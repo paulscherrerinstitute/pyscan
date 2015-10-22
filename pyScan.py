@@ -6,6 +6,50 @@ import numpy as np
 from time import sleep
 from copy import deepcopy
 
+import threading as thr
+
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+
+class MainPanel(QDialog):
+    def __init__(self, parent=None):
+        super(MainPanel, self).__init__(parent)
+        self.exitbutton=QPushButton('Abort measurement')
+
+        self.connect(self.exitbutton, SIGNAL("ex"), self.vis)
+        self.appearing=1
+
+        self.connect(self.exitbutton, SIGNAL("pb"), self.updatePB)
+        self.pbar = QProgressBar()
+        self.pbar.setRange(0, 100)
+
+        self.abortScan=0
+        self.connect(self.exitbutton, SIGNAL("clicked()"), self.abort)
+
+        layout=QGridLayout()
+        layout.addWidget(self.pbar,0,0)
+
+        layout.addWidget(self.exitbutton,1,0)
+        layout.addWidget(QLabel("Measurement is running. Don't close this window."),2,0)
+
+        self.setLayout(layout)
+
+        self.setWindowTitle("pyScan status")
+
+    def abort(self):
+        self.abortScan=1
+
+    def updatePB(self):
+        self.pbar.setValue(self.Progress)
+
+
+    def vis(self):
+        if self.appearing==0:
+            self.setVisible(False)
+        else:
+            self.setVisible(True)
+
+
 
 class Scan:
     def __init__(self):
@@ -15,6 +59,28 @@ class Scan:
 
         self.MonitorRunning=[]
 
+        self.form=None
+        self.launchPanel()
+        self.showPanel(0)
+        
+
+    def Panel(self):
+        app=QApplication(sys.argv)
+        self.form=MainPanel()
+        self.form.show()
+        app.exec_()
+
+    def launchPanel(self): 
+        self.thrUpdate = thr.Thread(target=self.Panel)
+        self.thrUpdate.setDaemon(True)
+        self.thrUpdate.start()
+        sleep(1.0)
+
+    def showPanel(self,s):
+        print dir(self),self.form
+        self.form.appearing=s
+
+        self.form.exitbutton.emit(SIGNAL("ex"))        
 
 
 
@@ -35,6 +101,8 @@ class Scan:
         self.cafe.terminate()
 
         self.outdict['ErrorMessage']='After the last scan, no initialization is done.'
+
+        self.showPanel(0)
 
     def initializeScan(self,inlist):
         self.cafe=PyCafe.CyCafe()
@@ -297,6 +365,10 @@ class Scan:
         self.allchh=self.addGroup('All',self.allch)
         
 
+        self.Ntot=1 # Total number of measurements
+        for dic in inlist:
+            self.Ntot=self.Ntot*dic['Nstep']
+
         self.inlist=inlist
         return self.outdict
 
@@ -335,7 +407,6 @@ class Scan:
                 self.stopScan[self.MonitorInfo[h][0]]=1
 
 
-
         dic=self.inlist[-1]
         self.stopScan=[0]*len(dic['Monitor'])
         self.MonitorInfo={}
@@ -352,6 +423,9 @@ class Scan:
             m0=self.cafe.monitorStart(h, cb=cbMonitor, dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
   
         self.cafe.openMonitorNowAndWait(2)
+
+        
+
 
     def PreAction(self,dic):
         order=np.array(dic['PreActionOrder'])
@@ -406,6 +480,7 @@ class Scan:
 
         self.stopScan=[]
         self.abortScan=0
+        self.form.abortScan=0
         if self.inlist[-1]['Monitor']:
             self.startMonitor(self.inlist[-1])
 
@@ -415,10 +490,12 @@ class Scan:
         self.outdict['Observable']=self.allocateOutput()
 
 
-
-
+        self.showPanel(1)
+        self.form.Progress=0
+        self.form.exitbutton.emit(SIGNAL("pb"))
+        self.Ndone=0
         self.Scan(self.outdict['KnobReadback'],self.outdict['Validation'],self.outdict['Observable'],None)
-
+        self.showPanel(0)
         self.finalizeScan()
             
         return self.outdict
@@ -492,6 +569,7 @@ class Scan:
                     sleep(dic['Waiting'])
 
                 Iscan=Iscan+1
+                self.Ndone=self.Ndone+1
         
                 Stepback=0
                 while self.stopScan.count(1): # Problem detected in the channel under monitoring
@@ -533,10 +611,19 @@ class Scan:
                 if Stepback:
                     print 'Stpping back'
                     Iscan=Iscan-1
+                    self.Ndone=self.Ndone-1
                     Rback.pop()
                     Valid.pop()
                     Obs.pop()
 
+                if self.form.abortScan:
+                    self.abortScan=1
+                    return
+
+                self.form.Progress=100.0*self.Ndone/self.Ntot
+                self.form.exitbutton.emit(SIGNAL("pb")) 
+
+                
 
             
             if len(dic['PostAction']):

@@ -11,9 +11,38 @@ import threading as thr
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-class MainPanel(QDialog):
+class SubPanelContents(QDialog):
     def __init__(self, parent=None):
-        super(MainPanel, self).__init__(parent)
+        super(SubPanelContents, self).__init__(parent)
+        self.exitbutton=QPushButton('Abort measurement')
+        self.pbar = QProgressBar()
+        self.pbar.setRange(0, 100)
+
+        self.connect(self.exitbutton, SIGNAL("ex"), self.vis)
+        self.appearing=1
+
+        self.connect(self.exitbutton, SIGNAL("pb"), self.updatePB)
+        self.pbar = QProgressBar()
+        self.pbar.setRange(0, 100)
+
+        self.abortScan=0
+        self.connect(self.exitbutton, SIGNAL("clicked()"), self.abort)
+
+
+    def abort(self):
+        self.abortScan=1
+
+    def updatePB(self):
+        self.pbar.setValue(self.Progress)
+
+
+    def vis(self):
+        'Dummy'
+
+
+class SubPanel(QDialog):
+    def __init__(self, parent=None):
+        super(SubPanel, self).__init__(parent)
         self.exitbutton=QPushButton('Abort measurement')
 
         self.connect(self.exitbutton, SIGNAL("ex"), self.vis)
@@ -30,7 +59,7 @@ class MainPanel(QDialog):
         layout.addWidget(self.pbar,0,0)
 
         layout.addWidget(self.exitbutton,1,0)
-        layout.addWidget(QLabel("Measurement is running. Don't close this window."),2,0)
+        layout.addWidget(QLabel("Don't close this window but use the button above to abort the measurement."),2,0)
 
         self.setLayout(layout)
 
@@ -52,21 +81,33 @@ class MainPanel(QDialog):
 
 
 class Scan:
-    def __init__(self):
+    def __init__(self,fromGUI=0):
         #self.cafe=PyCafe.CyCafe()
         #self.cafe.init()
         #self.cyca=PyCafe.CyCa()
 
         self.MonitorRunning=[]
 
-        self.form=None
-        self.launchPanel()
-        self.showPanel(0)
+        #self.form=None
+        #self.launchPanel()
+        #self.showPanel(0)
         
+        
+        if fromGUI:
+            self.form=SubPanel()
+            #self.form.show()
+            self.form.setVisible(False)
+        else:
+            self.form=None
+            self.launchPanel()
+            sleep(5.0)
+            self.showPanel(0)
+                    
+
 
     def Panel(self):
         app=QApplication(sys.argv)
-        self.form=MainPanel()
+        self.form=SubPanel()
         self.form.show()
         app.exec_()
 
@@ -74,7 +115,7 @@ class Scan:
         self.thrUpdate = thr.Thread(target=self.Panel)
         self.thrUpdate.setDaemon(True)
         self.thrUpdate.start()
-        sleep(1.0)
+        
 
     def showPanel(self,s):
         print dir(self),self.form
@@ -100,7 +141,7 @@ class Scan:
         #    self.cafe.close(h)
         self.cafe.terminate()
 
-        self.outdict['ErrorMessage']='After the last scan, no initialization is done.'
+        self.outdict['ErrorMessage']='Measurement finalized (finished/aborted) normally. Need initialisation before next measruement.'
 
         self.showPanel(0)
 
@@ -460,13 +501,10 @@ class Scan:
         l=[]
         for i in range(0,len(self.inlist)):
             N=self.inlist[len(self.inlist)-i-1]['Nstep']
-            if i==0:
-                l=l*N
-            else:
-                ll=[]
-                for j in range(0,N):
-                    ll.append(deepcopy(l))
-                l=ll
+            ll=[]
+            for j in range(0,N):
+                ll.append(deepcopy(l))
+            l=ll
 
         return l
 
@@ -489,6 +527,9 @@ class Scan:
         self.outdict['Validation']=self.allocateOutput()
         self.outdict['Observable']=self.allocateOutput()
 
+
+        print 'Place hold  ',self.outdict['KnobReadback']
+        
 
         self.showPanel(1)
         self.form.Progress=0
@@ -530,6 +571,8 @@ class Scan:
                     sleep(dic['KnobWaitingExtra'])
                 self.Scan(Rback[i],Valid[i],Obs[i],self.inlist[ind+1]) # and then going to a deeper layer recursively
                 if self.abortScan:
+                    if len(dic['PostAction']):
+                        self.PostAction(dic)
                     return
 
             if len(dic['PostAction']):
@@ -557,12 +600,36 @@ class Scan:
                     
                 for j in range(0,dic['NumberOfMeasurements']):
                     [v,s,sl]=self.cafe.getGroup(self.allchh)
-                    Rback.append(v[0:self.allchc[0]])
-                    Valid.append(v[self.allchc[0]:self.allchc[0]+self.allchc[1]])
-                    if len(dic['Observable'])==1:
-                        Obs.append(v[-1])
+                    if dic['NumberOfMeasurements']>1:
+                        if len(dic['Knob'])==1:
+                            Rback[Iscan].append(v[0])
+                        else:
+                            Rback[Iscan].append(v[0:self.allchc[0]])
+
+                        if len(dic['Validation'])==1:
+                            Valid[Iscan].append(v[self.allchc[0]])
+                        else:
+                            Valid[Iscan].append(v[self.allchc[0]:self.allchc[0]+self.allchc[1]])
+
+                        if len(dic['Observable'])==1:
+                            Obs[Iscan].append(v[-1])
+                        else:
+                            Obs[Iscan].append(v[self.allchc[0]+self.allchc[1]:self.allchc[0]+self.allchc[1]+self.allchc[2]])
                     else:
-                        Obs.append(v[self.allchc[0]+self.allchc[1]:self.allchc[0]+self.allchc[1]+self.allchc[2]])
+                        if len(dic['Knob'])==1:
+                            Rback[Iscan]=v[0]
+                        else:
+                            Rback[Iscan]=v[0:self.allchc[0]]
+
+                        if len(dic['Validation'])==1:
+                            Valid[Iscan]=v[self.allchc[0]]
+                        else:
+                            Valid[Iscan]=v[self.allchc[0]:self.allchc[0]+self.allchc[1]]
+
+                        if len(dic['Observable'])==1:
+                            Obs[Iscan]=v[-1]
+                        else:
+                            Obs[Iscan]=v[self.allchc[0]+self.allchc[1]:self.allchc[0]+self.allchc[1]+self.allchc[2]]
 
 
 
@@ -605,16 +672,18 @@ class Scan:
 
                     Stepback=1
                     if self.abortScan:
+                        if len(dic['PostAction']):
+                            self.PostAction(dic)
                         return
 
 
                 if Stepback:
-                    print 'Stpping back'
+                    print 'Stepping back'
                     Iscan=Iscan-1
                     self.Ndone=self.Ndone-1
-                    Rback.pop()
-                    Valid.pop()
-                    Obs.pop()
+                    Rback[Iscan].pop()
+                    Valid[Iscan].pop()
+                    Obs[Iscan].pop()
 
                 if self.form.abortScan:
                     self.abortScan=1

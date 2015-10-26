@@ -63,7 +63,7 @@ class SubPanel(QDialog):
 
         self.setLayout(layout)
 
-        self.setWindowTitle("pyScan status")
+        self.setWindowTitle("pyScan progress")
 
     def abort(self):
         self.abortScan=1
@@ -100,7 +100,7 @@ class Scan:
         else:
             self.form=None
             self.launchPanel()
-            sleep(5.0)
+            sleep(3.0)
             self.showPanel(0)
                     
 
@@ -115,7 +115,7 @@ class Scan:
         self.thrUpdate = thr.Thread(target=self.Panel)
         self.thrUpdate.setDaemon(True)
         self.thrUpdate.start()
-        
+        sleep(3.0)
 
     def showPanel(self,s):
         print dir(self),self.form
@@ -321,6 +321,13 @@ class Scan:
             else:
                 dic['PostAction']=[]
 
+            if 'Validation' in dic.keys():
+                if not isinstance(dic['Validation'],list):
+                    self.outdict['ErrorMessage']='Validation should be a list of channels. Input dictionary '+str(i)+'.' 
+                    return self.outdict
+            else:
+                dic['Validation']=[]
+
      
             if inlist.index(dic)==len(inlist)-1 and ('Monitor' in dic.keys()):
                 if isinstance(dic['Monitor'],str):
@@ -395,8 +402,10 @@ class Scan:
             self.allch.append(d['KnobReadback'])
             Nrb=Nrb+len(d['KnobReadback'])
 
+
         self.allch.append(inlist[-1]['Validation'])
         Nvalid=len(inlist[-1]['Validation'])
+
         self.allch.append(inlist[-1]['Observable'])
         Nobs=len(inlist[-1]['Observable'])
 

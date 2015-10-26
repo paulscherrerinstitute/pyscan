@@ -21,7 +21,7 @@ indict1['Nstep']=10
 indict1['Observable']=['MA-SARUN06-DBPM070:X','MA-SARUN06-DBPM070:Y']
 
 indict1['Waiting']=0.1
-indict1['Validation']=[]
+indict1['Validation']=['MA-SARUN06-DBPM070:POS-VALID','MA-SARUN06-DBPM070:Q-VALID']
 
 indict1['NumberOfMeasurements']=3
 
@@ -63,5 +63,9 @@ outdict=pyscan.initializeScan([indict0,indict1])
 outdict=pyscan.startScan()
 
 
-for o in  outdict['Observable']:
-    print o
+#for o in  outdict['Observable']:
+#    print o
+
+
+
+print outdict['Validation']

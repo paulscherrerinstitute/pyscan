@@ -167,7 +167,7 @@ class Scan:
 
 
             if 'Knob' not in dic.keys():
-                self.outdict['ErrorMessage']='Knob for the scan was not givenfor the input dictionary'+str(i)+'.'
+                self.outdict['ErrorMessage']='Knob for the scan was not given for the input dictionary'+str(i)+'.'
                 return self.outdict
             else:
                 if not isinstance(dic['Knob'],list):
@@ -217,7 +217,7 @@ class Scan:
                     self.outdict['ErrorMessage']='Neither ScanRange nor ScanValues is given in the input dictionary '+str(i)+'.'
                     return self.outdict
                 elif not isinstance(dic['ScanRange'],list):
-                    self.outdict['ErrorMessage']='ScanRange is not given in the right format '+str(i)+'.'
+                    self.outdict['ErrorMessage']='ScanRange is not given in the right format. Input dictionary '+str(i)+'.'
                     return self.outdict
                 elif not isinstance(dic['ScanRange'][0],list): 
                     dic['ScanRange']=[dic['ScanRange']]
@@ -251,7 +251,9 @@ class Scan:
                 if not isinstance(dic['ScanValues'],list):
                     self.outdict['ErrorMessage']='ScanValues is not given in the right fromat. Input dictionary '+str(i)+'.'
                     return self.outdict
-                if len(dic['ScanValues'])!=len(dic['Knob']):
+
+
+                if len(dic['ScanValues'])!=len(dic['Knob']) and len(dic['Knob'])!=1:
                     self.outdict['ErrorMessage']='The length of ScanValues does not meet to the number of Knobs.'
                     return self.outdict
 
@@ -267,7 +269,9 @@ class Scan:
                     dic['KnobExpanded']=ran
                     dic['Nstep']=minlen
                 else:
+                    dic['KnobExpanded']=[dic['ScanValues']]
                     dic['Nstep']=len(dic['ScanValues'])
+
 
             if inlist.index(dic)==len(inlist)-1 and ('Observable' not in dic.keys()):
                 self.outdict['ErrorMessage']='The observable is not given.'
@@ -308,7 +312,14 @@ class Scan:
 
 
             if 'PostAction' in dic.keys():
-                if not isinstance(dic['PostAction'],list):
+                if dic['PostAction']=='Restore':
+                    PA=[]
+                    for i in range(0,len(dic['Knob'])):
+                        k = dic['Knob'][i]
+                        v = dic['KnobSaved'][i]
+                        PA.append([k,k,v,1.0,10])
+                    dic['PostAction']=PA
+                elif not isinstance(dic['PostAction'],list):
                     self.outdict['ErrorMessage']='PostAction should be a list. Input dictionary '+str(i)+'.' 
                     return self.outdict
                 for l in dic['PostAction']:
@@ -394,6 +405,8 @@ class Scan:
 
             dic['KnobExpanded']=np.array(dic['KnobExpanded'])
 
+            if 'Additive' not in dic.keys():
+                dic['Additive']=0
 
         self.allch=[]
         self.allchc=[]
@@ -573,8 +586,11 @@ class Scan:
                 
                 #self.cafe.setGroup(dic['KnobHandle'],dic['KnobExpanded'][i])
                 
-                for j in range(0,len(dic['Knob'])): # Replace later with a group method (sedAndMatchGroup?)
-                    KV=dic['KnobExpanded'][j]
+                for j in range(0,len(dic['Knob'])): # Replace later with a group method, setAndMatchGroup?
+                    if dic['Additive']:
+                        KV=dic['KnobExpanded'][j]+dic['KnobSaved'][j]
+                    else:
+                        KV=dic['KnobExpanded'][j]
                     self.cafe.setAndMatch(dic['Knob'][j],KV[i],dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
                 if dic['KnobWaitingExtra']:
                     sleep(dic['KnobWaitingExtra'])
@@ -599,9 +615,12 @@ class Scan:
 
                 # set knob for this loop
                 #self.cafe.setGroup(dic['KnobHandle'],dic['KnobExpanded'][i])
-                for j in range(0,len(dic['Knob'])): # Replace later with a group method (sedAndMatchGroup?)
-                    KV=dic['KnobExpanded'][j]
-                    print 'Knob value',KV[Iscan]
+                for j in range(0,len(dic['Knob'])): # Replace later with a group method, setAndMatchGroup?
+                    if dic['Additive']:
+                        KV=dic['KnobExpanded'][j]+dic['KnobSaved'][j]
+                    else:
+                        KV=dic['KnobExpanded'][j]
+                    print 'Knob value',dic['KnobSaved'],dic['KnobExpanded'],KV[Iscan]
                     self.cafe.setAndMatch(dic['Knob'][j],KV[Iscan],dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
                 if dic['KnobWaitingExtra']:
                     sleep(dic['KnobWaitingExtra'])
@@ -653,7 +672,7 @@ class Scan:
                         if self.stopScan[k]:
                             if dic['MonitorAction'][k]=='Abort':
                                 self.abortScan=1
-                            elif dic['MonitorAction'][k]=='Wait' or dic['MonitorAction'][k]=='WaitAndAbort':
+                            else: #elif dic['MonitorAction'][k]=='Wait' or dic['MonitorAction'][k]=='WaitAndAbort':
                                 ngflag=1
                                 count=0
                                 while self.stopScan[k]:
@@ -672,14 +691,14 @@ class Scan:
                                          else:
                                              print 'value NG'
                                      else:
-                                         'Return value getPVCache',v
+                                         print 'Return value getPVCache',v
                                      sleep(1.0)
                                      count=count+1
                                      if dic['MonitorAction'][k]=='WaitAndAbort' and count>dic['MonitorTimeout'][k]:
                                          self.abortScan=1
                                          break
-
-                    Stepback=1
+                    if not dic['MonitorAction'][k]=='WaitAndNoStepBack':
+                        Stepback=1
                     if self.abortScan:
                         if len(dic['PostAction']):
                             self.PostAction(dic)

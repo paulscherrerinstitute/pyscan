@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, '/afs/psi.ch/intranet/SF/Applications/Development/OnlineModel/lib')
+
 if sys.version_info[0]<3:
     import PyCafe
 else:
@@ -7,6 +7,7 @@ else:
 
 import numpy as np
 from time import sleep
+from datetime import datetime
 from copy import deepcopy
 
 import threading as thr
@@ -556,6 +557,8 @@ class Scan:
             self.allch.append(d['KnobReadback'])
             Nrb=Nrb+len(d['KnobReadback'])
 
+        print 'Knob readback ############################'
+        print self.allch,Nrb
 
         self.allch.append(inlist[-1]['Validation'])
         Nvalid=len(inlist[-1]['Validation'])
@@ -703,6 +706,8 @@ class Scan:
                 self.outdict['ErrorMessage']='It seems that the initialization was not successful... No scan was performed.'
             return self.outdict
 
+        self.outdict['TimeStampStart']=datetime.now()
+
         self.stopScan=[]
         self.abortScan=0
         self.form.abortScan=0
@@ -725,6 +730,8 @@ class Scan:
         self.Scan(self.outdict['KnobReadback'],self.outdict['Validation'],self.outdict['Observable'],None)
         self.showPanel(0)
         self.finalizeScan()
+
+        self.outdict['TimeStampEnd']=datetime.now()
             
         return self.outdict
 
@@ -831,7 +838,7 @@ class Scan:
                     for j in range(0,dic['NumberOfMeasurements']):
                         [v,s,sl]=self.cafe.getGroup(self.allchh)
                         if dic['NumberOfMeasurements']>1:
-                            if len(dic['Knob'])==1:
+                            if self.allchc[0]==1:
                                 Rback[Iscan].append(v[0])
                             else:
                                 Rback[Iscan].append(v[0:self.allchc[0]])
@@ -846,7 +853,7 @@ class Scan:
                             else:
                                 Obs[Iscan].append(v[self.allchc[0]+self.allchc[1]:self.allchc[0]+self.allchc[1]+self.allchc[2]])
                         else:
-                            if len(dic['Knob'])==1:
+                            if self.allchc[0]==1:
                                 Rback[Iscan]=v[0]
                             else:
                                 Rback[Iscan]=v[0:self.allchc[0]]
@@ -955,7 +962,8 @@ class Scan:
                         for j in range(0,dic['NumberOfMeasurements']):
                             [v,s,sl]=self.cafe.getGroup(self.allchh)
                             if dic['NumberOfMeasurements']>1:
-                                if len(dic['Knob'])==1:
+                                #if len(dic['Knob'])==1: # Maybe a bug
+                                if self.allchc[0]==1:
                                     Rback[Kscan][Iscan].append(v[0])
                                 else:
                                     Rback[Kscan][Iscan].append(v[0:self.allchc[0]])
@@ -970,7 +978,7 @@ class Scan:
                                 else:
                                     Obs[Kscan][Iscan].append(v[self.allchc[0]+self.allchc[1]:self.allchc[0]+self.allchc[1]+self.allchc[2]])
                             else:
-                                if len(dic['Knob'])==1:
+                                if self.allchc[0]==1:
                                     Rback[Kscan][Iscan]=v[0]
                                 else:
                                     Rback[Kscan][Iscan]=v[0:self.allchc[0]]

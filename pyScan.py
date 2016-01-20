@@ -1,9 +1,6 @@
 import sys
 
-if sys.version_info[0]<3:
-    import PyCafe
-else:
-    import PyCafe3
+import PyCafe
 
 import numpy as np
 from time import sleep
@@ -86,7 +83,6 @@ class SubPanel(QDialog):
 
 class Scan:
     def __init__(self,fromGUI=0):
-        self.MonitorRunning=[]
         
 
         if fromGUI:
@@ -114,7 +110,6 @@ class Scan:
         sleep(3.0)
 
     def showPanel(self,s):
-        print dir(self),self.form
         self.form.appearing=s
 
         self.form.exitbutton.emit(SIGNAL("ex"))        
@@ -130,12 +125,16 @@ class Scan:
 
 
     def finalizeScan(self):
-        #for dic in self.inlist:
-        #    self.cafe.close(dic['KnobHandle'])
-            
+ 
         #for h in self.MonitorRunning:
         #    self.cafe.close(h)
-        self.cafe.terminate()
+        #self.MonitorRunning=[]
+        #self.cafe.terminate()
+        #del(self.cafe)
+        
+        self.cafe.groupClose('All')
+        self.cafe.groupClose('Monitor')
+
 
         self.outdict['ErrorMessage']='Measurement finalized (finished/aborted) normally. Need initialisation before next measruement.'
 
@@ -203,8 +202,9 @@ class Scan:
                     return self.outdict
 
             
-            dic['KnobHandle']=self.addGroup(str(i),dic['Knob'])
-            [dic['KnobSaved'],summary,status]=self.cafe.getGroup(dic['KnobHandle'])
+            TempHandle=self.addGroup(str(i),dic['Knob'])
+            [dic['KnobSaved'],summary,status]=self.cafe.getGroup(TempHandle)
+            self.cafe.groupClose(TempHandle)
             
             
             if 'Series' not in dic.keys():
@@ -368,36 +368,6 @@ class Scan:
                 dic['In-loopPreActionOrder']=[0]*len(dic['In-loopPreAction'])
 
 
-            if 'In-loopMonitor' in dic.keys():
-                if not isinstance(dic['In-loopMonitor'],list):
-                    self.outdict['ErrorMessage']='In-loopMonitor should be a list. Input dictionary '+str(i)+'.' 
-                    return self.outdict
-                for l in dic['In-loopMonitor']:
-                    if not isinstance(l,list):
-                        self.outdict['ErrorMessage']='Every In-loopMonitor should be a list. Input dictionary '+str(i)+'.' 
-                        return self.outdict
-                    if len(l)!=5:
-                        if not l[0]=='SpecialAction':
-                            self.outdict['ErrorMessage']='Every In-loopMonitor should be in a form of [Ch-set, Ch-read, Value, Tolerance, Timeout]. Input dictionary '+str(i)+'.' 
-                            return self.outdict
-
-                if 'In-loopMonitorWaiting' not in dic.keys():
-                    dic['In-loopMonitorWaiting']=0.0
-                if not isinstance(dic['In-loopMonitorWaiting'],float) and not isinstance(dic['In-loopMonitorWaiting'],int):
-                    self.outdict['ErrorMessage']='In-loopMonitorWating should be a float. Input dictionary '+str(i)+'.' 
-                    return self.outdict
-                
-                if 'In-loopMonitorOrder' not in dic.keys():
-                    dic['In-loopMonitorOrder']=[0]*len(dic['In-loopMonitor'])
-                if not isinstance(dic['In-loopMonitorOrder'],list):
-                    self.outdict['ErrorMessage']='In-loopMonitorOrder should be a list. Input dictionary '+str(i)+'.' 
-                    return self.outdict
-
-            else:
-                dic['In-loopMonitor']=[]
-                dic['In-loopMonitorWaiting']=0.0
-                dic['In-loopMonitorOrder']=[0]*len(dic['In-loopMonitor'])
-
 
             if 'PostAction' in dic.keys():
                 if dic['PostAction']=='Restore':
@@ -482,13 +452,16 @@ class Scan:
             if inlist.index(dic)==len(inlist)-1 and ('Monitor' in dic.keys()):
                 if isinstance(dic['Monitor'],str):
                     dic['Monitor']=[dic['Monitor']]
+
+                self.MonitorHandle=self.addGroup('Monitor',dic['Monitor'])
                 
                 if 'MonitorValue' not in dic.keys():
                     #self.outdict['ErrorMessage']='MonitorValue is not give though Monitor is given.' 
                     #return self.outdict
-                    dic['MonitorValue']=[]
-                    for m in dic['Monitor']:
-                        dic['MonitorValue'].append(self.cafe.get(m))  # Taking MonitorValue from the machine as it is not given.
+                    #dic['MonitorValue']=[]
+                    #for m in dic['Monitor']:
+                    #   dic['MonitorValue'].append(self.cafe.get(m))  # Taking MonitorValue from the machine as it is not given.
+                    [dic['MonitorValue'],summary,status]=self.cafe.getGroup('Monitor')
                 elif not isinstance(dic['MonitorValue'],list):
                     dic['MonitorValue']=[dic['MonitorValue']]
                 if len(dic['MonitorValue'])!=len(dic['Monitor']):
@@ -497,10 +470,13 @@ class Scan:
 
                 if 'MonitorTolerance' not in dic.keys():
                     dic['MonitorTolerance']=[]
-                    for m in dic['Monitor']:
+                    [Value,summary,status]=self.cafe.getGroup('Monitor')
+                    for v in Value:
                         v=self.cafe.get(m)
                         if isinstance(v,str):
                             dic['MonitorTolerance'].append(None)
+                        elif v==0:
+                            dic['MonitorTolerance'].append(0.1)
                         else:
                             dic['MonitorTolerance'].append(abs(v*0.1)) # 10% of the current value will be the torelance when not given
                 elif not isinstance(dic['MonitorTolerance'],list):
@@ -557,8 +533,6 @@ class Scan:
             self.allch.append(d['KnobReadback'])
             Nrb=Nrb+len(d['KnobReadback'])
 
-        print 'Knob readback ############################'
-        print self.allch,Nrb
 
         self.allch.append(inlist[-1]['Validation'])
         Nvalid=len(inlist[-1]['Validation'])
@@ -569,7 +543,7 @@ class Scan:
 
         self.allchc=[Nrb,Nvalid,Nobs]
         self.allch=[item for sublist in self.allch for item in sublist] # Recursive in one line!
-        self.allchh=self.addGroup('All',self.allch)
+        Handle=self.addGroup('All',self.allch)
         
 
         self.Ntot=1 # Total number of measurements
@@ -591,15 +565,24 @@ class Scan:
 
             def matchValue(h):
                 en=self.MonitorInfo[h][1]
-                c=self.cafe.getPVCache(en)
+                print ('***********************************')
+                print (HandleList)
+                print (h)
+                print (self.MonitorInfo[h][1])
+                print (en)
+                self.cafe.printHandle(en)
+                print ('***********************************')
+
+                #c=self.cafe.getPVCache(en)
+                c=self.cafe.getPVCache(h)
                 v=c.value[0]
                 #v=self.cafe.get(en)
                 if isinstance(v,str):
                     if v==self.MonitorInfo[h][2]:
-                        print 'value OK'
+                        print ('value OK')
                         return 1
                     else:
-                        print 'value NG'
+                        print ('value NG')
                         return 0
                 elif isinstance(v,int) or isinstance(v,float):
                     if abs(v-self.MonitorInfo[h][2])<self.MonitorInfo[h][3]:
@@ -620,20 +603,26 @@ class Scan:
         dic=self.inlist[-1]
         self.stopScan=[0]*len(dic['Monitor'])
         self.MonitorInfo={}
-        self.cafe.openPrepare()
-        for i in range(0,len(dic['Monitor'])):
-            m=dic['Monitor'][i]
-            h=self.cafe.open(m)
-            self.MonitorRunning.append(h)
+
+        HandleList=self.cafe.getHandlesFromWithinGroup(self.MonitorHandle)
+        #self.cafe.openPrepare()
+        for i in range(0,len(HandleList)):
+            h=HandleList[i]
+            #m=dic['Monitor'][i]
+            #h=self.cafe.open(m)
+            #self.MonitorRunning.append(h)
             self.MonitorInfo[h]=[i,dic['Monitor'][i],dic['MonitorValue'][i],dic['MonitorTolerance'][i],dic['MonitorAction'][i],dic['MonitorTimeout']]
-        self.cafe.openNowAndWait(2)
+        #self.cafe.openNowAndWait(2)
 
-        self.cafe.openMonitorPrepare()
-        for h in self.MonitorRunning:
-            m0=self.cafe.monitorStart(h, cb=cbMonitor, dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
+        #self.cafe.openMonitorPrepare()
+        #for h in self.MonitorRunning:
+        #    m0=self.cafe.monitorStart(h, cb=cbMonitor, dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
   
+        #self.cafe.openMonitorNowAndWait(2)
+        self.cafe.openMonitorPrepare()
+        m0=self.cafe.groupMonitorStartWithCBList(self.MonitorHandle, cb=[cbMonitor]*len(dic['Monitor']), dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
         self.cafe.openMonitorNowAndWait(2)
-
+        
         
     def PreAction(self,dic,key='PreAction'):
 
@@ -641,11 +630,12 @@ class Scan:
         maxo=order.max()
         mino=order.min()
 
+        stat=0
         for i in range(mino,maxo+1):
             for j in range(0,len(order)):
                 od=order[j]
                 if i==od:
-                    if dic[key][j][0]=='SpecialAction':
+                    if dic[key][j][0].lower()=='specialaction':
                         self.ObjectSA.SpecialAction(dic[key][j][1])
                     else:
                         chset=dic[key][j][0]
@@ -653,9 +643,28 @@ class Scan:
                         val=dic[key][j][2]
                         tol=dic[key][j][3]
                         timeout=dic[key][j][4]
-                        self.cafe.setAndMatch(chset,val,chread,tol,timeout,0)
- 
+                        if chset.lower()=='match':
+                            print ('****************************----')
+                            try:
+                                status=self.cafe.match(val,chread,tol,timeout,1)
+                                print ('--------------',status)
+                            except Exception as inst:
+                                print ('Exception in preAction')
+                                print (inst)
+                                stat=1
+                                
+                        else:
+                            try:
+                                status=self.cafe.setAndMatch(chset,val,chread,tol,timeout,0)
+                                print ('===========',status)
+                            except Exception as inst:
+                                print ('Exception in preAction')
+                                print (inst)
+                                stat=1
+
         sleep(dic[key+'Waiting'])
+
+        return stat # Future development: Give it to output dictionary
 
     def PostAction(self,dic,key='PostAction'):
 
@@ -720,9 +729,6 @@ class Scan:
         self.outdict['Observable']=self.allocateOutput()
 
 
-        print 'Place hold  ',self.outdict['KnobReadback']
-
-
         self.showPanel(1)
         self.form.Progress=0
         self.form.exitbutton.emit(SIGNAL("pb"))
@@ -743,10 +749,8 @@ class Scan:
 
         if dic==None:
             dic=self.inlist[0]
-            print 'kkk'
 
-        print dic
-        print '*****************',dic
+        print ('*****************',dic)
         ind=self.inlist.index(dic)
         if ind!=len(self.inlist)-1:
 
@@ -755,7 +759,7 @@ class Scan:
 
             if not dic['Series']:
                 for i in range(0,dic['Nstep']):
-                    print 'Dict'+str(ind)+'  Loop'+str(i)
+                    print ('Dict'+str(ind)+'  Loop'+str(i))
 
                     #self.cafe.setGroup(dic['KnobHandle'],dic['KnobExpanded'][i])
                     for j in range(0,len(dic['Knob'])): # Replace later with a group method, setAndMatchGroup?
@@ -815,10 +819,8 @@ class Scan:
 
                 Iscan=0
                 while Iscan<dic['Nstep']:
-                    print Iscan
+                    print (Iscan)
 
-                    if len(dic['In-loopPreAction']):
-                        self.PreAction(dic,'In-loopPreAction')            
 
                     # set knob for this loop
                     #self.cafe.setGroup(dic['KnobHandle'],dic['KnobExpanded'][i])
@@ -827,16 +829,16 @@ class Scan:
                             KV=np.array(dic['KnobExpanded'][j])+dic['KnobSaved'][j]
                         else:
                             KV=dic['KnobExpanded'][j]
-                        print 'Knob value',dic['KnobSaved'],dic['KnobExpanded'],KV[Iscan]
+                        print ('Knob value',dic['KnobSaved'],dic['KnobExpanded'],KV[Iscan])
                         self.cafe.setAndMatch(dic['Knob'][j],KV[Iscan],dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
                     if dic['KnobWaitingExtra']:
                         sleep(dic['KnobWaitingExtra'])
 
-                    if len(dic['In-loopMonitor']):
-                        self.PreAction(dic,'In-loopMonitor')      
+                    if len(dic['In-loopPreAction']):
+                        self.PreAction(dic,'In-loopPreAction')            
 
                     for j in range(0,dic['NumberOfMeasurements']):
-                        [v,s,sl]=self.cafe.getGroup(self.allchh)
+                        [v,s,sl]=self.cafe.getGroup('All')
                         if dic['NumberOfMeasurements']>1:
                             if self.allchc[0]==1:
                                 Rback[Iscan].append(v[0])
@@ -888,18 +890,18 @@ class Scan:
                                          v=self.cafe.get(en)
                                          if isinstance(v,str):
                                              if v==dic['MonitorValue'][k]:
-                                                 print 'value OK', self.stopScan
+                                                 print ('value OK', self.stopScan)
                                                  self.stopScan[k]=0
                                              else:
-                                                 print 'value NG'
+                                                 print ('value NG')
                                          elif isinstance(v,int) or isinstance(v,float):
                                              if abs(v-dic['MonitorValue'][k])<dic['MonitorTolerance'][k]:
-                                                 print 'value OK'
+                                                 print ('value OK')
                                                  self.stopScan[k]=0
                                              else:
-                                                 print 'value NG'
+                                                 print ('value NG')
                                          else:
-                                             print 'Return value getPVCache',v
+                                             print ('Return value getPVCache',v)
                                          sleep(1.0)
                                          count=count+1
                                          if dic['MonitorAction'][k]=='WaitAndAbort' and count>dic['MonitorTimeout'][k]:
@@ -913,7 +915,7 @@ class Scan:
                             return
 
                     if Stepback:
-                        print 'Stepping back'
+                        print ('Stepping back')
                         Iscan=Iscan-1
                         self.Ndone=self.Ndone-1
                         Rback[Iscan].pop()
@@ -938,10 +940,8 @@ class Scan:
                 while Kscan<len(dic['Knob']):
                     Iscan=0
                     while Iscan<dic['Nstep'][Kscan]:
-                        print Kscan,Iscan
+                        print (Kscan,Iscan)
 
-                        if len(dic['In-loopPreAction']):
-                            self.PreAction(dic,'In-loopPreAction')           
                         # set knob for this loop
                         #self.cafe.setGroup(dic['KnobHandle'],dic['KnobExpanded'][i])
                         for j in range(0,len(dic['Knob'])): # Replace later with a group method, setAndMatchGroup?
@@ -956,11 +956,11 @@ class Scan:
                         if dic['KnobWaitingExtra']:
                             sleep(dic['KnobWaitingExtra'])
 
-                        if len(dic['In-loopMonitor']):
-                            self.PreAction(dic,'In-loopMonitor')          
+                        if len(dic['In-loopPreAction']):
+                            self.PreAction(dic,'In-loopPreAction')           
 
                         for j in range(0,dic['NumberOfMeasurements']):
-                            [v,s,sl]=self.cafe.getGroup(self.allchh)
+                            [v,s,sl]=self.cafe.getGroup('All')
                             if dic['NumberOfMeasurements']>1:
                                 #if len(dic['Knob'])==1: # Maybe a bug
                                 if self.allchc[0]==1:
@@ -1013,18 +1013,18 @@ class Scan:
                                              v=self.cafe.get(en)
                                              if isinstance(v,str):
                                                  if v==dic['MonitorValue'][k]:
-                                                     print 'value OK', self.stopScan
+                                                     print ('value OK', self.stopScan)
                                                      self.stopScan[k]=0
                                                  else:
-                                                     print 'value NG'
+                                                     print ('value NG')
                                              elif isinstance(v,int) or isinstance(v,float):
                                                  if abs(v-dic['MonitorValue'][k])<dic['MonitorTolerance'][k]:
-                                                     print 'value OK'
+                                                     print ('value OK')
                                                      self.stopScan[k]=0
                                                  else:
-                                                     print 'value NG'
+                                                     print ('value NG')
                                              else:
-                                                 print 'Return value getPVCache',v
+                                                 print ('Return value getPVCache',v)
                                              sleep(1.0)
                                              count=count+1
                                              if dic['MonitorAction'][k]=='WaitAndAbort' and count>dic['MonitorTimeout'][k]:
@@ -1038,7 +1038,7 @@ class Scan:
                                 return
 
                         if Stepback:
-                            print 'Stepping back'
+                            print ('Stepping back')
                             Iscan=Iscan-1
                             self.Ndone=self.Ndone-1
                             Rback[Iscan].pop()

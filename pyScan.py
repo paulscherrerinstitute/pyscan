@@ -1,5 +1,9 @@
 import sys
 
+
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+
 import PyCafe
 
 import numpy as np
@@ -9,8 +13,7 @@ from copy import deepcopy
 
 import threading as thr
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
 
 class SubPanelContents(QDialog):
     def __init__(self, parent=None):
@@ -84,6 +87,7 @@ class SubPanel(QDialog):
 class Scan:
     def __init__(self,fromGUI=0):
         
+        self.fromGUI=fromGUI
 
         if fromGUI:
             self.form=SubPanel()
@@ -91,9 +95,10 @@ class Scan:
             self.form.setVisible(False)
         else:
             self.form=None
-            self.launchPanel()
-            sleep(3.0)
-            self.showPanel(0)
+           
+            #self.launchPanel()
+            #sleep(3.0)
+            #self.showPanel(0)
 
 
 
@@ -133,12 +138,14 @@ class Scan:
         #del(self.cafe)
         
         self.cafe.groupClose('All')
-        self.cafe.groupClose('Monitor')
+        if self.inlist[-1]['Monitor']:
+            self.cafe.groupClose('Monitor')
 
 
         self.outdict['ErrorMessage']='Measurement finalized (finished/aborted) normally. Need initialisation before next measruement.'
 
-        self.showPanel(0)
+        if self.fromGUI:
+            self.showPanel(0)
 
     def initializeScan(self,inlist):
         self.cafe=PyCafe.CyCafe()
@@ -677,7 +684,10 @@ class Scan:
                 val=act[2]
                 tol=act[3]
                 timeout=act[4]
-                self.cafe.setAndMatch(chset,val,chread,tol,timeout,0)
+                try:
+                    self.cafe.setAndMatch(chset,val,chread,tol,timeout,0)
+                except Exception as inst:
+                    print (inst)
 
     def CrossReference(self,Object):
         self.ObjectSA=Object
@@ -719,7 +729,6 @@ class Scan:
 
         self.stopScan=[]
         self.abortScan=0
-        self.form.abortScan=0
         if self.inlist[-1]['Monitor']:
             self.startMonitor(self.inlist[-1])
 
@@ -729,12 +738,15 @@ class Scan:
         self.outdict['Observable']=self.allocateOutput()
 
 
-        self.showPanel(1)
-        self.form.Progress=0
-        self.form.exitbutton.emit(SIGNAL("pb"))
+        if self.fromGUI:
+            self.showPanel(1)
+            self.form.abortScan=0
+            self.form.Progress=0
+            self.form.exitbutton.emit(SIGNAL("pb"))
         self.Ndone=0
         self.Scan(self.outdict['KnobReadback'],self.outdict['Validation'],self.outdict['Observable'],None)
-        self.showPanel(0)
+        if self.fromGUI:
+            self.showPanel(0)
         self.finalizeScan()
 
         self.outdict['TimeStampEnd']=datetime.now()
@@ -767,8 +779,11 @@ class Scan:
                             KV=np.array(dic['KnobExpanded'][j])+dic['KnobSaved'][j]
                         else:
                             KV=dic['KnobExpanded'][j]
-                        self.cafe.setAndMatch(dic['Knob'][j],KV[i],dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
-
+                        try:
+                            self.cafe.setAndMatch(dic['Knob'][j],KV[i],dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
+                        except Exception as inst:
+                            print ('Exception in preAction')
+                            print (inst)
                     if dic['KnobWaitingExtra']:
                         sleep(dic['KnobWaitingExtra'])
                     self.Scan(Rback[i],Valid[i],Obs[i],self.inlist[ind+1]) # and then going to a deeper layer recursively
@@ -791,8 +806,11 @@ class Scan:
                                     KV=dic['ScanValues'][k][j]
                             else:
                                 KV=dic['KnobSaved'][k]
-
-                            self.cafe.setAndMatch(dic['Knob'][k],KV[i],dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
+                            try:
+                                self.cafe.setAndMatch(dic['Knob'][k],KV[i],dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
+                            except Exception as inst:
+                                print ('Exception in preAction')
+                                print (inst)
 
                         if dic['KnobWaitingExtra']:
                             sleep(dic['KnobWaitingExtra'])
@@ -830,7 +848,11 @@ class Scan:
                         else:
                             KV=dic['KnobExpanded'][j]
                         print ('Knob value',dic['KnobSaved'],dic['KnobExpanded'],KV[Iscan])
-                        self.cafe.setAndMatch(dic['Knob'][j],KV[Iscan],dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
+                        try:
+                            self.cafe.setAndMatch(dic['Knob'][j],KV[Iscan],dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
+                        except Exception as inst:
+                            print ('Exception in preAction')
+                            print (inst)
                     if dic['KnobWaitingExtra']:
                         sleep(dic['KnobWaitingExtra'])
 
@@ -922,7 +944,7 @@ class Scan:
                         Valid[Iscan].pop()
                         Obs[Iscan].pop()
 
-                    if self.form.abortScan:
+                    if self.fromGUI and self.form.abortScan:
                         self.abortScan=1
                         if len(dic['PostAction']):
                             self.PostAction(dic)
@@ -931,8 +953,9 @@ class Scan:
                     if len(dic['In-loopPostAction']):
                         self.PostAction(dic,'In-loopPostAction')           
 
-                    self.form.Progress=100.0*self.Ndone/self.Ntot
-                    self.form.exitbutton.emit(SIGNAL("pb")) 
+                    if self.fromGUI:
+                        self.form.Progress=100.0*self.Ndone/self.Ntot
+                        self.form.exitbutton.emit(SIGNAL("pb")) 
 
 
             else: # Series scan
@@ -952,7 +975,11 @@ class Scan:
                                     KV=dic['KnobValues'][j][Iscan]
                             else:
                                 KV=dic['KnobSaved'][j]
-                            self.cafe.setAndMatch(dic['Knob'][j],KV,dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
+                            try:
+                                self.cafe.setAndMatch(dic['Knob'][j],KV,dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
+                            except Exception as inst:
+                                print ('Exception in preAction')
+                                print (inst)
                         if dic['KnobWaitingExtra']:
                             sleep(dic['KnobWaitingExtra'])
 
@@ -1045,7 +1072,7 @@ class Scan:
                             Valid[Iscan].pop()
                             Obs[Iscan].pop()
 
-                        if self.form.abortScan:
+                        if self.fromGUI and self.form.abortScan:
                             self.abortScan=1
                             if len(dic['PostAction']):
                                 self.PostAction(dic)
@@ -1054,8 +1081,9 @@ class Scan:
                         if len(dic['In-loopPostAction']):
                             self.In-loopPostAction(dic)           
 
-                        self.form.Progress=100.0*self.Ndone/self.Ntot
-                        self.form.exitbutton.emit(SIGNAL("pb")) 
+                        if fromGUI:
+                            self.form.Progress=100.0*self.Ndone/self.Ntot
+                            self.form.exitbutton.emit(SIGNAL("pb")) 
                     Kscan=Kscan+1
                         
             

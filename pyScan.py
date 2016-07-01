@@ -123,8 +123,12 @@ class Scan:
 
     def addGroup(self,GroupName,ChList):
         self.cafe.openGroupPrepare()
-        h=self.cafe.grouping(GroupName, ChList)
-        self.cafe.openGroupNowAndWait(0.1)
+        h=self.cafe.grouping(GroupName, ChList) # Grouping does GroupOpen
+        #pvg=self.cafe.getPVGroup(GroupName)
+        #pvg.show()
+        #h=self.cafe.groupOpen(GroupName) # Grouping does GroupOpen
+        self.cafe.openGroupNowAndWait(1.0)
+        #sleep(1.0)
         return h
         
 
@@ -572,29 +576,36 @@ class Scan:
 
             def matchValue(h):
                 en=self.MonitorInfo[h][1]
-                print ('***********************************')
-                print (HandleList)
-                print (h)
-                print (self.MonitorInfo[h][1])
-                print (en)
-                self.cafe.printHandle(en)
-                print ('***********************************')
+                #print ('***********************************')
+                #print (HandleList)
+                #print (h)
+                #print (self.MonitorInfo[h][1])
+                #print (en)
+                #self.cafe.printHandle(en)
+                #print ('***********************************')
 
                 #c=self.cafe.getPVCache(en)
                 c=self.cafe.getPVCache(h)
                 v=c.value[0]
+                if v=='':
+                    # To comply with RF-READY-STATUS channle, where ENUM is empty...
+                    c=self.cafe.getPVCache(h,dt='int')
+                    v=c.value[0]
                 #v=self.cafe.get(en)
                 if isinstance(v,str):
                     if v==self.MonitorInfo[h][2]:
                         print ('value OK')
                         return 1
                     else:
+                        print (en,self.MonitorInfo[h][2],v)
                         print ('value NG')
                         return 0
                 elif isinstance(v,int) or isinstance(v,float):
-                    if abs(v-self.MonitorInfo[h][2])<self.MonitorInfo[h][3]:
+                    if abs(v-self.MonitorInfo[h][2])<=self.MonitorInfo[h][3]:
                         return 1
                     else:
+                        print ('value NG')
+                        print (v,self.MonitorInfo[h][2],self.MonitorInfo[h][3])
                         return 0
                 else:
                     'Return value from getPVCache',v
@@ -602,8 +613,8 @@ class Scan:
             if matchValue(h):
                 self.stopScan[self.MonitorInfo[h][0]]=0
             else:
-                if self.MonitorInfo[h][4]=='Abort':
-                    self.abortScan=1
+                #if self.MonitorInfo[h][4]=='Abort':
+                #    self.abortScan=1
                 self.stopScan[self.MonitorInfo[h][0]]=1
 
 
@@ -626,8 +637,12 @@ class Scan:
         #    m0=self.cafe.monitorStart(h, cb=cbMonitor, dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
   
         #self.cafe.openMonitorNowAndWait(2)
+
+
         self.cafe.openMonitorPrepare()
         m0=self.cafe.groupMonitorStartWithCBList(self.MonitorHandle, cb=[cbMonitor]*len(dic['Monitor']), dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
+        #m0=self.cafe.groupMonitorStart(self.MonitorHandle, cb=[cbMonitor]*len(dic['Monitor']), dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
+
         self.cafe.openMonitorNowAndWait(2)
         
         
@@ -851,7 +866,7 @@ class Scan:
                         try:
                             self.cafe.setAndMatch(dic['Knob'][j],KV[Iscan],dic['KnobReadback'][j],dic['KnobTolerance'][j],dic['KnobWaiting'][j],0)
                         except Exception as inst:
-                            print ('Exception in preAction')
+                            print ('Exception in Scan loop')
                             print (inst)
                     if dic['KnobWaitingExtra']:
                         sleep(dic['KnobWaitingExtra'])
@@ -900,7 +915,11 @@ class Scan:
                     self.Ndone=self.Ndone+1
 
                     Stepback=0
+                    count=[0]*len(self.stopScan)
+                    k_stop=None
                     while self.stopScan.count(1): # Problem detected in the channel under monitoring
+                        ''' 
+                        # This is done by the monitor callback
                         for k in range(0,len(self.stopScan)):
                             if self.stopScan[k]:
                                 if dic['MonitorAction'][k]=='Abort':
@@ -929,12 +948,30 @@ class Scan:
                                          if dic['MonitorAction'][k]=='WaitAndAbort' and count>dic['MonitorTimeout'][k]:
                                              self.abortScan=1
                                              break
-                        if not dic['MonitorAction'][k]=='WaitAndNoStepBack':
-                            Stepback=1
+                        '''
+                        Stepback=1
+                        sleep(1.0)
+                        for k in range(0,len(self.stopScan)):
+                            if self.stopScan[k]:
+                                k_stop=k
+                                if dic['MonitorAction'][k]=='Abort':
+                                    self.abortScan=1
+                                count[k]=count[k]+1
+                            else:
+                                count[k]=0
+                            if dic['MonitorAction'][k]=='WaitAndAbort' and count[k]>dic['MonitorTimeout'][k]:
+                                self.abortScan=1
+                        
                         if self.abortScan:
                             if len(dic['PostAction']):
                                 self.PostAction(dic)
                             return
+                        print ('Monitor??')
+                        print (self.stopScan)
+
+                    if k_stop and dic['MonitorAction'][k_stop]=='WaitAndNoStepBack':
+                        # Take the action of the most persisting monitor...
+                        Stepback=0
 
                     if Stepback:
                         print ('Stepping back')
@@ -1028,8 +1065,11 @@ class Scan:
                         self.Ndone=self.Ndone+1
 
                         Stepback=0
+                        count=[0]*len(self.stopScan)
+                        k_stop=None
                         while self.stopScan.count(1): # Problem detected in the channel under monitoring
                             for k in range(0,len(self.stopScan)):
+                                '''
                                 if self.stopScan[k]:
                                     if dic['MonitorAction'][k]=='Abort':
                                         self.abortScan=1
@@ -1063,6 +1103,27 @@ class Scan:
                                 if len(dic['PostAction']):
                                     self.PostAction(dic)
                                 return
+                            '''
+                            Stepback=1
+                            sleep(1.0)
+                            for k in range(0,len(self.stopScan)):
+                                if self.stopScan[k]:
+                                    k_stop=k
+                                    if dic['MonitorAction'][k]=='Abort':
+                                        self.abortScan=1
+                                    count[k]=count[k]+1
+                                else:
+                                    count[k]=0
+                                if dic['MonitorAction'][k]=='WaitAndAbort' and count[k]>dic['MonitorTimeout'][k]:
+                                    self.abortScan=1
+                            
+                            if self.abortScan:
+                                if len(dic['PostAction']):
+                                    self.PostAction(dic)
+                                return
+
+                        if k_stop and dic['MonitorAction'][k_stop]=='WaitAndNoStepBack':
+                            Stepback=0
 
                         if Stepback:
                             print ('Stepping back')

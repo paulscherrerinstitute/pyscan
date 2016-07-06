@@ -101,6 +101,9 @@ class Scan:
             #self.showPanel(0)
 
 
+        self.abortScan=0
+        self.pauseScan=0
+
 
     def Panel(self):
         app=QApplication(sys.argv)
@@ -534,7 +537,9 @@ class Scan:
             if 'Additive' not in dic.keys():
                 dic['Additive']=0
 
-
+            if inlist.index(dic)==len(inlist)-1 and ('StepbackOnPause' not in dic.keys()):
+                dic['StepbackOnPause']=1
+                
             
 
         self.allch=[]
@@ -744,6 +749,7 @@ class Scan:
 
         self.stopScan=[]
         self.abortScan=0
+        self.pauseScan=0
         if self.inlist[-1]['Monitor']:
             self.startMonitor(self.inlist[-1])
 
@@ -917,7 +923,8 @@ class Scan:
                     Stepback=0
                     count=[0]*len(self.stopScan)
                     k_stop=None
-                    while self.stopScan.count(1): # Problem detected in the channel under monitoring
+                    p_stop=None
+                    while self.stopScan.count(1)+self.pauseScan: # Problem detected in the channel under monitoring
                         ''' 
                         # This is done by the monitor callback
                         for k in range(0,len(self.stopScan)):
@@ -968,9 +975,16 @@ class Scan:
                             return
                         print ('Monitor??')
                         print (self.stopScan)
+                        if self.pauseScan:
+                            p_stop=1
+
+
 
                     if k_stop and dic['MonitorAction'][k_stop]=='WaitAndNoStepBack':
                         # Take the action of the most persisting monitor...
+                        Stepback=0
+
+                    if p_stop and not dic['StepbackOnPause']:
                         Stepback=0
 
                     if Stepback:
@@ -1067,6 +1081,7 @@ class Scan:
                         Stepback=0
                         count=[0]*len(self.stopScan)
                         k_stop=None
+                        p_stop=None
                         while self.stopScan.count(1): # Problem detected in the channel under monitoring
                             for k in range(0,len(self.stopScan)):
                                 '''
@@ -1122,7 +1137,13 @@ class Scan:
                                     self.PostAction(dic)
                                 return
 
+                            if self.pauseScan:
+                                p_stop=1
+
                         if k_stop and dic['MonitorAction'][k_stop]=='WaitAndNoStepBack':
+                            Stepback=0
+
+                        if p_stop and not dic['StepbackOnPause']:
                             Stepback=0
 
                         if Stepback:

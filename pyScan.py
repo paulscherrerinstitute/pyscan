@@ -90,11 +90,11 @@ class Scan:
         self.fromGUI=fromGUI
 
         if fromGUI:
-            self.form=SubPanel()
-            #self.form.show()
-            self.form.setVisible(False)
+            self.ProgDisp=SubPanel()
+            #self.ProgDisp.show()
+            self.ProgDisp.setVisible(False)
         else:
-            self.form=None
+            self.ProgDisp=None
            
             #self.launchPanel()
             #sleep(3.0)
@@ -104,8 +104,8 @@ class Scan:
 
     def Panel(self):
         app=QApplication(sys.argv)
-        self.form=SubPanel()
-        self.form.show()
+        self.ProgDisp=SubPanel()
+        self.ProgDisp.show()
         app.exec_()
 
     def launchPanel(self): 
@@ -115,9 +115,9 @@ class Scan:
         sleep(3.0)
 
     def showPanel(self,s):
-        self.form.appearing=s
+        self.ProgDisp.appearing=s
 
-        self.form.exitbutton.emit(SIGNAL("ex"))        
+        self.ProgDisp.exitbutton.emit(SIGNAL("ex"))        
 
 
 
@@ -755,9 +755,9 @@ class Scan:
 
         if self.fromGUI:
             self.showPanel(1)
-            self.form.abortScan=0
-            self.form.Progress=0
-            self.form.exitbutton.emit(SIGNAL("pb"))
+            self.ProgDisp.abortScan=0
+            self.ProgDisp.Progress=0
+            self.ProgDisp.exitbutton.emit(SIGNAL("pb"))
         self.Ndone=0
         self.Scan(self.outdict['KnobReadback'],self.outdict['Validation'],self.outdict['Observable'],None)
         if self.fromGUI:
@@ -981,7 +981,7 @@ class Scan:
                         Valid[Iscan].pop()
                         Obs[Iscan].pop()
 
-                    if self.fromGUI and self.form.abortScan:
+                    if self.fromGUI and self.ProgDisp.abortScan:
                         self.abortScan=1
                         if len(dic['PostAction']):
                             self.PostAction(dic)
@@ -991,8 +991,8 @@ class Scan:
                         self.PostAction(dic,'In-loopPostAction')           
 
                     if self.fromGUI:
-                        self.form.Progress=100.0*self.Ndone/self.Ntot
-                        self.form.exitbutton.emit(SIGNAL("pb")) 
+                        self.ProgDisp.Progress=100.0*self.Ndone/self.Ntot
+                        self.ProgDisp.exitbutton.emit(SIGNAL("pb")) 
 
 
             else: # Series scan
@@ -1133,7 +1133,7 @@ class Scan:
                             Valid[Iscan].pop()
                             Obs[Iscan].pop()
 
-                        if self.fromGUI and self.form.abortScan:
+                        if self.fromGUI and self.ProgDisp.abortScan:
                             self.abortScan=1
                             if len(dic['PostAction']):
                                 self.PostAction(dic)
@@ -1143,8 +1143,8 @@ class Scan:
                             self.In-loopPostAction(dic)           
 
                         if fromGUI:
-                            self.form.Progress=100.0*self.Ndone/self.Ntot
-                            self.form.exitbutton.emit(SIGNAL("pb")) 
+                            self.ProgDisp.Progress=100.0*self.Ndone/self.Ntot
+                            self.ProgDisp.exitbutton.emit(SIGNAL("pb")) 
                     Kscan=Kscan+1
                         
             

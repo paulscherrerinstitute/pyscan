@@ -316,6 +316,9 @@ class Scan:
             if inlist.index(dic)==len(inlist)-1 and ('Observable' not in dic.keys()):
                 self.outdict['ErrorMessage']='The observable is not given.'
                 return self.outdict
+            elif inlist.index(dic)==len(inlist)-1:
+                if not isinstance(dic['Observable'],list):
+                    dic['Observable']=[dic['Observable']]
 
             if inlist.index(dic)==len(inlist)-1 and ('NumberOfMeasurements' not in dic.keys()):
                 dic['NumberOfMeasurements']=1

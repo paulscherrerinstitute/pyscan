@@ -218,6 +218,15 @@ class Scan:
             
             TempHandle=self.addGroup(str(i),dic['Knob'])
             [dic['KnobSaved'],summary,status]=self.cafe.getGroup(TempHandle)
+            if summary!=1: # Something wrong. Try again.
+                [dic['KnobSaved'],summary,status]=self.cafe.getGroup(TempHandle)
+            if summary!=1:
+                for si in status:
+                    if si!=1:
+                        Wch=dic['Knob'][status.index(si)]
+                self.outdict['ErrorMessage']='Something wrong in Epics channel: '+Wch
+                self.cafe.groupClose(TempHandle)
+                return self.outdict
             self.cafe.groupClose(TempHandle)
             
             
@@ -471,7 +480,17 @@ class Scan:
                     dic['Monitor']=[dic['Monitor']]
 
                 self.MonitorHandle=self.addGroup('Monitor',dic['Monitor'])
-                
+                [v,summary,status]=self.cafe.getGroup(self.MonitorHandle)
+                if summary!=1: # Something wrong. Try again.
+                    [v,summary,status]=self.cafe.getGroup(self.MonitorHandle)
+                if summary!=1:
+                    for si in status:
+                        if si!=1:
+                            Wch=dic['Monitor'][status.index(si)]
+                    self.outdict['ErrorMessage']='Something wrong in Epics channel: '+Wch
+                    self.cafe.groupClose(self.MonitorHandle)
+                    return self.outdict
+
                 if 'MonitorValue' not in dic.keys():
                     #self.outdict['ErrorMessage']='MonitorValue is not give though Monitor is given.' 
                     #return self.outdict
@@ -563,6 +582,16 @@ class Scan:
         self.allchc=[Nrb,Nvalid,Nobs]
         self.allch=[item for sublist in self.allch for item in sublist] # Recursive in one line!
         Handle=self.addGroup('All',self.allch)
+        [v,summary,status]=self.cafe.getGroup(Handle)
+        if summary!=1: # Something wrong. Try again.
+            [v,summary,status]=self.cafe.getGroup(Handle)
+        if summary!=1:
+            for si in status:
+                if si!=1:
+                    Wch=self.allch[status.index(si)]
+            self.outdict['ErrorMessage']='Something wrong in Epics channel: '+Wch
+            self.cafe.groupClose(Handle)
+            return self.outdict
         
 
         self.Ntot=1 # Total number of measurements

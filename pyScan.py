@@ -39,7 +39,6 @@ class SubPanelContents(QDialog):
     def updatePB(self):
         self.pbar.setValue(self.Progress)
 
-
     def vis(self):
         'Dummy'
 
@@ -82,7 +81,9 @@ class SubPanel(QDialog):
         else:
             self.setVisible(True)
 
-
+class DummyClass:
+    def __init__(self):
+        self.Progress=1 # For Thomas!!
 
 class Scan:
     def __init__(self,fromGUI=0):
@@ -94,7 +95,7 @@ class Scan:
             #self.ProgDisp.show()
             self.ProgDisp.setVisible(False)
         else:
-            self.ProgDisp=None
+            self.ProgDisp=DummyClass()
            
             #self.launchPanel()
             #sleep(3.0)
@@ -148,6 +149,7 @@ class Scan:
         if self.inlist[-1]['Monitor']:
             self.cafe.groupClose('Monitor')
 
+        print ('in pycan finalization',self.cafe.groupList())
 
         self.outdict['ErrorMessage']='Measurement finalized (finished/aborted) normally. Need initialisation before next measruement.'
 
@@ -475,7 +477,7 @@ class Scan:
                 dic['Validation']=[]
 
      
-            if inlist.index(dic)==len(inlist)-1 and ('Monitor' in dic.keys()):
+            if inlist.index(dic)==len(inlist)-1 and ('Monitor' in dic.keys()) and (dic['Monitor']):
                 if isinstance(dic['Monitor'],str):
                     dic['Monitor']=[dic['Monitor']]
 
@@ -602,6 +604,11 @@ class Scan:
                 self.Ntot=self.Ntot*sum(dic['Nstep'])
 
         self.inlist=inlist
+        # Prealocating the place for the output
+        self.outdict['KnobReadback']=self.allocateOutput()
+        self.outdict['Validation']=self.allocateOutput()
+        self.outdict['Observable']=self.allocateOutput()
+        self.ProgDisp.Progress=0
         return self.outdict
 
 
@@ -786,15 +793,14 @@ class Scan:
             self.startMonitor(self.inlist[-1])
 
         # Prealocating the place for the output
-        self.outdict['KnobReadback']=self.allocateOutput()
-        self.outdict['Validation']=self.allocateOutput()
-        self.outdict['Observable']=self.allocateOutput()
+        #self.outdict['KnobReadback']=self.allocateOutput()
+        #self.outdict['Validation']=self.allocateOutput()
+        #self.outdict['Observable']=self.allocateOutput()
 
 
         if self.fromGUI:
             self.showPanel(1)
             self.ProgDisp.abortScan=0
-            self.ProgDisp.Progress=0
             self.ProgDisp.exitbutton.emit(SIGNAL("pb"))
         self.Ndone=0
         self.Scan(self.outdict['KnobReadback'],self.outdict['Validation'],self.outdict['Observable'],None)
@@ -1036,8 +1042,8 @@ class Scan:
                     if len(dic['In-loopPostAction']):
                         self.PostAction(dic,'In-loopPostAction')           
 
-                    if self.fromGUI:
-                        self.ProgDisp.Progress=100.0*self.Ndone/self.Ntot
+                    self.ProgDisp.Progress=100.0*self.Ndone/self.Ntot
+                    if self.fromGUI:                        
                         self.ProgDisp.exitbutton.emit(SIGNAL("pb")) 
 
 
@@ -1195,8 +1201,8 @@ class Scan:
                         if len(dic['In-loopPostAction']):
                             self.In-loopPostAction(dic)           
 
+                        self.ProgDisp.Progress=100.0*self.Ndone/self.Ntot
                         if fromGUI:
-                            self.ProgDisp.Progress=100.0*self.Ndone/self.Ntot
                             self.ProgDisp.exitbutton.emit(SIGNAL("pb")) 
                     Kscan=Kscan+1
                         

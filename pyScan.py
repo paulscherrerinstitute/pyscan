@@ -1035,6 +1035,7 @@ class Scan:
 
                     if self.fromGUI and self.ProgDisp.abortScan:
                         self.abortScan=1
+                    if self.abortScan:
                         if len(dic['PostAction']):
                             self.PostAction(dic)
                         return
@@ -1194,6 +1195,7 @@ class Scan:
 
                         if self.fromGUI and self.ProgDisp.abortScan:
                             self.abortScan=1
+                        if self.abortScan:
                             if len(dic['PostAction']):
                                 self.PostAction(dic)
                             return

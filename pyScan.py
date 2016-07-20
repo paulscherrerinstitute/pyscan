@@ -176,6 +176,9 @@ class Scan:
 
             dic['ID']=i # Just in case there are identical input dictionaries. (Normally, it may not happen.)
 
+            if inlist.index(dic)==len(inlist)-1 and ('Waiting' not in dic.keys()):
+                self.outdict['ErrorMessage']='Waiting for the scan was not given.'
+                return self.outdict
 
             if 'Knob' not in dic.keys():
                 self.outdict['ErrorMessage']='Knob for the scan was not given for the input dictionary'+str(i)+'.'
@@ -636,14 +639,23 @@ class Scan:
                     c=self.cafe.getPVCache(h,dt='int')
                     v=c.value[0]
                 #v=self.cafe.get(en)
-                if isinstance(v,str):
+                if isinstance(self.MonitorInfo[h][2],list): # Monitor value is in list, i.e. several cases are okay
+                    if v in self.MonitorInfo[h][2]:
+                        print ('value OK')
+                        return 1
+                    else:
+                        print ('kkkkkkk',en,self.MonitorInfo[h][2],v)
+                        print ('value NG')
+                        return 0
+                elif isinstance(v,str):
                     if v==self.MonitorInfo[h][2]:
                         print ('value OK')
                         return 1
                     else:
-                        print (en,self.MonitorInfo[h][2],v)
+                        print ('nnnnn',en,self.MonitorInfo[h][2],v)
                         print ('value NG')
                         return 0
+
                 elif isinstance(v,int) or isinstance(v,float):
                     if abs(v-self.MonitorInfo[h][2])<=self.MonitorInfo[h][3]:
                         return 1
@@ -1204,7 +1216,7 @@ class Scan:
                             self.In-loopPostAction(dic)           
 
                         self.ProgDisp.Progress=100.0*self.Ndone/self.Ntot
-                        if fromGUI:
+                        if self.fromGUI:
                             self.ProgDisp.exitbutton.emit(SIGNAL("pb")) 
                     Kscan=Kscan+1
                         

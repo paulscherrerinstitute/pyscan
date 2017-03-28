@@ -14,7 +14,6 @@ from copy import deepcopy
 import threading as thr
 
 
-
 class SubPanelContents(QDialog):
     def __init__(self, parent=None):
         super(SubPanelContents, self).__init__(parent)
@@ -32,7 +31,6 @@ class SubPanelContents(QDialog):
         self.abortScan=0
         self.connect(self.exitbutton, SIGNAL("clicked()"), self.abort)
 
-
     def abort(self):
         self.abortScan=1
 
@@ -40,7 +38,7 @@ class SubPanelContents(QDialog):
         self.pbar.setValue(self.Progress)
 
     def vis(self):
-        'Dummy'
+        pass
 
 
 class SubPanel(QDialog):
@@ -74,16 +72,17 @@ class SubPanel(QDialog):
     def updatePB(self):
         self.pbar.setValue(self.Progress)
 
-
     def vis(self):
         if self.appearing==0:
             self.setVisible(False)
         else:
             self.setVisible(True)
 
+
 class DummyClass:
     def __init__(self):
         self.Progress=1 # For Thomas!!
+
 
 class Scan:
     def __init__(self,fromGUI=0):
@@ -101,10 +100,8 @@ class Scan:
             #sleep(3.0)
             #self.showPanel(0)
 
-
         self.abortScan=0
         self.pauseScan=0
-
 
     def Panel(self):
         app=QApplication(sys.argv)
@@ -123,8 +120,6 @@ class Scan:
 
         self.ProgDisp.exitbutton.emit(SIGNAL("ex"))        
 
-
-
     def addGroup(self,GroupName,ChList):
         self.cafe.openGroupPrepare()
         h=self.cafe.grouping(GroupName, ChList) # Grouping does GroupOpen
@@ -134,8 +129,6 @@ class Scan:
         self.cafe.openGroupNowAndWait(1.0)
         #sleep(1.0)
         return h
-        
-
 
     def finalizeScan(self):
  
@@ -165,11 +158,8 @@ class Scan:
         self.outdict={}
         self.outdict['ErrorMessage']=None
 
-
         if not isinstance(inlist,list): # It is a simple SKS or MKS
             inlist=[inlist]
-
-
 
         for i in range(0,len(inlist)):
             dic=inlist[i]
@@ -233,8 +223,7 @@ class Scan:
                 self.cafe.groupClose(TempHandle)
                 return self.outdict
             self.cafe.groupClose(TempHandle)
-            
-            
+
             if 'Series' not in dic.keys():
                 dic['Series']=0
                 
@@ -311,7 +300,6 @@ class Scan:
                 if len(dic['Knob'])!=len(dic['ScanValues']):
                     self.outdict['ErrorMessage']='Scan values length does not match to the number of knobs in the input dictionary '+str(i)+'.'
                     return self.outdict
-                    
 
                 Nstep=[]
                 for vl in dic['ScanValues']:
@@ -321,11 +309,7 @@ class Scan:
                     Nstep.append(len(vl))
                 dic['Nstep']=Nstep
 
-                
-
             # End of scan values set up
-
-
 
             if inlist.index(dic)==len(inlist)-1 and ('Observable' not in dic.keys()):
                 self.outdict['ErrorMessage']='The observable is not given.'
@@ -337,7 +321,6 @@ class Scan:
             if inlist.index(dic)==len(inlist)-1 and ('NumberOfMeasurements' not in dic.keys()):
                 dic['NumberOfMeasurements']=1
 
-            
             if 'PreAction' in dic.keys():
                 if not isinstance(dic['PreAction'],list):
                     self.outdict['ErrorMessage']='PreAction should be a list. Input dictionary '+str(i)+'.' 
@@ -397,8 +380,6 @@ class Scan:
                 dic['In-loopPreAction']=[]
                 dic['In-loopPreActionWaiting']=0.0
                 dic['In-loopPreActionOrder']=[0]*len(dic['In-loopPreAction'])
-
-
 
             if 'PostAction' in dic.keys():
                 if dic['PostAction']=='Restore':
@@ -470,8 +451,6 @@ class Scan:
             else:
                 dic['In-loopPostAction']=[]
 
-
-
             if 'Validation' in dic.keys():
                 if not isinstance(dic['Validation'],list):
                     self.outdict['ErrorMessage']='Validation should be a list of channels. Input dictionary '+str(i)+'.' 
@@ -479,7 +458,6 @@ class Scan:
             else:
                 dic['Validation']=[]
 
-     
             if inlist.index(dic)==len(inlist)-1 and ('Monitor' in dic.keys()) and (dic['Monitor']):
                 if isinstance(dic['Monitor'],str):
                     dic['Monitor']=[dic['Monitor']]
@@ -566,8 +544,6 @@ class Scan:
 
             if inlist.index(dic)==len(inlist)-1 and ('StepbackOnPause' not in dic.keys()):
                 dic['StepbackOnPause']=1
-                
-            
 
         self.allch=[]
         self.allchc=[]
@@ -583,7 +559,6 @@ class Scan:
         self.allch.append(inlist[-1]['Observable'])
         Nobs=len(inlist[-1]['Observable'])
 
-
         self.allchc=[Nrb,Nvalid,Nobs]
         self.allch=[item for sublist in self.allch for item in sublist] # Recursive in one line!
         Handle=self.addGroup('All',self.allch)
@@ -597,7 +572,6 @@ class Scan:
             self.outdict['ErrorMessage']='Something wrong in Epics channel: '+Wch
             self.cafe.groupClose(Handle)
             return self.outdict
-        
 
         self.Ntot=1 # Total number of measurements
         for dic in inlist:
@@ -614,13 +588,8 @@ class Scan:
         self.ProgDisp.Progress=0
         return self.outdict
 
-
-
     def startMonitor(self,dic):
-
-
         def cbMonitor(h):
-
             def matchValue(h):
                 en=self.MonitorInfo[h][1]
                 #print ('***********************************')
@@ -673,7 +642,6 @@ class Scan:
                 #    self.abortScan=1
                 self.stopScan[self.MonitorInfo[h][0]]=1
 
-
         dic=self.inlist[-1]
         self.stopScan=[0]*len(dic['Monitor'])
         self.MonitorInfo={}
@@ -694,14 +662,12 @@ class Scan:
   
         #self.cafe.openMonitorNowAndWait(2)
 
-
         self.cafe.openMonitorPrepare()
         m0=self.cafe.groupMonitorStartWithCBList(self.MonitorHandle, cb=[cbMonitor]*len(dic['Monitor']), dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
         #m0=self.cafe.groupMonitorStart(self.MonitorHandle, cb=[cbMonitor]*len(dic['Monitor']), dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
 
         self.cafe.openMonitorNowAndWait(2)
-        
-        
+
     def PreAction(self,dic,key='PreAction'):
 
         order=np.array(dic[key+'Order'])
@@ -763,7 +729,6 @@ class Scan:
     def CrossReference(self,Object):
         self.ObjectSA=Object
 
-
     def allocateOutput(self,l=None):
         
         l=[]
@@ -787,7 +752,6 @@ class Scan:
                 
 
         return l
-
 
     def startScan(self):
         
@@ -824,11 +788,7 @@ class Scan:
             
         return self.outdict
 
-
     def Scan(self,Rback,Valid,Obs,dic=None):        
-
-
-        
 
         if dic==None:
             dic=self.inlist[0]
@@ -892,9 +852,7 @@ class Scan:
                     if self.abortScan:
                         if len(dic['PostAction']):
                             self.PostAction(dic)
-                        return                
-
-
+                        return
 
             if len(dic['PostAction']):
                 self.PostAction(dic)
@@ -1219,7 +1177,6 @@ class Scan:
                         if self.fromGUI:
                             self.ProgDisp.exitbutton.emit(SIGNAL("pb")) 
                     Kscan=Kscan+1
-                        
-            
+
             if len(dic['PostAction']):
                 self.PostAction(dic)

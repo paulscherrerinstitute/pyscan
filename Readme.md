@@ -2,6 +2,18 @@
 pyScan is a python class that performs a scan for single or multiple given knobs. The user may specify single or multiple observables. The knobs and observables have to be available as Epics channels.
 
 # Usage
+
+Before using the pyscan right now following environment variables need to be set in the right order before:
+
+```
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/epics/base/lib/SL6-x86_64/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/intel-14.0.2/lib/intel64/
+
+source /opt/gfa/python 3.5
+
+export PYTHONPATH=/opt/gfa/cafe/python/python-3.5/latest/lib/:$PYTHONPATH
+```
+
 The simplest scan would be varying single knob. This is referred to as ‘single-knob scan’ (SKS) in this manual. When several knobs are varied at the same time, it is ‘multi-knob scan’ (MKS). The input parameters for SKS and MKS are given in the form of python dictionary as described below. The observable can be single or multiple for any type of scan.
 
 More complicated scan can be built by combining SKSs and MKSs. This is achieved by defining multiple input dictionaries. For example, ‘N-dimensional scan’ can be defined by a combination of N SKSs. The observable is specified only in the last dictionary that is nested most inside of the measurement loop.

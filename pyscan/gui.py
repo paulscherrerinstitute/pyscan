@@ -66,7 +66,20 @@ class SubPanel(QDialog):
         else:
             self.setVisible(True)
 
+    def showPanel(self, s):
+        self.appearing = s
+        self.exitbutton.emit(SIGNAL("ex"))
+
+    def emit(self, signal):
+        self.exitbutton.emit(SIGNAL(signal))
+
 
 class DummyClass:
     def __init__(self):
         self.Progress = 1  # For Thomas!!
+
+    def showPanel(self, s):
+        pass
+
+    def emit(self, signal):
+        pass

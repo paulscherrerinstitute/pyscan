@@ -1,13 +1,9 @@
-import sys
-import threading as thr
 from copy import deepcopy
 from datetime import datetime
 from time import sleep
 
 import PyCafe
 import numpy as np
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
 
 from pyscan.gui import SubPanel, DummyClass
 
@@ -24,29 +20,8 @@ class Scan:
         else:
             self.ProgDisp = DummyClass()
 
-            # self.launchPanel()
-            # sleep(3.0)
-            # self.showPanel(0)
-
         self.abortScan = 0
         self.pauseScan = 0
-
-    def Panel(self):
-        app = QApplication(sys.argv)
-        self.ProgDisp = SubPanel()
-        self.ProgDisp.show()
-        app.exec_()
-
-    def launchPanel(self):
-        self.thrUpdate = thr.Thread(target=self.Panel)
-        self.thrUpdate.setDaemon(True)
-        self.thrUpdate.start()
-        sleep(3.0)
-
-    def showPanel(self, s):
-        self.ProgDisp.appearing = s
-
-        self.ProgDisp.exitbutton.emit(SIGNAL("ex"))
 
     def addGroup(self, GroupName, ChList):
         self.cafe.openGroupPrepare()
@@ -77,7 +52,7 @@ class Scan:
                               'Need initialisation before next measurement.'
 
         if self.fromGUI:
-            self.showPanel(0)
+            self.ProgDisp.showPanel(0)
 
     def initializeScan(self, inlist):
         self.cafe = PyCafe.CyCafe()
@@ -742,13 +717,13 @@ class Scan:
 
 
         if self.fromGUI:
-            self.showPanel(1)
+            self.ProgDisp.showPanel(1)
             self.ProgDisp.abortScan = 0
-            self.ProgDisp.exitbutton.emit(SIGNAL("pb"))
+            self.ProgDisp.emit("pb")
         self.Ndone = 0
         self.Scan(self.outdict['KnobReadback'], self.outdict['Validation'], self.outdict['Observable'], None)
         if self.fromGUI:
-            self.showPanel(0)
+            self.ProgDisp.showPanel(0)
         self.finalizeScan()
 
         self.outdict['TimeStampEnd'] = datetime.now()
@@ -982,7 +957,7 @@ class Scan:
 
                     self.ProgDisp.Progress = 100.0 * self.Ndone / self.Ntot
                     if self.fromGUI:
-                        self.ProgDisp.exitbutton.emit(SIGNAL("pb"))
+                        self.ProgDisp.emit("pb")
 
 
             else:  # Series scan
@@ -1144,7 +1119,7 @@ class Scan:
 
                         self.ProgDisp.Progress = 100.0 * self.Ndone / self.Ntot
                         if self.fromGUI:
-                            self.ProgDisp.exitbutton.emit(SIGNAL("pb"))
+                            self.ProgDisp.emit("pb")
                     Kscan = Kscan + 1
 
             if len(dic['PostAction']):

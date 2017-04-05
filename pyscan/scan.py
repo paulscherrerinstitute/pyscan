@@ -12,12 +12,11 @@ class Scan:
     def __init__(self, fromGUI=0):
 
         self.epics_dal = None
-
         self.fromGUI = fromGUI
+        self.outdict = None
 
         if fromGUI:
             self.ProgDisp = SubPanel()
-            # self.ProgDisp.show()
             self.ProgDisp.setVisible(False)
         else:
             self.ProgDisp = DummyClass()
@@ -25,15 +24,7 @@ class Scan:
         self.abortScan = 0
         self.pauseScan = 0
 
-
     def finalizeScan(self):
-
-        # for h in self.MonitorRunning:
-        #    self.cafe.close(h)
-        # self.MonitorRunning=[]
-        # self.cafe.terminate()
-        # del(self.cafe)
-
         self.epics_dal.groupClose('All')
         if self.inlist[-1]['Monitor']:
             self.epics_dal.groupClose('Monitor')
@@ -51,494 +42,417 @@ class Scan:
         self.epics_dal = PyCafeEpicsDal()
 
         self.inlist = []
-        self.outdict = {}
-        self.outdict['ErrorMessage'] = None
 
         if not isinstance(inlist, list):  # It is a simple SKS or MKS
             inlist = [inlist]
 
-        for i in range(0, len(inlist)):
-            dic = inlist[i]
+        try:
 
-            dic['ID'] = i  # Just in case there are identical input dictionaries. (Normally, it may not happen.)
+            for i in range(0, len(inlist)):
+                dic = inlist[i]
 
-            if inlist.index(dic) == len(inlist) - 1 and ('Waiting' not in dic.keys()):
-                self.outdict['ErrorMessage'] = 'Waiting for the scan was not given.'
-                return self.outdict
+                dic['ID'] = i  # Just in case there are identical input dictionaries. (Normally, it may not happen.)
 
-            if 'Knob' not in dic.keys():
-                self.outdict['ErrorMessage'] = 'Knob for the scan was not given for the input dictionary' + str(i) + '.'
-                return self.outdict
-            else:
-                if not isinstance(dic['Knob'], list):
-                    dic['Knob'] = [dic['Knob']]
+                if inlist.index(dic) == len(inlist) - 1 and ('Waiting' not in dic.keys()):
+                    raise ValueError('Waiting for the scan was not given.')
 
-            if 'KnobReadback' not in dic.keys():
-                dic['KnobReadback'] = dic['Knob']
-            if not isinstance(dic['KnobReadback'], list):
-                dic['KnobReadback'] = [dic['KnobReadback']]
-            if len(dic['KnobReadback']) != len(dic['Knob']):
-                self.outdict['ErrorMessage'] = 'The number of KnobReadback does not meet to the number of Knobs.'
-                return self.outdict
-
-            if 'KnobTolerance' not in dic.keys():
-                dic['KnobTolerance'] = [1.0] * len(dic['Knob'])
-            if not isinstance(dic['KnobTolerance'], list):
-                dic['KnobTolerance'] = [dic['KnobTolerance']]
-            if len(dic['KnobTolerance']) != len(dic['Knob']):
-                self.outdict['ErrorMessage'] = 'The number of KnobTolerance does not meet to the number of Knobs.'
-                return self.outdict
-
-            if 'KnobWaiting' not in dic.keys():
-                dic['KnobWaiting'] = [10.0] * len(dic['Knob'])
-            if not isinstance(dic['KnobWaiting'], list):
-                dic['KnobWaiting'] = [dic['KnobWaiting']]
-            if len(dic['KnobWaiting']) != len(dic['Knob']):
-                self.outdict['ErrorMessage'] = 'The number of KnobWaiting does not meet to the number of Knobs.'
-                return self.outdict
-
-            if 'KnobWaitingExtra' not in dic.keys():
-                dic['KnobWaitingExtra'] = 0.0
-            else:
-                try:
-                    dic['KnobWaitingExtra'] = float(dic['KnobWaitingExtra'])
-                except:
-                    self.outdict['ErrorMessage'] = 'KnobWaitingExtra is not a number in the input dictionary ' + str(
-                        i) + '.'
-                    return self.outdict
-
-            TempHandle = self.epics_dal.addGroup(str(i), dic['Knob'])
-            [dic['KnobSaved'], summary, status] = self.epics_dal.getGroup(TempHandle)
-            if summary != 1:  # Something wrong. Try again.
-                [dic['KnobSaved'], summary, status] = self.epics_dal.getGroup(TempHandle)
-            if summary != 1:
-                for si in status:
-                    if si != 1:
-                        Wch = dic['Knob'][status.index(si)]
-                self.outdict['ErrorMessage'] = 'Something wrong in Epics channel: ' + Wch
-                self.epics_dal.groupClose(TempHandle)
-                return self.outdict
-            self.epics_dal.groupClose(TempHandle)
-
-            if 'Series' not in dic.keys():
-                dic['Series'] = 0
-
-            if not dic['Series']:  # Setting up scan values for SKS and MKS
-                if 'ScanValues' not in dic.keys():
-                    if 'ScanRange' not in dic.keys():
-                        self.outdict[
-                            'ErrorMessage'] = 'Neither ScanRange nor ScanValues is given in the input dictionary ' + str(
-                            i) + '.'
-                        return self.outdict
-                    elif not isinstance(dic['ScanRange'], list):
-                        self.outdict[
-                            'ErrorMessage'] = 'ScanRange is not given in the right format. Input dictionary ' + str(
-                            i) + '.'
-                        return self.outdict
-                    elif not isinstance(dic['ScanRange'][0], list):
-                        dic['ScanRange'] = [dic['ScanRange']]
-
-                    if ('Nstep' not in dic.keys()) and ('StepSize' not in dic.keys()):
-                        self.outdict['ErrorMessage'] = 'Neither Nstep nor StepSize is given.'
-                        return self.outdict
-
-                    if 'Nstep' in dic.keys():  # StepSize is ignored when Nstep is given
-                        if not isinstance(dic['Nstep'], int):
-                            self.outdict['ErrorMessage'] = 'Nstep should be an integer. Input dictionary ' + str(
-                                i) + '.'
-                            return self.outdict
-                        ran = []
-                        for r in dic['ScanRange']:
-                            s = (r[1] - r[0]) / (dic['Nstep'] - 1)
-                            f = np.arange(r[0], r[1], s)
-                            f = np.append(f, np.array(r[1]))
-                            ran.append(f.tolist())
-                        dic['KnobExpanded'] = ran
-                    else:  # StepSize given
-                        if len(dic['Knob']) > 1:
-                            self.outdict[
-                                'ErrorMessage'] = 'Give Nstep instead of StepSize for MKS. Input dictionary ' + str(
-                                i) + '.'
-                            return self.outdict
-                        # StepSize is only valid for SKS
-                        r = dic['ScanRange'][0]
-                        f = np.arange(r[0], r[1], s)
-                        f = np.append(f, np.array(r[1]))
-                        dic['Nstep'] = len(f)
-                        # dic['KnobExpanded']=[f]
-                        dic['KnobExpanded'] = [f.tolist()]
+                if 'Knob' not in dic.keys():
+                    raise ValueError('Knob for the scan was not given for the input dictionary' + str(i) + '.')
                 else:
-                    if not isinstance(dic['ScanValues'], list):
-                        self.outdict[
-                            'ErrorMessage'] = 'ScanValues is not given in the right fromat. Input dictionary ' + str(
-                            i) + '.'
-                        return self.outdict
+                    if not isinstance(dic['Knob'], list):
+                        dic['Knob'] = [dic['Knob']]
 
-                    if len(dic['ScanValues']) != len(dic['Knob']) and len(dic['Knob']) != 1:
-                        self.outdict['ErrorMessage'] = 'The length of ScanValues does not meet to the number of Knobs.'
-                        return self.outdict
+                if 'KnobReadback' not in dic.keys():
+                    dic['KnobReadback'] = dic['Knob']
+                if not isinstance(dic['KnobReadback'], list):
+                    dic['KnobReadback'] = [dic['KnobReadback']]
+                if len(dic['KnobReadback']) != len(dic['Knob']):
+                    raise ValueError('The number of KnobReadback does not meet to the number of Knobs.')
 
-                    if len(dic['Knob']) > 1:
-                        minlen = 100000
-                        for r in dic['ScanValues']:
-                            if minlen > len(r):
-                                minlen = len(r)
-                        ran = []
-                        for r in dic['ScanValues']:
-                            ran.append(r[0:minlen])  # Cut at the length of the shortest list.
-                        dic['KnobExpanded'] = ran
-                        dic['Nstep'] = minlen
-                    else:
-                        dic['KnobExpanded'] = [dic['ScanValues']]
-                        dic['Nstep'] = len(dic['ScanValues'])
-            else:  # Setting up scan values for Series scan
-                if 'ScanValues' not in dic.keys():
-                    self.outdict[
-                        'ErrorMessage'] = 'ScanValues should be given for Series scan in the input dictionary ' + str(
-                        i) + '.'
-                    return self.outdict
+                if 'KnobTolerance' not in dic.keys():
+                    dic['KnobTolerance'] = [1.0] * len(dic['Knob'])
+                if not isinstance(dic['KnobTolerance'], list):
+                    dic['KnobTolerance'] = [dic['KnobTolerance']]
+                if len(dic['KnobTolerance']) != len(dic['Knob']):
+                    raise ValueError('The number of KnobTolerance does not meet to the number of Knobs.')
 
-                if not isinstance(dic['ScanValues'], list):
-                    self.outdict[
-                        'ErrorMessage'] = 'ScanValues should be given as a list (of lists) for Series scan in the input dictionary ' + str(
-                        i) + '.'
-                    return self.outdict
+                if 'KnobWaiting' not in dic.keys():
+                    dic['KnobWaiting'] = [10.0] * len(dic['Knob'])
+                if not isinstance(dic['KnobWaiting'], list):
+                    dic['KnobWaiting'] = [dic['KnobWaiting']]
+                if len(dic['KnobWaiting']) != len(dic['Knob']):
+                    raise ValueError('The number of KnobWaiting does not meet to the number of Knobs.')
 
-                if len(dic['Knob']) != len(dic['ScanValues']):
-                    self.outdict[
-                        'ErrorMessage'] = 'Scan values length does not match to the number of knobs in the input dictionary ' + str(
-                        i) + '.'
-                    return self.outdict
+                if 'KnobWaitingExtra' not in dic.keys():
+                    dic['KnobWaitingExtra'] = 0.0
+                else:
+                    try:
+                        dic['KnobWaitingExtra'] = float(dic['KnobWaitingExtra'])
+                    except:
+                        raise ValueError('KnobWaitingExtra is not a number in the input dictionary ' + str(i) + '.')
 
-                Nstep = []
-                for vl in dic['ScanValues']:
-                    if not isinstance(vl, list):
-                        self.outdict[
-                            'ErrorMessage'] = 'ScanValue element should be given as a list for Series scan in the input dictionary ' + str(
-                            i) + '.'
-                        return self.outdict
-                    Nstep.append(len(vl))
-                dic['Nstep'] = Nstep
-
-            # End of scan values set up
-
-            if inlist.index(dic) == len(inlist) - 1 and ('Observable' not in dic.keys()):
-                self.outdict['ErrorMessage'] = 'The observable is not given.'
-                return self.outdict
-            elif inlist.index(dic) == len(inlist) - 1:
-                if not isinstance(dic['Observable'], list):
-                    dic['Observable'] = [dic['Observable']]
-
-            if inlist.index(dic) == len(inlist) - 1 and ('NumberOfMeasurements' not in dic.keys()):
-                dic['NumberOfMeasurements'] = 1
-
-            if 'PreAction' in dic.keys():
-                if not isinstance(dic['PreAction'], list):
-                    self.outdict['ErrorMessage'] = 'PreAction should be a list. Input dictionary ' + str(i) + '.'
-                    return self.outdict
-                for l in dic['PreAction']:
-                    if not isinstance(l, list):
-                        self.outdict['ErrorMessage'] = 'Every PreAction should be a list. Input dictionary ' + str(
-                            i) + '.'
-                        return self.outdict
-                    if len(l) != 5:
-                        if not l[0] == 'SpecialAction':
-                            self.outdict[
-                                'ErrorMessage'] = 'Every PreAction should be in a form of [Ch-set, Ch-read, Value, Tolerance, Timeout]. Input dictionary ' + str(
-                                i) + '.'
-                            return self.outdict
-
-                if 'PreActionWaiting' not in dic.keys():
-                    dic['PreActionWaiting'] = 0.0
-                if not isinstance(dic['PreActionWaiting'], float) and not isinstance(dic['PreActionWaiting'], int):
-                    self.outdict['ErrorMessage'] = 'PreActionWating should be a float. Input dictionary ' + str(i) + '.'
-                    return self.outdict
-
-                if 'PreActionOrder' not in dic.keys():
-                    dic['PreActionOrder'] = [0] * len(dic['PreAction'])
-                if not isinstance(dic['PreActionOrder'], list):
-                    self.outdict['ErrorMessage'] = 'PreActionOrder should be a list. Input dictionary ' + str(i) + '.'
-                    return self.outdict
-
-            else:
-                dic['PreAction'] = []
-                dic['PreActionWaiting'] = 0.0
-                dic['PreActionOrder'] = [0] * len(dic['PreAction'])
-
-            if 'In-loopPreAction' in dic.keys():
-                if not isinstance(dic['In-loopPreAction'], list):
-                    self.outdict['ErrorMessage'] = 'In-loopPreAction should be a list. Input dictionary ' + str(i) + '.'
-                    return self.outdict
-                for l in dic['In-loopPreAction']:
-                    if not isinstance(l, list):
-                        self.outdict[
-                            'ErrorMessage'] = 'Every In-loopPreAction should be a list. Input dictionary ' + str(
-                            i) + '.'
-                        return self.outdict
-                    if len(l) != 5:
-                        if not l[0] == 'SpecialAction':
-                            self.outdict[
-                                'ErrorMessage'] = 'Every In-loopPreAction should be in a form of [Ch-set, Ch-read, Value, Tolerance, Timeout]. Input dictionary ' + str(
-                                i) + '.'
-                            return self.outdict
-
-                if 'In-loopPreActionWaiting' not in dic.keys():
-                    dic['In-loopPreActionWaiting'] = 0.0
-                if not isinstance(dic['In-loopPreActionWaiting'], float) and not isinstance(
-                        dic['In-loopPreActionWaiting'], int):
-                    self.outdict['ErrorMessage'] = 'In-loopPreActionWating should be a float. Input dictionary ' + str(
-                        i) + '.'
-                    return self.outdict
-
-                if 'In-loopPreActionOrder' not in dic.keys():
-                    dic['In-loopPreActionOrder'] = [0] * len(dic['In-loopPreAction'])
-                if not isinstance(dic['In-loopPreActionOrder'], list):
-                    self.outdict['ErrorMessage'] = 'In-loopPreActionOrder should be a list. Input dictionary ' + str(
-                        i) + '.'
-                    return self.outdict
-
-            else:
-                dic['In-loopPreAction'] = []
-                dic['In-loopPreActionWaiting'] = 0.0
-                dic['In-loopPreActionOrder'] = [0] * len(dic['In-loopPreAction'])
-
-            if 'PostAction' in dic.keys():
-                if dic['PostAction'] == 'Restore':
-                    PA = []
-                    for i in range(0, len(dic['Knob'])):
-                        k = dic['Knob'][i]
-                        v = dic['KnobSaved'][i]
-                        PA.append([k, k, v, 1.0, 10])
-                    dic['PostAction'] = PA
-                elif not isinstance(dic['PostAction'], list):
-                    self.outdict['ErrorMessage'] = 'PostAction should be a list. Input dictionary ' + str(i) + '.'
-                    return self.outdict
-                Restore = 0
-                for i in range(0, len(dic['PostAction'])):
-                    l = dic['PostAction'][i]
-                    if l == 'Restore':
-                        Restore = 1
-                        PA = []
-                        for j in range(0, len(dic['Knob'])):
-                            k = dic['Knob'][j]
-                            v = dic['KnobSaved'][j]
-                            PA.append([k, k, v, 1.0, 10])
-                            # dic['PostAction'][i]=PA
-                    elif not isinstance(l, list):
-                        self.outdict['ErrorMessage'] = 'Every PostAction should be a list. Input dictionary ' + str(
-                            i) + '.'
-                        return self.outdict
-                    elif len(l) != 5:
-                        if not l[0] == 'SpecialAction':
-                            self.outdict[
-                                'ErrorMessage'] = 'Every PostAction should be in a form of [Ch-set, Ch-read, Value, Tolerance, Timeout]. Input dictionary ' + str(
-                                i) + '.'
-                            return self.outdict
-                if Restore:
-                    dic['PostAction'].remove('Restore')
-                    dic['PostAction'] = dic['PostAction'] + PA
-
-            else:
-                dic['PostAction'] = []
-
-            if 'In-loopPostAction' in dic.keys():
-                if dic['In-loopPostAction'] == 'Restore':
-                    PA = []
-                    for i in range(0, len(dic['Knob'])):
-                        k = dic['Knob'][i]
-                        v = dic['KnobSaved'][i]
-                        PA.append([k, k, v, 1.0, 10])
-                    dic['In-loopPostAction'] = PA
-                elif not isinstance(dic['In-loopPostAction'], list):
-                    self.outdict['ErrorMessage'] = 'In-loopPostAction should be a list. Input dictionary ' + str(
-                        i) + '.'
-                    return self.outdict
-                Restore = 0
-                for i in range(0, len(dic['In-loopPostAction'])):
-                    l = dic['In-loopPostAction'][i]
-                    if l == 'Restore':
-                        Restore = 1
-                        PA = []
-                        for j in range(0, len(dic['Knob'])):
-                            k = dic['Knob'][j]
-                            v = dic['KnobSaved'][j]
-                            PA.append([k, k, v, 1.0, 10])
-                        dic['In-loopPostAction'][i] = PA
-                    elif not isinstance(l, list):
-                        self.outdict[
-                            'ErrorMessage'] = 'Every In-loopPostAction should be a list. Input dictionary ' + str(
-                            i) + '.'
-                        return self.outdict
-                    elif len(l) != 5:
-                        self.outdict[
-                            'ErrorMessage'] = 'Every In-loopPostAction should be in a form of [Ch-set, Ch-read, Value, Tolerance, Timeout]. Input dictionary ' + str(
-                            i) + '.'
-                        return self.outdict
-                if Restore:
-                    dic['In-loopPostAction'].remove('Restore')
-                    dic['In-loopPostAction'] = dic['In-loopPostAction'] + PA
-            else:
-                dic['In-loopPostAction'] = []
-
-            if 'Validation' in dic.keys():
-                if not isinstance(dic['Validation'], list):
-                    self.outdict['ErrorMessage'] = 'Validation should be a list of channels. Input dictionary ' + str(
-                        i) + '.'
-                    return self.outdict
-            else:
-                dic['Validation'] = []
-
-            if inlist.index(dic) == len(inlist) - 1 and ('Monitor' in dic.keys()) and (dic['Monitor']):
-                if isinstance(dic['Monitor'], str):
-                    dic['Monitor'] = [dic['Monitor']]
-
-                self.MonitorHandle = self.epics_dal.addGroup('Monitor', dic['Monitor'])
-                [v, summary, status] = self.epics_dal.getGroup(self.MonitorHandle)
+                TempHandle = self.epics_dal.addGroup(str(i), dic['Knob'])
+                [dic['KnobSaved'], summary, status] = self.epics_dal.getGroup(TempHandle)
                 if summary != 1:  # Something wrong. Try again.
-                    [v, summary, status] = self.epics_dal.getGroup(self.MonitorHandle)
+                    [dic['KnobSaved'], summary, status] = self.epics_dal.getGroup(TempHandle)
                 if summary != 1:
                     for si in status:
                         if si != 1:
-                            Wch = dic['Monitor'][status.index(si)]
-                    self.outdict['ErrorMessage'] = 'Something wrong in Epics channel: ' + Wch
-                    self.epics_dal.groupClose(self.MonitorHandle)
-                    return self.outdict
+                            Wch = dic['Knob'][status.index(si)]
+                    self.epics_dal.groupClose(TempHandle)
+                    raise ValueError('Something wrong in Epics channel: ' + Wch)
+                self.epics_dal.groupClose(TempHandle)
 
-                if 'MonitorValue' not in dic.keys():
-                    # self.outdict['ErrorMessage']='MonitorValue is not give though Monitor is given.'
-                    # return self.outdict
-                    # dic['MonitorValue']=[]
-                    # for m in dic['Monitor']:
-                    #   dic['MonitorValue'].append(self.cafe.get(m))  # Taking MonitorValue from the machine as it is not given.
-                    [dic['MonitorValue'], summary, status] = self.epics_dal.getGroup('Monitor')
-                elif not isinstance(dic['MonitorValue'], list):
-                    dic['MonitorValue'] = [dic['MonitorValue']]
-                if len(dic['MonitorValue']) != len(dic['Monitor']):
-                    self.outdict['ErrorMessage'] = 'The length of MonitorValue does not meet to the length of Monitor.'
-                    return self.outdict
+                if 'Series' not in dic.keys():
+                    dic['Series'] = 0
 
-                if 'MonitorTolerance' not in dic.keys():
-                    dic['MonitorTolerance'] = []
-                    [Value, summary, status] = self.epics_dal.getGroup('Monitor')
-                    for v in Value:
-                        v = self.epics_dal.get(m)
-                        if isinstance(v, str):
-                            dic['MonitorTolerance'].append(None)
-                        elif v == 0:
-                            dic['MonitorTolerance'].append(0.1)
+                if not dic['Series']:  # Setting up scan values for SKS and MKS
+                    if 'ScanValues' not in dic.keys():
+                        if 'ScanRange' not in dic.keys():
+                            raise ValueError('Neither ScanRange nor ScanValues is given '
+                                             'in the input dictionary ' + str(i) + '.')
+                        elif not isinstance(dic['ScanRange'], list):
+                            raise ValueError('ScanRange is not given in the right format. '
+                                             'Input dictionary ' + str(i) + '.')
+                        elif not isinstance(dic['ScanRange'][0], list):
+                            dic['ScanRange'] = [dic['ScanRange']]
+
+                        if ('Nstep' not in dic.keys()) and ('StepSize' not in dic.keys()):
+                            raise ValueError('Neither Nstep nor StepSize is given.')
+
+                        if 'Nstep' in dic.keys():  # StepSize is ignored when Nstep is given
+                            if not isinstance(dic['Nstep'], int):
+                                raise ValueError('Nstep should be an integer. Input dictionary ' + str(i) + '.')
+                            ran = []
+                            for r in dic['ScanRange']:
+                                s = (r[1] - r[0]) / (dic['Nstep'] - 1)
+                                f = np.arange(r[0], r[1], s)
+                                f = np.append(f, np.array(r[1]))
+                                ran.append(f.tolist())
+                            dic['KnobExpanded'] = ran
+                        else:  # StepSize given
+                            if len(dic['Knob']) > 1:
+                                raise ValueError('Give Nstep instead of StepSize for MKS. '
+                                                 'Input dictionary ' + str(i) + '.')
+                            # StepSize is only valid for SKS
+                            r = dic['ScanRange'][0]
+                            f = np.arange(r[0], r[1], s)
+                            f = np.append(f, np.array(r[1]))
+                            dic['Nstep'] = len(f)
+                            dic['KnobExpanded'] = [f.tolist()]
+                    else:
+                        if not isinstance(dic['ScanValues'], list):
+                            raise ValueError('ScanValues is not given in the right fromat. '
+                                             'Input dictionary ' + str(i) + '.')
+
+                        if len(dic['ScanValues']) != len(dic['Knob']) and len(dic['Knob']) != 1:
+                            raise ValueError('The length of ScanValues does not meet to the number of Knobs.')
+
+                        if len(dic['Knob']) > 1:
+                            minlen = 100000
+                            for r in dic['ScanValues']:
+                                if minlen > len(r):
+                                    minlen = len(r)
+                            ran = []
+                            for r in dic['ScanValues']:
+                                ran.append(r[0:minlen])  # Cut at the length of the shortest list.
+                            dic['KnobExpanded'] = ran
+                            dic['Nstep'] = minlen
                         else:
-                            dic['MonitorTolerance'].append(
-                                abs(v * 0.1))  # 10% of the current value will be the torelance when not given
-                elif not isinstance(dic['MonitorTolerance'], list):
-                    dic['MonitorTolerance'] = [dic['MonitorTolerance']]
-                if len(dic['MonitorTolerance']) != len(dic['Monitor']):
-                    self.outdict[
-                        'ErrorMessage'] = 'The length of MonitorTolerance does not meet to the length of Monitor.'
-                    return self.outdict
+                            dic['KnobExpanded'] = [dic['ScanValues']]
+                            dic['Nstep'] = len(dic['ScanValues'])
+                else:  # Setting up scan values for Series scan
+                    if 'ScanValues' not in dic.keys():
+                        raise ValueError('ScanValues should be given for Series '
+                                         'scan in the input dictionary ' + str(i) + '.')
 
-                if 'MonitorAction' not in dic.keys():
-                    self.outdict['ErrorMessage'] = 'MonitorAction is not give though Monitor is given.'
-                    return self.outdict
+                    if not isinstance(dic['ScanValues'], list):
+                        raise ValueError('ScanValues should be given as a list (of lists) '
+                                         'for Series scan in the input dictionary ' + str(i) + '.')
 
-                if not isinstance(dic['MonitorAction'], list):
-                    dic['MonitorAction'] = [dic['MonitorAction']]
-                for m in dic['MonitorAction']:
-                    if m != 'Abort' and m != 'Wait' and m != 'WaitAndAbort':
-                        self.outdict['ErrorMessage'] = 'MonitorAction shold be Wait, Abort, or WaitAndAbort.'
-                        return self.outdict
+                    if len(dic['Knob']) != len(dic['ScanValues']):
+                        raise ValueError('Scan values length does not match to the '
+                                         'number of knobs in the input dictionary ' + str(i) + '.')
 
-                if 'MonitorTimeout' not in dic.keys():
-                    dic['MonitorTimeout'] = [30.0] * len(dic['Monitor'])
-                elif not isinstance(dic['MonitorTimeout'], list):
-                    dic['MonitorValue'] = [dic['MonitorValue']]
-                if len(dic['MonitorValue']) != len(dic['Monitor']):
-                    self.outdict['ErrorMessage'] = 'The length of MonitorValue does not meet to the length of Monitor.'
-                    return self.outdict
-                for m in dic['MonitorTimeout']:
-                    try:
-                        float(m)
-                    except:
-                        self.outdict['ErrorMessage'] = 'MonitorTimeout shold be a list of float(or int).'
-                        return self.outdict
+                    Nstep = []
+                    for vl in dic['ScanValues']:
+                        if not isinstance(vl, list):
+                            raise ValueError('ScanValue element should be given as a list for '
+                                             'Series scan in the input dictionary ' + str(i) + '.')
+                        Nstep.append(len(vl))
+                    dic['Nstep'] = Nstep
 
-            elif inlist.index(dic) == len(inlist) - 1:
-                dic['Monitor'] = []
-                dic['MonitorValue'] = []
-                dic['MonitorTolerance'] = []
-                dic['MonitorAction'] = []
-                dic['MonitorTimeout'] = []
+                # End of scan values set up
 
-            # if not dic['Series']:
-            #    dic['KnobExpanded']=np.array(dic['KnobExpanded'])
+                if inlist.index(dic) == len(inlist) - 1 and ('Observable' not in dic.keys()):
+                    raise ValueError('The observable is not given.')
+                elif inlist.index(dic) == len(inlist) - 1:
+                    if not isinstance(dic['Observable'], list):
+                        dic['Observable'] = [dic['Observable']]
 
-            if 'Additive' not in dic.keys():
-                dic['Additive'] = 0
+                if inlist.index(dic) == len(inlist) - 1 and ('NumberOfMeasurements' not in dic.keys()):
+                    dic['NumberOfMeasurements'] = 1
 
-            if inlist.index(dic) == len(inlist) - 1 and ('StepbackOnPause' not in dic.keys()):
-                dic['StepbackOnPause'] = 1
+                if 'PreAction' in dic.keys():
+                    if not isinstance(dic['PreAction'], list):
+                        raise ValueError('PreAction should be a list. Input dictionary ' + str(i) + '.')
+                    for l in dic['PreAction']:
+                        if not isinstance(l, list):
+                            raise ValueError('Every PreAction should be a list. Input dictionary ' + str(i) + '.')
+                        if len(l) != 5:
+                            if not l[0] == 'SpecialAction':
+                                raise ValueError('Every PreAction should be in a form of '
+                                                 '[Ch-set, Ch-read, Value, Tolerance, Timeout]. '
+                                                 'Input dictionary ' + str(i) + '.')
 
-        self.allch = []
-        self.allchc = []
-        Nrb = 0
-        for d in inlist:
-            self.allch.append(d['KnobReadback'])
-            Nrb = Nrb + len(d['KnobReadback'])
+                    if 'PreActionWaiting' not in dic.keys():
+                        dic['PreActionWaiting'] = 0.0
+                    if not isinstance(dic['PreActionWaiting'], float) and not isinstance(dic['PreActionWaiting'], int):
+                        raise ValueError('PreActionWating should be a float. Input dictionary ' + str(i) + '.')
 
-        self.allch.append(inlist[-1]['Validation'])
-        Nvalid = len(inlist[-1]['Validation'])
+                    if 'PreActionOrder' not in dic.keys():
+                        dic['PreActionOrder'] = [0] * len(dic['PreAction'])
+                    if not isinstance(dic['PreActionOrder'], list):
+                        raise ValueError('PreActionOrder should be a list. Input dictionary ' + str(i) + '.')
 
-        self.allch.append(inlist[-1]['Observable'])
-        Nobs = len(inlist[-1]['Observable'])
+                else:
+                    dic['PreAction'] = []
+                    dic['PreActionWaiting'] = 0.0
+                    dic['PreActionOrder'] = [0] * len(dic['PreAction'])
 
-        self.allchc = [Nrb, Nvalid, Nobs]
-        self.allch = [item for sublist in self.allch for item in sublist]  # Recursive in one line!
-        Handle = self.epics_dal.addGroup('All', self.allch)
-        [v, summary, status] = self.epics_dal.getGroup(Handle)
-        if summary != 1:  # Something wrong. Try again.
+                if 'In-loopPreAction' in dic.keys():
+                    if not isinstance(dic['In-loopPreAction'], list):
+                        raise ValueError('In-loopPreAction should be a list. Input dictionary ' + str(i) + '.')
+                    for l in dic['In-loopPreAction']:
+                        if not isinstance(l, list):
+                            raise ValueError('Every In-loopPreAction should be a list. '
+                                             'Input dictionary ' + str(i) + '.')
+                        if len(l) != 5:
+                            if not l[0] == 'SpecialAction':
+                                raise ValueError('Every In-loopPreAction should be in a form of '
+                                                 '[Ch-set, Ch-read, Value, Tolerance, Timeout]. '
+                                                 'Input dictionary ' + str(i) + '.')
+
+                    if 'In-loopPreActionWaiting' not in dic.keys():
+                        dic['In-loopPreActionWaiting'] = 0.0
+                    if not isinstance(dic['In-loopPreActionWaiting'], float) and not isinstance(
+                            dic['In-loopPreActionWaiting'], int):
+                        raise ValueError('In-loopPreActionWating should be a float. Input dictionary ' + str(i) + '.')
+
+                    if 'In-loopPreActionOrder' not in dic.keys():
+                        dic['In-loopPreActionOrder'] = [0] * len(dic['In-loopPreAction'])
+                    if not isinstance(dic['In-loopPreActionOrder'], list):
+                        raise ValueError('In-loopPreActionOrder should be a list. Input dictionary ' + str(i) + '.')
+
+                else:
+                    dic['In-loopPreAction'] = []
+                    dic['In-loopPreActionWaiting'] = 0.0
+                    dic['In-loopPreActionOrder'] = [0] * len(dic['In-loopPreAction'])
+
+                if 'PostAction' in dic.keys():
+                    if dic['PostAction'] == 'Restore':
+                        PA = []
+                        for i in range(0, len(dic['Knob'])):
+                            k = dic['Knob'][i]
+                            v = dic['KnobSaved'][i]
+                            PA.append([k, k, v, 1.0, 10])
+                        dic['PostAction'] = PA
+                    elif not isinstance(dic['PostAction'], list):
+                        raise ValueError('PostAction should be a list. Input dictionary ' + str(i) + '.')
+                    Restore = 0
+                    for i in range(0, len(dic['PostAction'])):
+                        l = dic['PostAction'][i]
+                        if l == 'Restore':
+                            Restore = 1
+                            PA = []
+                            for j in range(0, len(dic['Knob'])):
+                                k = dic['Knob'][j]
+                                v = dic['KnobSaved'][j]
+                                PA.append([k, k, v, 1.0, 10])
+                        elif not isinstance(l, list):
+                            raise ValueError('Every PostAction should be a list. Input dictionary ' + str(i) + '.')
+                        elif len(l) != 5:
+                            if not l[0] == 'SpecialAction':
+                                raise ValueError('Every PostAction should be in a form of '
+                                                 '[Ch-set, Ch-read, Value, Tolerance, Timeout]. '
+                                                 'Input dictionary ' + str(i) + '.')
+                    if Restore:
+                        dic['PostAction'].remove('Restore')
+                        dic['PostAction'] = dic['PostAction'] + PA
+
+                else:
+                    dic['PostAction'] = []
+
+                if 'In-loopPostAction' in dic.keys():
+                    if dic['In-loopPostAction'] == 'Restore':
+                        PA = []
+                        for i in range(0, len(dic['Knob'])):
+                            k = dic['Knob'][i]
+                            v = dic['KnobSaved'][i]
+                            PA.append([k, k, v, 1.0, 10])
+                        dic['In-loopPostAction'] = PA
+                    elif not isinstance(dic['In-loopPostAction'], list):
+                        raise ValueError('In-loopPostAction should be a list. Input dictionary ' + str(i) + '.')
+                    Restore = 0
+                    for i in range(0, len(dic['In-loopPostAction'])):
+                        l = dic['In-loopPostAction'][i]
+                        if l == 'Restore':
+                            Restore = 1
+                            PA = []
+                            for j in range(0, len(dic['Knob'])):
+                                k = dic['Knob'][j]
+                                v = dic['KnobSaved'][j]
+                                PA.append([k, k, v, 1.0, 10])
+                            dic['In-loopPostAction'][i] = PA
+                        elif not isinstance(l, list):
+                            raise ValueError('Every In-loopPostAction should be a list. '
+                                             'Input dictionary ' + str(i) + '.')
+                        elif len(l) != 5:
+                            raise ValueError('Every In-loopPostAction should be in a form of '
+                                             '[Ch-set, Ch-read, Value, Tolerance, Timeout]. '
+                                             'Input dictionary ' + str(i) + '.')
+                    if Restore:
+                        dic['In-loopPostAction'].remove('Restore')
+                        dic['In-loopPostAction'] = dic['In-loopPostAction'] + PA
+                else:
+                    dic['In-loopPostAction'] = []
+
+                if 'Validation' in dic.keys():
+                    if not isinstance(dic['Validation'], list):
+                        raise ValueError('Validation should be a list of channels. Input dictionary ' + str(i) + '.')
+                else:
+                    dic['Validation'] = []
+
+                if inlist.index(dic) == len(inlist) - 1 and ('Monitor' in dic.keys()) and (dic['Monitor']):
+                    if isinstance(dic['Monitor'], str):
+                        dic['Monitor'] = [dic['Monitor']]
+
+                    self.MonitorHandle = self.epics_dal.addGroup('Monitor', dic['Monitor'])
+                    [v, summary, status] = self.epics_dal.getGroup(self.MonitorHandle)
+                    if summary != 1:  # Something wrong. Try again.
+                        [v, summary, status] = self.epics_dal.getGroup(self.MonitorHandle)
+                    if summary != 1:
+                        for si in status:
+                            if si != 1:
+                                Wch = dic['Monitor'][status.index(si)]
+                        self.epics_dal.groupClose(self.MonitorHandle)
+                        raise ValueError('Something wrong in Epics channel: ' + Wch)
+
+                    if 'MonitorValue' not in dic.keys():
+                        [dic['MonitorValue'], summary, status] = self.epics_dal.getGroup('Monitor')
+                    elif not isinstance(dic['MonitorValue'], list):
+                        dic['MonitorValue'] = [dic['MonitorValue']]
+                    if len(dic['MonitorValue']) != len(dic['Monitor']):
+                        raise ValueError('The length of MonitorValue does not meet to the length of Monitor.')
+
+                    if 'MonitorTolerance' not in dic.keys():
+                        dic['MonitorTolerance'] = []
+                        [Value, summary, status] = self.epics_dal.getGroup('Monitor')
+                        for v in Value:
+                            v = self.epics_dal.get(m)
+                            if isinstance(v, str):
+                                dic['MonitorTolerance'].append(None)
+                            elif v == 0:
+                                dic['MonitorTolerance'].append(0.1)
+                            else:
+                                dic['MonitorTolerance'].append(
+                                    abs(v * 0.1))  # 10% of the current value will be the torelance when not given
+                    elif not isinstance(dic['MonitorTolerance'], list):
+                        dic['MonitorTolerance'] = [dic['MonitorTolerance']]
+                    if len(dic['MonitorTolerance']) != len(dic['Monitor']):
+                        raise ValueError('The length of MonitorTolerance does not meet to the length of Monitor.')
+
+                    if 'MonitorAction' not in dic.keys():
+                        raise ValueError('MonitorAction is not give though Monitor is given.')
+
+                    if not isinstance(dic['MonitorAction'], list):
+                        dic['MonitorAction'] = [dic['MonitorAction']]
+                    for m in dic['MonitorAction']:
+                        if m != 'Abort' and m != 'Wait' and m != 'WaitAndAbort':
+                            raise ValueError('MonitorAction shold be Wait, Abort, or WaitAndAbort.')
+
+                    if 'MonitorTimeout' not in dic.keys():
+                        dic['MonitorTimeout'] = [30.0] * len(dic['Monitor'])
+                    elif not isinstance(dic['MonitorTimeout'], list):
+                        dic['MonitorValue'] = [dic['MonitorValue']]
+                    if len(dic['MonitorValue']) != len(dic['Monitor']):
+                        raise ValueError('The length of MonitorValue does not meet to the length of Monitor.')
+                    for m in dic['MonitorTimeout']:
+                        try:
+                            float(m)
+                        except:
+                            raise ValueError('MonitorTimeout should be a list of float(or int).')
+
+                elif inlist.index(dic) == len(inlist) - 1:
+                    dic['Monitor'] = []
+                    dic['MonitorValue'] = []
+                    dic['MonitorTolerance'] = []
+                    dic['MonitorAction'] = []
+                    dic['MonitorTimeout'] = []
+
+                if 'Additive' not in dic.keys():
+                    dic['Additive'] = 0
+
+                if inlist.index(dic) == len(inlist) - 1 and ('StepbackOnPause' not in dic.keys()):
+                    dic['StepbackOnPause'] = 1
+
+            self.allch = []
+            self.allchc = []
+            Nrb = 0
+            for d in inlist:
+                self.allch.append(d['KnobReadback'])
+                Nrb = Nrb + len(d['KnobReadback'])
+
+            self.allch.append(inlist[-1]['Validation'])
+            Nvalid = len(inlist[-1]['Validation'])
+
+            self.allch.append(inlist[-1]['Observable'])
+            Nobs = len(inlist[-1]['Observable'])
+
+            self.allchc = [Nrb, Nvalid, Nobs]
+            self.allch = [item for sublist in self.allch for item in sublist]  # Recursive in one line!
+            Handle = self.epics_dal.addGroup('All', self.allch)
             [v, summary, status] = self.epics_dal.getGroup(Handle)
-        if summary != 1:
-            for si in status:
-                if si != 1:
-                    Wch = self.allch[status.index(si)]
-            self.outdict['ErrorMessage'] = 'Something wrong in Epics channel: ' + Wch
-            self.epics_dal.groupClose(Handle)
-            return self.outdict
+            if summary != 1:  # Something wrong. Try again.
+                [v, summary, status] = self.epics_dal.getGroup(Handle)
+            if summary != 1:
+                for si in status:
+                    if si != 1:
+                        Wch = self.allch[status.index(si)]
+                self.epics_dal.groupClose(Handle)
+                raise ValueError('Something wrong in Epics channel: ' + Wch)
 
-        self.Ntot = 1  # Total number of measurements
-        for dic in inlist:
-            if not dic['Series']:
-                self.Ntot = self.Ntot * dic['Nstep']
-            else:
-                self.Ntot = self.Ntot * sum(dic['Nstep'])
+            self.Ntot = 1  # Total number of measurements
+            for dic in inlist:
+                if not dic['Series']:
+                    self.Ntot = self.Ntot * dic['Nstep']
+                else:
+                    self.Ntot = self.Ntot * sum(dic['Nstep'])
 
-        self.inlist = inlist
-        # Prealocating the place for the output
-        self.outdict['KnobReadback'] = self.allocateOutput()
-        self.outdict['Validation'] = self.allocateOutput()
-        self.outdict['Observable'] = self.allocateOutput()
-        self.ProgDisp.Progress = 0
+            self.inlist = inlist
+            self.ProgDisp.Progress = 0
+
+            # Prealocating the place for the output
+            self.outdict = {"ErrorMessage": None,
+                            "KnobReadback": self.allocateOutput(),
+                            "Validation": self.allocateOutput(),
+                            "Observable": self.allocateOutput()}
+
+        except ValueError as e:
+            self.outdict = {"ErrorMessage": str(e)}
+
         return self.outdict
 
     def startMonitor(self, dic):
         def cbMonitor(h):
             def matchValue(h):
                 en = self.MonitorInfo[h][1]
-                # print ('***********************************')
-                # print (HandleList)
-                # print (h)
-                # print (self.MonitorInfo[h][1])
-                # print (en)
-                # self.cafe.printHandle(en)
-                # print ('***********************************')
-
-                # c=self.cafe.getPVCache(en)
                 c = self.epics_dal.getPVCache(h)
                 v = c.value[0]
                 if v == '':
                     # To comply with RF-READY-STATUS channle, where ENUM is empty...
                     c = self.epics_dal.getPVCache(h, dt='int')
                     v = c.value[0]
-                # v=self.cafe.get(en)
                 if isinstance(self.MonitorInfo[h][2], list):  # Monitor value is in list, i.e. several cases are okay
                     if v in self.MonitorInfo[h][2]:
                         print('value OK')
@@ -569,8 +483,6 @@ class Scan:
             if matchValue(h):
                 self.stopScan[self.MonitorInfo[h][0]] = 0
             else:
-                # if self.MonitorInfo[h][4]=='Abort':
-                #    self.abortScan=1
                 self.stopScan[self.MonitorInfo[h][0]] = 1
 
         dic = self.inlist[-1]
@@ -581,18 +493,8 @@ class Scan:
         # self.cafe.openPrepare()
         for i in range(0, len(HandleList)):
             h = HandleList[i]
-            # m=dic['Monitor'][i]
-            # h=self.cafe.open(m)
-            # self.MonitorRunning.append(h)
             self.MonitorInfo[h] = [i, dic['Monitor'][i], dic['MonitorValue'][i], dic['MonitorTolerance'][i],
                                    dic['MonitorAction'][i], dic['MonitorTimeout']]
-        # self.cafe.openNowAndWait(2)
-
-        # self.cafe.openMonitorPrepare()
-        # for h in self.MonitorRunning:
-        #    m0=self.cafe.monitorStart(h, cb=cbMonitor, dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
-
-        # self.cafe.openMonitorNowAndWait(2)
 
         self.epics_dal.openMonitorPrepare()
         m0 = self.epics_dal.groupMonitorStartWithCBList(self.MonitorHandle, cb=[cbMonitor] * len(dic['Monitor']))
@@ -699,12 +601,6 @@ class Scan:
         if self.inlist[-1]['Monitor']:
             self.startMonitor(self.inlist[-1])
 
-        # Prealocating the place for the output
-        # self.outdict['KnobReadback']=self.allocateOutput()
-        # self.outdict['Validation']=self.allocateOutput()
-        # self.outdict['Observable']=self.allocateOutput()
-
-
         if self.fromGUI:
             self.ProgDisp.showPanel(1)
             self.ProgDisp.abortScan = 0
@@ -802,7 +698,6 @@ class Scan:
                     print(Iscan)
 
                     # set knob for this loop
-                    # self.cafe.setGroup(dic['KnobHandle'],dic['KnobExpanded'][i])
                     for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
                         if dic['Additive']:
                             KV = np.array(dic['KnobExpanded'][j]) + dic['KnobSaved'][j]
@@ -957,7 +852,6 @@ class Scan:
                         print(Kscan, Iscan)
 
                         # set knob for this loop
-                        # self.cafe.setGroup(dic['KnobHandle'],dic['KnobExpanded'][i])
                         for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
                             if j == Kscan:
                                 if dic['Additive']:

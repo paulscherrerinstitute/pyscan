@@ -1,4 +1,4 @@
-from pyscan.pyScan import *
+from pyscan import *
 
 
 def scan(prefix="MA-"):

@@ -1,4 +1,4 @@
-from pyScan import *
+from pyscan.pyScan import *
 
 pyscan = Scan()
 

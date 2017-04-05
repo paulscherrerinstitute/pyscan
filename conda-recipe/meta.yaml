@@ -1,0 +1,24 @@
+package:
+    name: pyscan
+    version: 2.0.0
+
+build:
+  number: 0
+
+source:
+    path: ..
+
+requirements:
+    build:
+        - python
+    run:
+        - python 3.4*
+        - numpy
+        - pyqt 4.*
+
+test:
+  source_files:
+    - tests/
+
+about:
+    summary: "PyScan is a python class that performs a scan for single or multiple given knobs."

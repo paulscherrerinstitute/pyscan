@@ -2,14 +2,16 @@ from copy import deepcopy
 from datetime import datetime
 from time import sleep
 
-import PyCafe
 import numpy as np
 
+from pyscan.dal import PyCafeEpicsDal
 from pyscan.gui import SubPanel, DummyClass
 
 
 class Scan:
     def __init__(self, fromGUI=0):
+
+        self.epics_dal = None
 
         self.fromGUI = fromGUI
 
@@ -23,15 +25,6 @@ class Scan:
         self.abortScan = 0
         self.pauseScan = 0
 
-    def addGroup(self, GroupName, ChList):
-        self.cafe.openGroupPrepare()
-        h = self.cafe.grouping(GroupName, ChList)  # Grouping does GroupOpen
-        # pvg=self.cafe.getPVGroup(GroupName)
-        # pvg.show()
-        # h=self.cafe.groupOpen(GroupName) # Grouping does GroupOpen
-        self.cafe.openGroupNowAndWait(1.0)
-        # sleep(1.0)
-        return h
 
     def finalizeScan(self):
 
@@ -41,11 +34,11 @@ class Scan:
         # self.cafe.terminate()
         # del(self.cafe)
 
-        self.cafe.groupClose('All')
+        self.epics_dal.groupClose('All')
         if self.inlist[-1]['Monitor']:
-            self.cafe.groupClose('Monitor')
+            self.epics_dal.groupClose('Monitor')
 
-        print('in pycan finalization', self.cafe.groupList())
+        print('in pycan finalization', self.epics_dal.groupList())
 
         self.outdict[
             'ErrorMessage'] = 'Measurement finalized (finished/aborted) normally. ' \
@@ -55,9 +48,7 @@ class Scan:
             self.ProgDisp.showPanel(0)
 
     def initializeScan(self, inlist):
-        self.cafe = PyCafe.CyCafe()
-        self.cafe.init()
-        self.cyca = PyCafe.CyCa()
+        self.epics_dal = PyCafeEpicsDal()
 
         self.inlist = []
         self.outdict = {}
@@ -116,18 +107,18 @@ class Scan:
                         i) + '.'
                     return self.outdict
 
-            TempHandle = self.addGroup(str(i), dic['Knob'])
-            [dic['KnobSaved'], summary, status] = self.cafe.getGroup(TempHandle)
+            TempHandle = self.epics_dal.addGroup(str(i), dic['Knob'])
+            [dic['KnobSaved'], summary, status] = self.epics_dal.getGroup(TempHandle)
             if summary != 1:  # Something wrong. Try again.
-                [dic['KnobSaved'], summary, status] = self.cafe.getGroup(TempHandle)
+                [dic['KnobSaved'], summary, status] = self.epics_dal.getGroup(TempHandle)
             if summary != 1:
                 for si in status:
                     if si != 1:
                         Wch = dic['Knob'][status.index(si)]
                 self.outdict['ErrorMessage'] = 'Something wrong in Epics channel: ' + Wch
-                self.cafe.groupClose(TempHandle)
+                self.epics_dal.groupClose(TempHandle)
                 return self.outdict
-            self.cafe.groupClose(TempHandle)
+            self.epics_dal.groupClose(TempHandle)
 
             if 'Series' not in dic.keys():
                 dic['Series'] = 0
@@ -401,16 +392,16 @@ class Scan:
                 if isinstance(dic['Monitor'], str):
                     dic['Monitor'] = [dic['Monitor']]
 
-                self.MonitorHandle = self.addGroup('Monitor', dic['Monitor'])
-                [v, summary, status] = self.cafe.getGroup(self.MonitorHandle)
+                self.MonitorHandle = self.epics_dal.addGroup('Monitor', dic['Monitor'])
+                [v, summary, status] = self.epics_dal.getGroup(self.MonitorHandle)
                 if summary != 1:  # Something wrong. Try again.
-                    [v, summary, status] = self.cafe.getGroup(self.MonitorHandle)
+                    [v, summary, status] = self.epics_dal.getGroup(self.MonitorHandle)
                 if summary != 1:
                     for si in status:
                         if si != 1:
                             Wch = dic['Monitor'][status.index(si)]
                     self.outdict['ErrorMessage'] = 'Something wrong in Epics channel: ' + Wch
-                    self.cafe.groupClose(self.MonitorHandle)
+                    self.epics_dal.groupClose(self.MonitorHandle)
                     return self.outdict
 
                 if 'MonitorValue' not in dic.keys():
@@ -419,7 +410,7 @@ class Scan:
                     # dic['MonitorValue']=[]
                     # for m in dic['Monitor']:
                     #   dic['MonitorValue'].append(self.cafe.get(m))  # Taking MonitorValue from the machine as it is not given.
-                    [dic['MonitorValue'], summary, status] = self.cafe.getGroup('Monitor')
+                    [dic['MonitorValue'], summary, status] = self.epics_dal.getGroup('Monitor')
                 elif not isinstance(dic['MonitorValue'], list):
                     dic['MonitorValue'] = [dic['MonitorValue']]
                 if len(dic['MonitorValue']) != len(dic['Monitor']):
@@ -428,9 +419,9 @@ class Scan:
 
                 if 'MonitorTolerance' not in dic.keys():
                     dic['MonitorTolerance'] = []
-                    [Value, summary, status] = self.cafe.getGroup('Monitor')
+                    [Value, summary, status] = self.epics_dal.getGroup('Monitor')
                     for v in Value:
-                        v = self.cafe.get(m)
+                        v = self.epics_dal.get(m)
                         if isinstance(v, str):
                             dic['MonitorTolerance'].append(None)
                         elif v == 0:
@@ -501,16 +492,16 @@ class Scan:
 
         self.allchc = [Nrb, Nvalid, Nobs]
         self.allch = [item for sublist in self.allch for item in sublist]  # Recursive in one line!
-        Handle = self.addGroup('All', self.allch)
-        [v, summary, status] = self.cafe.getGroup(Handle)
+        Handle = self.epics_dal.addGroup('All', self.allch)
+        [v, summary, status] = self.epics_dal.getGroup(Handle)
         if summary != 1:  # Something wrong. Try again.
-            [v, summary, status] = self.cafe.getGroup(Handle)
+            [v, summary, status] = self.epics_dal.getGroup(Handle)
         if summary != 1:
             for si in status:
                 if si != 1:
                     Wch = self.allch[status.index(si)]
             self.outdict['ErrorMessage'] = 'Something wrong in Epics channel: ' + Wch
-            self.cafe.groupClose(Handle)
+            self.epics_dal.groupClose(Handle)
             return self.outdict
 
         self.Ntot = 1  # Total number of measurements
@@ -541,11 +532,11 @@ class Scan:
                 # print ('***********************************')
 
                 # c=self.cafe.getPVCache(en)
-                c = self.cafe.getPVCache(h)
+                c = self.epics_dal.getPVCache(h)
                 v = c.value[0]
                 if v == '':
                     # To comply with RF-READY-STATUS channle, where ENUM is empty...
-                    c = self.cafe.getPVCache(h, dt='int')
+                    c = self.epics_dal.getPVCache(h, dt='int')
                     v = c.value[0]
                 # v=self.cafe.get(en)
                 if isinstance(self.MonitorInfo[h][2], list):  # Monitor value is in list, i.e. several cases are okay
@@ -586,7 +577,7 @@ class Scan:
         self.stopScan = [0] * len(dic['Monitor'])
         self.MonitorInfo = {}
 
-        HandleList = self.cafe.getHandlesFromWithinGroup(self.MonitorHandle)
+        HandleList = self.epics_dal.getHandlesFromWithinGroup(self.MonitorHandle)
         # self.cafe.openPrepare()
         for i in range(0, len(HandleList)):
             h = HandleList[i]
@@ -603,12 +594,10 @@ class Scan:
 
         # self.cafe.openMonitorNowAndWait(2)
 
-        self.cafe.openMonitorPrepare()
-        m0 = self.cafe.groupMonitorStartWithCBList(self.MonitorHandle, cb=[cbMonitor] * len(dic['Monitor']),
-                                                   dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
-        # m0=self.cafe.groupMonitorStart(self.MonitorHandle, cb=[cbMonitor]*len(dic['Monitor']), dbr=self.cyca.CY_DBR_PLAIN, mask=self.cyca.CY_DBE_VALUE)
+        self.epics_dal.openMonitorPrepare()
+        m0 = self.epics_dal.groupMonitorStartWithCBList(self.MonitorHandle, cb=[cbMonitor] * len(dic['Monitor']))
 
-        self.cafe.openMonitorNowAndWait(2)
+        self.epics_dal.openMonitorNowAndWait(2)
 
     def PreAction(self, dic, key='PreAction'):
 
@@ -632,7 +621,7 @@ class Scan:
                         if chset.lower() == 'match':
                             print('****************************----')
                             try:
-                                status = self.cafe.match(val, chread, tol, timeout, 1)
+                                status = self.epics_dal.match(val, chread, tol, timeout, 1)
                                 print('--------------', status)
                             except Exception as inst:
                                 print('Exception in preAction')
@@ -641,7 +630,7 @@ class Scan:
 
                         else:
                             try:
-                                status = self.cafe.setAndMatch(chset, val, chread, tol, timeout, 0)
+                                status = self.epics_dal.setAndMatch(chset, val, chread, tol, timeout, 0)
                                 print('===========', status)
                             except Exception as inst:
                                 print('Exception in preAction')
@@ -664,7 +653,7 @@ class Scan:
                 tol = act[3]
                 timeout = act[4]
                 try:
-                    self.cafe.setAndMatch(chset, val, chread, tol, timeout, 0)
+                    self.epics_dal.setAndMatch(chset, val, chread, tol, timeout, 0)
                 except Exception as inst:
                     print(inst)
 
@@ -753,8 +742,8 @@ class Scan:
                         else:
                             KV = dic['KnobExpanded'][j]
                         try:
-                            self.cafe.setAndMatch(dic['Knob'][j], KV[i], dic['KnobReadback'][j],
-                                                  dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+                            self.epics_dal.setAndMatch(dic['Knob'][j], KV[i], dic['KnobReadback'][j],
+                                                       dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
                         except Exception as inst:
                             print('Exception in preAction')
                             print(inst)
@@ -781,8 +770,8 @@ class Scan:
                             else:
                                 KV = dic['KnobSaved'][k]
                             try:
-                                self.cafe.setAndMatch(dic['Knob'][k], KV[i], dic['KnobReadback'][j],
-                                                      dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+                                self.epics_dal.setAndMatch(dic['Knob'][k], KV[i], dic['KnobReadback'][j],
+                                                           dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
                             except Exception as inst:
                                 print('Exception in preAction')
                                 print(inst)
@@ -821,8 +810,8 @@ class Scan:
                             KV = dic['KnobExpanded'][j]
                         print('Knob value', dic['KnobSaved'], dic['KnobExpanded'], KV[Iscan])
                         try:
-                            self.cafe.setAndMatch(dic['Knob'][j], KV[Iscan], dic['KnobReadback'][j],
-                                                  dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+                            self.epics_dal.setAndMatch(dic['Knob'][j], KV[Iscan], dic['KnobReadback'][j],
+                                                       dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
                         except Exception as inst:
                             print('Exception in Scan loop')
                             print(inst)
@@ -833,7 +822,7 @@ class Scan:
                         self.PreAction(dic, 'In-loopPreAction')
 
                     for j in range(0, dic['NumberOfMeasurements']):
-                        [v, s, sl] = self.cafe.getGroup('All')
+                        [v, s, sl] = self.epics_dal.getGroup('All')
                         if dic['NumberOfMeasurements'] > 1:
                             if self.allchc[0] == 1:
                                 Rback[Iscan].append(v[0])
@@ -978,8 +967,8 @@ class Scan:
                             else:
                                 KV = dic['KnobSaved'][j]
                             try:
-                                self.cafe.setAndMatch(dic['Knob'][j], KV, dic['KnobReadback'][j],
-                                                      dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+                                self.epics_dal.setAndMatch(dic['Knob'][j], KV, dic['KnobReadback'][j],
+                                                           dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
                             except Exception as inst:
                                 print('Exception in preAction')
                                 print(inst)
@@ -990,7 +979,7 @@ class Scan:
                             self.PreAction(dic, 'In-loopPreAction')
 
                         for j in range(0, dic['NumberOfMeasurements']):
-                            [v, s, sl] = self.cafe.getGroup('All')
+                            [v, s, sl] = self.epics_dal.getGroup('All')
                             if dic['NumberOfMeasurements'] > 1:
                                 # if len(dic['Knob'])==1: # Maybe a bug
                                 if self.allchc[0] == 1:

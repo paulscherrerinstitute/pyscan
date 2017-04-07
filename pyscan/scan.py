@@ -38,6 +38,25 @@ class Scan:
         if self.fromGUI:
             self.ProgDisp.showPanel(0)
 
+    def _add_group(self, dic, name, sources, result, close=True):
+
+        temp_handle = self.epics_dal.addGroup(name, sources)
+        [output, summary, status] = self.epics_dal.getGroup(temp_handle)
+        if summary != 1:  # Something wrong. Try again.
+            [output, summary, status] = self.epics_dal.getGroup(temp_handle)
+        if summary != 1:
+            for si in status:
+                if si != 1:
+                    wch = sources[status.index(si)]
+            self.epics_dal.groupClose(temp_handle)
+            raise ValueError('Something wrong in Epics channel: ' + wch)
+
+        if result:
+            dic[result] = output
+
+        if close:
+            self.epics_dal.groupClose(temp_handle)
+
     def initializeScan(self, inlist):
         self.epics_dal = PyCafeEpicsDal()
 
@@ -48,9 +67,7 @@ class Scan:
 
         try:
 
-            for i in range(0, len(inlist)):
-                dic = inlist[i]
-
+            for dic in inlist:
                 dic['ID'] = i  # Just in case there are identical input dictionaries. (Normally, it may not happen.)
 
                 if inlist.index(dic) == len(inlist) - 1 and ('Waiting' not in dic.keys()):
@@ -91,17 +108,7 @@ class Scan:
                     except:
                         raise ValueError('KnobWaitingExtra is not a number in the input dictionary ' + str(i) + '.')
 
-                TempHandle = self.epics_dal.addGroup(str(i), dic['Knob'])
-                [dic['KnobSaved'], summary, status] = self.epics_dal.getGroup(TempHandle)
-                if summary != 1:  # Something wrong. Try again.
-                    [dic['KnobSaved'], summary, status] = self.epics_dal.getGroup(TempHandle)
-                if summary != 1:
-                    for si in status:
-                        if si != 1:
-                            Wch = dic['Knob'][status.index(si)]
-                    self.epics_dal.groupClose(TempHandle)
-                    raise ValueError('Something wrong in Epics channel: ' + Wch)
-                self.epics_dal.groupClose(TempHandle)
+                self._add_group(dic, str(i), dic['Knob'], 'KnobSaved')
 
                 if 'Series' not in dic.keys():
                     dic['Series'] = 0
@@ -327,16 +334,7 @@ class Scan:
                     if isinstance(dic['Monitor'], str):
                         dic['Monitor'] = [dic['Monitor']]
 
-                    self.MonitorHandle = self.epics_dal.addGroup('Monitor', dic['Monitor'])
-                    [v, summary, status] = self.epics_dal.getGroup(self.MonitorHandle)
-                    if summary != 1:  # Something wrong. Try again.
-                        [v, summary, status] = self.epics_dal.getGroup(self.MonitorHandle)
-                    if summary != 1:
-                        for si in status:
-                            if si != 1:
-                                Wch = dic['Monitor'][status.index(si)]
-                        self.epics_dal.groupClose(self.MonitorHandle)
-                        raise ValueError('Something wrong in Epics channel: ' + Wch)
+                    self._add_group(dic, 'Monitor', dic['Monitor'], None)
 
                     if 'MonitorValue' not in dic.keys():
                         [dic['MonitorValue'], summary, status] = self.epics_dal.getGroup('Monitor')
@@ -411,16 +409,8 @@ class Scan:
 
             self.allchc = [Nrb, Nvalid, Nobs]
             self.allch = [item for sublist in self.allch for item in sublist]  # Recursive in one line!
-            Handle = self.epics_dal.addGroup('All', self.allch)
-            [v, summary, status] = self.epics_dal.getGroup(Handle)
-            if summary != 1:  # Something wrong. Try again.
-                [v, summary, status] = self.epics_dal.getGroup(Handle)
-            if summary != 1:
-                for si in status:
-                    if si != 1:
-                        Wch = self.allch[status.index(si)]
-                self.epics_dal.groupClose(Handle)
-                raise ValueError('Something wrong in Epics channel: ' + Wch)
+
+            self._add_group(dic, 'All', self.allch, None, close=False)
 
             self.Ntot = 1  # Total number of measurements
             for dic in inlist:

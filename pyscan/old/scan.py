@@ -3,9 +3,9 @@ from datetime import datetime
 from time import sleep
 
 import numpy as np
-
-from pyscan.dal import PyCafeEpicsDal
 from pyscan.gui import SubPanel, DummyClass
+
+from pyscan.old.dal import PyCafeEpicsDal
 
 
 class Scan:

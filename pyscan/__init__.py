@@ -1,2 +1,4 @@
-from pyscan.scan import *
 from pyscan.gui import *
+
+from pyscan.old.scan import *
+

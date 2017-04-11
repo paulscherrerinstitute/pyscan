@@ -1,6 +1,6 @@
 import unittest
 
-from pyscan.positioner import LinearDiscreetPositioner, ZigZagLinearDiscreetPositioner
+from pyscan.positioner import LinearDiscreetPositioner, ZigZagLinearDiscreetPositioner, VectorPositioner
 
 
 class DiscreetPositionersTests(unittest.TestCase):
@@ -57,6 +57,10 @@ class DiscreetPositionersTests(unittest.TestCase):
         # Generate 4 steps, from 2 to -2, using step size -1.2
         self.verify_result(LinearDiscreetPositioner([2], [-2], [-1.2]), expected_result)
 
+    def test_LinearDiscreetPositioner_multiaxis(self):
+        # TODO: Test multiaxes generation.
+        pass
+
     def test_LinearDiscreetPositioner_exceptions(self):
         # TODO: Implement tests for input validation.
         # Negative number of steps.
@@ -93,4 +97,22 @@ class DiscreetPositionersTests(unittest.TestCase):
 
     def test_ZigZagLinearDiscreetPositioner_exceptions(self):
         # TODO: Implement tests for input validation.
+        pass
+
+    def test_VectorPositioner(self):
+        expected_result = [[-2., -2], [-1., -1], [0., 0], [1., 1], [2., 2]]
+
+        # # Test 1 pass.
+        self.verify_result(VectorPositioner(expected_result), expected_result)
+
+        # Test 3 passes.
+        self.verify_result(VectorPositioner(expected_result, passes=3), expected_result * 3)
+
+        expected_result = [[0.0, -1], [1.0, 0], [2.0, 1], [3.0, 2], [4.0, 3]]
+
+        # Test offset.
+        self.verify_result(VectorPositioner(expected_result, offsets=[2, 1]), expected_result)
+
+    def test_VectorPositioner_exceptions(self):
+        # TODO: Test VectorPositioner validation.
         pass

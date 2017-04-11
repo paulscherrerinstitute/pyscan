@@ -5,15 +5,15 @@ import math
 
 class LinearDiscreetPositioner(object):
     def __init__(self, start, end, steps, passes=1, offsets=None):
-        self.offset = offsets
+        self.offsets = offsets
         self.passes = passes
         self.end = end
         self.start = start
 
         # Fix the offsets if provided.
-        if self.offset:
-            self.start = [offset + original_value for original_value, offset in zip(self.start, self.offset)]
-            self.end = [offset + original_value for original_value, offset in zip(self.end, self.offset)]
+        if self.offsets:
+            self.start = [offset + original_value for original_value, offset in zip(self.start, self.offsets)]
+            self.end = [offset + original_value for original_value, offset in zip(self.end, self.offsets)]
 
         # Number of steps case.
         if isinstance(steps[0], int):
@@ -44,7 +44,6 @@ class LinearDiscreetPositioner(object):
 
 
 class ZigZagLinearDiscreetPositioner(LinearDiscreetPositioner):
-
     def next_position(self):
         # The initial position is always the start position.
         current_positions = copy(self.start)
@@ -59,3 +58,27 @@ class ZigZagLinearDiscreetPositioner(LinearDiscreetPositioner):
                                      in zip(current_positions, self.step_size)]
 
                 yield current_positions
+
+
+class VectorPositioner(object):
+    def __init__(self, positions, passes=1, offsets=None):
+        self.positions = positions
+        self.passes = passes
+        self.offsets = offsets
+
+        # TODO: Verify that all the axis have the same number of positions - also offsets.
+        # Since all the axis have the same number of elements, we can use the first one.
+        self.n_positions = len(self.positions[0])
+
+        # Fix the offset if provided.
+        if self.offsets:
+            for step_positions in self.positions:
+                # step_positions[:] =
+                for index in range(self.n_positions):
+                    step_positions[index] = step_positions[index] + offsets[index]
+
+    def next_position(self):
+        for _ in range(self.passes):
+            for position in self.positions:
+                yield position
+

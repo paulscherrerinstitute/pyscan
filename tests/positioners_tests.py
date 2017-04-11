@@ -1,6 +1,7 @@
 import unittest
 
-from pyscan.positioner import LinearDiscreetPositioner, ZigZagLinearDiscreetPositioner, VectorPositioner
+from pyscan.positioner import LinearDiscreetPositioner, ZigZagLinearDiscreetPositioner, VectorPositioner, \
+    ZigZagVectorPositioner
 
 
 class DiscreetPositionersTests(unittest.TestCase):
@@ -116,3 +117,15 @@ class DiscreetPositionersTests(unittest.TestCase):
     def test_VectorPositioner_exceptions(self):
         # TODO: Test VectorPositioner validation.
         pass
+
+    def test_ZigZagVectorPositioner(self):
+        expected_single_result = [[-2., -2], [-1., -1], [0., 0], [1., 1], [2., 2]]
+        expected_3pass_result = [[-2.0, -2], [-1.0, -1], [0.0, 0], [1.0, 1], [2.0, 2],
+                                 [1.0, 1], [0.0, 0], [-1.0, -1], [-2.0, -2],
+                                 [-1.0, -1], [0.0, 0], [1.0, 1], [2.0, 2]]
+
+        # Verify that the positioner works the same with one pass.
+        self.verify_result(ZigZagVectorPositioner(expected_single_result, passes=1), expected_single_result)
+
+        # Check if the expected result with 3 passes is the same.
+        self.verify_result(ZigZagVectorPositioner(expected_single_result, passes=3), expected_3pass_result)

@@ -1,6 +1,7 @@
 from copy import copy
 
 import math
+from itertools import chain, cycle
 
 
 class LinearDiscreetPositioner(object):
@@ -67,18 +68,29 @@ class VectorPositioner(object):
         self.offsets = offsets
 
         # TODO: Verify that all the axis have the same number of positions - also offsets.
-        # Since all the axis have the same number of elements, we can use the first one.
-        self.n_positions = len(self.positions[0])
+        self.n_positions = len(self.positions)
+
+        # TODO: Verify that passes is positive.
 
         # Fix the offset if provided.
         if self.offsets:
             for step_positions in self.positions:
-                # step_positions[:] =
-                for index in range(self.n_positions):
-                    step_positions[index] = step_positions[index] + offsets[index]
+                step_positions[:] = [original_position + offset
+                                     for original_position, offset in zip(step_positions, self.offsets)]
 
     def next_position(self):
         for _ in range(self.passes):
             for position in self.positions:
                 yield position
 
+
+class ZigZagVectorPositioner(VectorPositioner):
+    def next_position(self):
+
+        # This creates a generator for [0, 1, 2, 3... n, n-1, n-2.. 2, 1, 0.....]
+        indexes = cycle(chain(range(0, self.n_positions, 1), range(self.n_positions-2, 0, -1)))
+        # First pass has the full number of items, each subsequent has one less (extreme sequence item).
+        n_indexes = self.n_positions + ((self.passes-1) * (self.n_positions - 1))
+
+        for x in range(n_indexes):
+            yield self.positions[next(indexes)]

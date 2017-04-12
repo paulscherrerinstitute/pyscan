@@ -10,15 +10,16 @@ test_positions = [0, 1, 2, 3, 4, 5]
 class ScannerTests(unittest.TestCase):
 
     def test_ScannerBasics(self):
+
         positioner = VectorPositioner(test_positions)
 
         target_positions = []
         writer = TestWriter(target_positions)
 
+        data_processor = SimpleDataProcessor()
+
         read_buffer = [0, 11, 22, 33, 44, 55]
         reader = TestReader(read_buffer)
-
-        data_processor = SimpleDataProcessor()
 
         scanner = Scanner(positioner, writer, data_processor, reader)
         scanner.discrete_scan()
@@ -31,3 +32,7 @@ class ScannerTests(unittest.TestCase):
 
         self.assertEqual(test_positions, [position for position, data in data_processor.get_data()],
                          "The provided and sampled positions are not the same.")
+
+    def test_ScannerCallbacks(self):
+        # TODO: Implement tests callbacks.
+        pass

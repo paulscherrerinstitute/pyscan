@@ -61,41 +61,6 @@ class ZigZagLinearPositioner(LinearPositioner):
                 yield current_positions
 
 
-class VectorPositioner(object):
-    def __init__(self, positions, passes=1, offsets=None):
-        self.positions = positions
-        self.passes = passes
-        self.offsets = offsets
-
-        # TODO: Verify that all the axis have the same number of positions - also offsets.
-        self.n_positions = len(self.positions)
-
-        # TODO: Verify that passes is positive.
-
-        # Fix the offset if provided.
-        if self.offsets:
-            for step_positions in self.positions:
-                step_positions[:] = [original_position + offset
-                                     for original_position, offset in zip(step_positions, self.offsets)]
-
-    def next_position(self):
-        for _ in range(self.passes):
-            for position in self.positions:
-                yield position
-
-
-class ZigZagVectorPositioner(VectorPositioner):
-    def next_position(self):
-
-        # This creates a generator for [0, 1, 2, 3... n, n-1, n-2.. 2, 1, 0.....]
-        indexes = cycle(chain(range(0, self.n_positions, 1), range(self.n_positions-2, 0, -1)))
-        # First pass has the full number of items, each subsequent has one less (extreme sequence item).
-        n_indexes = self.n_positions + ((self.passes-1) * (self.n_positions - 1))
-
-        for x in range(n_indexes):
-            yield self.positions[next(indexes)]
-
-
 class AreaPositioner(object):
     def __init__(self, start, end, steps, passes=1, offsets=None):
         self.offsets = offsets
@@ -131,7 +96,7 @@ class AreaPositioner(object):
         for _ in range(self.passes):
             positions = copy(self.start)
             # Return the initial state.
-            yield positions
+            yield copy(positions)
 
             # Recursive call to print all axis values.
             def scan_axis(axis_number):
@@ -153,3 +118,71 @@ class AreaPositioner(object):
                 positions[axis_number] = self.start[axis_number]
 
             yield from scan_axis(0)
+
+
+class ZigZagAreaPositioner(AreaPositioner):
+    def next_position(self):
+        for pass_number in range(self.passes):
+            # Directions (positive ascending, negative descending) for each axis.
+            directions = [1] * self.n_axis
+            positions = copy(self.start)
+
+            # Return the initial state.
+            yield copy(positions)
+
+            # Recursive call to print all axis values.
+            def scan_axis(axis_number):
+                # We should not scan axis that do not exist.
+                if not axis_number < self.n_axis:
+                    return
+
+                # Output all position on the next axis while this axis is still at the start position.
+                yield from scan_axis(axis_number + 1)
+
+                # Move axis step by step.
+                for _ in range(self.n_steps[axis_number]):
+                    positions[axis_number] = positions[axis_number] + (self.step_size[axis_number]
+                                                                       * directions[axis_number])
+                    yield copy(positions)
+                    # Output all positions from the next axis for each value of this axis.
+                    yield from scan_axis(axis_number + 1)
+
+                # Invert the direction for the next iteration on this axis.
+                directions[axis_number] *= -1
+
+            yield from scan_axis(0)
+
+
+class VectorPositioner(object):
+    def __init__(self, positions, passes=1, offsets=None):
+        self.positions = positions
+        self.passes = passes
+        self.offsets = offsets
+
+        # TODO: Verify that all the axis have the same number of positions - also offsets.
+        self.n_positions = len(self.positions)
+
+        # TODO: Verify that passes is positive.
+
+        # Fix the offset if provided.
+        if self.offsets:
+            for step_positions in self.positions:
+                step_positions[:] = [original_position + offset
+                                     for original_position, offset in zip(step_positions, self.offsets)]
+
+    def next_position(self):
+        for _ in range(self.passes):
+            for position in self.positions:
+                yield position
+
+
+class ZigZagVectorPositioner(VectorPositioner):
+    def next_position(self):
+
+        # This creates a generator for [0, 1, 2, 3... n, n-1, n-2.. 2, 1, 0.....]
+        indexes = cycle(chain(range(0, self.n_positions, 1), range(self.n_positions-2, 0, -1)))
+        # First pass has the full number of items, each subsequent has one less (extreme sequence item).
+        n_indexes = self.n_positions + ((self.passes-1) * (self.n_positions - 1))
+
+        for x in range(n_indexes):
+            yield self.positions[next(indexes)]

@@ -1,9 +1,12 @@
 class TestWriter(object):
-    def __init__(self, buffer):
+    def __init__(self, buffer=None):
         """
         Initiate the test writer.
         :param buffer: Buffer to write to.
         """
+        if buffer is None:
+            buffer = []
+
         self.buffer = buffer
 
     def write(self, value):
@@ -29,7 +32,7 @@ class TestReader(object):
         Return the next element from the data_source list.
         :return: 
         """
-        return self.iter.next()
+        return next(self.iter)
 
 
 def is_close(list1, list2, epsilon=0.00001):

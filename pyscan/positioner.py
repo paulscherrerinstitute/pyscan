@@ -31,7 +31,7 @@ class LinearPositioner(object):
             # TODO: Raise an exception.
             pass
 
-    def next_position(self):
+    def get_generator(self):
         for _ in range(self.passes):
             # The initial position is always the start position.
             current_positions = copy(self.start)
@@ -45,7 +45,7 @@ class LinearPositioner(object):
 
 
 class ZigZagLinearPositioner(LinearPositioner):
-    def next_position(self):
+    def get_generator(self):
         # The initial position is always the start position.
         current_positions = copy(self.start)
         yield current_positions
@@ -92,7 +92,7 @@ class AreaPositioner(object):
             # TODO: Raise an exception.
             pass
 
-    def next_position(self):
+    def get_generator(self):
         for _ in range(self.passes):
             positions = copy(self.start)
             # Return the initial state.
@@ -121,7 +121,7 @@ class AreaPositioner(object):
 
 
 class ZigZagAreaPositioner(AreaPositioner):
-    def next_position(self):
+    def get_generator(self):
         for pass_number in range(self.passes):
             # Directions (positive ascending, negative descending) for each axis.
             directions = [1] * self.n_axis
@@ -170,14 +170,14 @@ class VectorPositioner(object):
                 step_positions[:] = [original_position + offset
                                      for original_position, offset in zip(step_positions, self.offsets)]
 
-    def next_position(self):
+    def get_generator(self):
         for _ in range(self.passes):
             for position in self.positions:
                 yield position
 
 
 class ZigZagVectorPositioner(VectorPositioner):
-    def next_position(self):
+    def get_generator(self):
 
         # This creates a generator for [0, 1, 2, 3... n, n-1, n-2.. 2, 1, 0.....]
         indexes = cycle(chain(range(0, self.n_positions, 1), range(self.n_positions-2, 0, -1)))

@@ -13,7 +13,7 @@ class DiscreetPositionersTests(unittest.TestCase):
         :param positioner: Positioner instance to get the positions from.
         :param expected_result: Expected values.
         """
-        positions = list(positioner.next_position())
+        positions = list(positioner.get_generator())
         self.assertEqual(len(positions), len(expected_result),
                          "The number of positions does not match "
                          "the expected one.\n"

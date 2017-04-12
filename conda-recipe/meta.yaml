@@ -15,6 +15,10 @@ requirements:
         - python 3.4*
         - numpy
         - pyqt 4.*
+        - pyepics
+
+    test:
+         - pcaspy
 
 test:
   source_files:

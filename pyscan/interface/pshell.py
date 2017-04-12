@@ -1,8 +1,8 @@
 from enum import Enum
 
 from pyscan.positioner import ZigZagLinearPositioner, LinearPositioner, AreaPositioner, ZigZagAreaPositioner
-from pyscan.scan import SimpleExecuter, Scanner, SimpleDataProcessor
-from pyscan.utils import convert_to_list, EpicsReader, EpicsWriter
+from pyscan.scan import Scanner
+from pyscan.utils import convert_to_list, EpicsReader, EpicsWriter, SimpleExecuter, SimpleDataProcessor
 
 
 class Config(Enum):

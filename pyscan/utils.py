@@ -74,3 +74,31 @@ class EpicsReader(object):
 
         return result
 
+
+class SimpleExecuter(object):
+    """
+    Execute all callbacks in the same thread.
+    Each callback method should accept 2 parameters: position, sampled values.
+    """
+    def __init__(self, callbacks):
+        self.callbacks = callbacks
+
+    def execute(self, context):
+        for callback in self.callbacks:
+            callback(context["position"], context["value"])
+
+
+class SimpleDataProcessor(object):
+    """
+    Save the position and the received data at this position.
+    """
+    def __init__(self):
+        self.positions = []
+        self.data = []
+
+    def process(self, position, data):
+        self.positions.append(position)
+        self.data.append(data)
+
+    def get_data(self):
+        return [(position, data) for position, data in zip(self.positions, self.data)]

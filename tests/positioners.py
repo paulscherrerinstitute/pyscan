@@ -2,20 +2,10 @@ import unittest
 
 from pyscan.positioner import LinearPositioner, ZigZagLinearPositioner, VectorPositioner, \
     ZigZagVectorPositioner, AreaPositioner, ZigZagAreaPositioner
+from tests.utils import is_close
 
 
 class DiscreetPositionersTests(unittest.TestCase):
-    @staticmethod
-    def is_close(list1, list2, epsilon=0.00001):
-        """
-        Comparator for lists of floats.
-        Since we are dealing with floats, an exact match cannot be enforced.
-        :param list1: First list to compare.
-        :param list2: Second list to compare.
-        :param epsilon: Maximum difference we allow at each step. Default 10e-5
-        :return: True if all elements are in the specified error range.
-        """
-        return all((value1 - value2) < epsilon for value1, value2 in zip(list1, list2))
 
     def verify_result(self, positioner, expected_result):
         """
@@ -30,7 +20,7 @@ class DiscreetPositionersTests(unittest.TestCase):
                          "Received: %s\nExpected: %s." % (positions, expected_result))
 
         for i, position in enumerate(positions):
-            self.assertTrue(self.is_close(position, expected_result[i]),
+            self.assertTrue(is_close(position, expected_result[i]),
                             "The elements in position %d do not match the expected result.\n"
                             "Received: %s\nExpected: %s." % (i, positions, expected_result))
 

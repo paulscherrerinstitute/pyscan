@@ -633,15 +633,15 @@ class Scan:
         else:  # The last dictionary is the most inside loop
 
             if not dic['Series']:
-                self.not_last_range_scan(Obs, Rback, Valid, dic)
+                self.last_range_scan(Obs, Rback, Valid, dic)
             else:  # Series scan
-                self.non_last_series_scan(Obs, Rback, Valid, dic)
+                self.last_series_scan(Obs, Rback, Valid, dic)
 
         # Execute post actions.
         if len(dic['PostAction']):
             self.PostAction(dic)
 
-    def non_last_series_scan(self, Obs, Rback, Valid, dic):
+    def last_series_scan(self, Obs, Rback, Valid, dic):
         Kscan = 0
         while Kscan < len(dic['Knob']):
             Iscan = 0
@@ -758,7 +758,7 @@ class Scan:
                     self.ProgDisp.emit("pb")
             Kscan = Kscan + 1
 
-    def not_last_range_scan(self, Obs, Rback, Valid, dic):
+    def last_range_scan(self, Obs, Rback, Valid, dic):
         Iscan = 0
         while Iscan < dic['Nstep']:
             print(Iscan)
@@ -880,24 +880,31 @@ class Scan:
                 self.ProgDisp.emit("pb")
 
     def range_scan(self, Obs, Rback, Valid, dic, ind):
-        for i in range(0, dic['Nstep']):
-            print('Dict' + str(ind) + '  Loop' + str(i))
+        for step_index in range(dic['Nstep']):
+            print('Dict' + str(ind) + '  Loop' + str(step_index))
 
-            for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+            for knob_index in range(len(dic['Knob'])):
                 if dic['Additive']:
-                    KV = np.array(dic['KnobExpanded'][j]) + dic['KnobSaved'][j]
+                    KV = np.array(dic['KnobExpanded'][knob_index]) + dic['KnobSaved'][knob_index]
                 else:
-                    KV = dic['KnobExpanded'][j]
+                    KV = dic['KnobExpanded'][knob_index]
                 try:
-                    self.epics_dal.setAndMatch(dic['Knob'][j], KV[i], dic['KnobReadback'][j],
-                                               dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+                    set_pv_name = dic['Knob'][knob_index]
+                    readback_pv_name = dic['KnobReadback'][knob_index]
+                    pv_value = KV[step_index]
+                    pv_tolerance = dic['KnobTolerance'][knob_index]
+                    pv_wait_time = dic['KnobWaiting'][knob_index]
+
+                    self.epics_dal.setAndMatch(set_pv_name, pv_value, readback_pv_name, pv_tolerance, pv_wait_time, 0)
                 except Exception as inst:
-                    print('Exception in preAction')
+                    print('Exception in range_scan')
                     print(inst)
+
+            # Delay between setting the position and reading the values.
             if dic['KnobWaitingExtra']:
                 sleep(dic['KnobWaitingExtra'])
-            self.Scan(Rback[i], Valid[i], Obs[i],
-                      self.inlist[ind + 1])  # and then going to a deeper layer recursively
+
+            self.Scan(Rback[step_index], Valid[step_index], Obs[step_index], self.inlist[ind + 1])
 
             if self.abortScan:
                 if len(dic['PostAction']):
@@ -908,29 +915,34 @@ class Scan:
         # For every PV.
         for i in range(0, len(dic['Knob'])):
             # For the number of steps for this PV.
-            for j in range(0, dic['Nstep'][i]):
+            for step_index in range(dic['Nstep'][i]):
                 # For every PV.
-                for k in range(0, len(dic['Knob'])):
+                for knob_index in range(len(dic['Knob'])):
                     #
-                    if k == i:
+                    if knob_index == i:
                         if dic['Additive']:
-                            KV = dic['KnobSaved'] + dic['ScanValues'][k][j]
+                            KV = dic['KnobSaved'] + dic['ScanValues'][knob_index][step_index]
                         else:
-                            KV = dic['ScanValues'][k][j]
+                            KV = dic['ScanValues'][knob_index][step_index]
                     else:
-                        KV = dic['KnobSaved'][k]
+                        KV = dic['KnobSaved'][knob_index]
                     try:
-                        self.epics_dal.setAndMatch(dic['Knob'][k], KV[i], dic['KnobReadback'][j],
-                                                   dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+                        set_pv_name = dic['Knob'][knob_index]
+                        readback_pv_name = dic['KnobReadback'][step_index]
+                        pv_value = KV[i]
+                        pv_tolerance = dic['KnobTolerance'][step_index]
+                        pv_wait_time = dic['KnobWaiting'][step_index]
+
+                        self.epics_dal.setAndMatch(set_pv_name, pv_value, readback_pv_name, pv_tolerance, pv_wait_time,
+                                                   0)
                     except Exception as inst:
-                        print('Exception in preAction')
+                        print('Exception in series_scan')
                         print(inst)
 
                 if dic['KnobWaitingExtra']:
                     sleep(dic['KnobWaitingExtra'])
 
-                self.Scan(Rback[i][j], Valid[i][j], Obs[i][j],
-                          self.inlist[ind + 1])  # and then going to a deeper layer recursively
+                self.Scan(Rback[i][step_index], Valid[i][step_index], Obs[i][step_index], self.inlist[ind + 1])
 
             if self.abortScan:
                 if len(dic['PostAction']):

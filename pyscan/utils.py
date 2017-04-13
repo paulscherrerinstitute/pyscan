@@ -12,14 +12,26 @@ def convert_to_list(value):
     return [value] if (value is not None) and (not isinstance(value, list)) else value
 
 
+def connect_to_pv(pv_name):
+    """
+    Start a connection to a PV.
+    :param pv_name: PV name to connect to.
+    :return: PV object.
+    :raises ValueError if cannot connect to PV.
+    """
+    pv = PV(pv_name, auto_monitor=False)
+    if not pv.connect():
+        raise ValueError("Cannot connect to PV '%s'." % pv_name)
+
+    return pv
+
+
 class EpicsWriter(object):
     """
     Sequentially write the PV value and wait for the PV to reach the desired value.
     """
     def __init__(self, list_of_pvs):
-        self.pvs = []
-        for pv_name in convert_to_list(list_of_pvs):
-            self.pvs.append(PV(pv_name, auto_monitor=False))
+        self.pvs = [connect_to_pv(pv_name) for pv_name in convert_to_list(list_of_pvs)]
 
     def write(self, values, tolerance=0.00001, timeout=5):
         """
@@ -59,9 +71,7 @@ class EpicsReader(object):
     Sequentially read the PVs and return a list of results.
     """
     def __init__(self, list_of_pvs):
-        self.pvs = []
-        for pv_name in convert_to_list(list_of_pvs):
-            self.pvs.append(PV(pv_name, auto_monitor=False))
+        self.pvs = [connect_to_pv(pv_name) for pv_name in convert_to_list(list_of_pvs)]
 
     def read(self):
         """

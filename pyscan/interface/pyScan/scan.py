@@ -623,313 +623,318 @@ class Scan:
         if ind != len(self.inlist) - 1:
 
             if not dic['Series']:
-                for i in range(0, dic['Nstep']):
-                    print('Dict' + str(ind) + '  Loop' + str(i))
-
-                    for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
-                        if dic['Additive']:
-                            KV = np.array(dic['KnobExpanded'][j]) + dic['KnobSaved'][j]
-                        else:
-                            KV = dic['KnobExpanded'][j]
-                        try:
-                            self.epics_dal.setAndMatch(dic['Knob'][j], KV[i], dic['KnobReadback'][j],
-                                                       dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
-                        except Exception as inst:
-                            print('Exception in preAction')
-                            print(inst)
-                    if dic['KnobWaitingExtra']:
-                        sleep(dic['KnobWaitingExtra'])
-                    self.Scan(Rback[i], Valid[i], Obs[i],
-                              self.inlist[ind + 1])  # and then going to a deeper layer recursively
-
-                    if self.abortScan:
-                        if len(dic['PostAction']):
-                            self.PostAction(dic)
-                        raise Exception("Scan aborted")
+                self.range_scan(Obs, Rback, Valid, dic, ind)
             else:  # Series scan
-
-
-
-                for i in range(0, len(dic['Knob'])):
-
-                    for j in range(0, dic['Nstep'][i]):
-                        for k in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
-                            if k == i:
-                                if dic['Additive']:
-                                    KV = dic['KnobSaved'] + dic['ScanValues'][k][j]
-                                else:
-                                    KV = dic['ScanValues'][k][j]
-                            else:
-                                KV = dic['KnobSaved'][k]
-                            try:
-                                self.epics_dal.setAndMatch(dic['Knob'][k], KV[i], dic['KnobReadback'][j],
-                                                           dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
-                            except Exception as inst:
-                                print('Exception in preAction')
-                                print(inst)
-
-                        if dic['KnobWaitingExtra']:
-                            sleep(dic['KnobWaitingExtra'])
-
-                        self.Scan(Rback[i][j], Valid[i][j], Obs[i][j],
-                                  self.inlist[ind + 1])  # and then going to a deeper layer recursively
-
-                    if self.abortScan:
-                        if len(dic['PostAction']):
-                            self.PostAction(dic)
-                        raise Exception("Scan aborted")
-
-            if len(dic['PostAction']):
-                self.PostAction(dic)
+                self.series_scan(Obs, Rback, Valid, dic, ind)
 
         else:  # The last dictionary is the most inside loop
 
             if not dic['Series']:
-                Iscan = 0
-                while Iscan < dic['Nstep']:
-                    print(Iscan)
+                self.not_last_range_scan(Obs, Rback, Valid, dic)
+            else:  # Series scan
+                self.non_last_series_scan(Obs, Rback, Valid, dic)
 
-                    # set knob for this loop
-                    for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+        # Execute post actions.
+        if len(dic['PostAction']):
+            self.PostAction(dic)
+
+    def non_last_series_scan(self, Obs, Rback, Valid, dic):
+        Kscan = 0
+        while Kscan < len(dic['Knob']):
+            Iscan = 0
+            while Iscan < dic['Nstep'][Kscan]:
+                print(Kscan, Iscan)
+
+                # set knob for this loop
+                for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+                    if j == Kscan:
                         if dic['Additive']:
-                            KV = np.array(dic['KnobExpanded'][j]) + dic['KnobSaved'][j]
+                            KV = dic['KnobSaved'][j] + dic['ScanValues'][j][Iscan]
                         else:
-                            KV = dic['KnobExpanded'][j]
-                        print('Knob value', dic['KnobSaved'], dic['KnobExpanded'], KV[Iscan])
-                        try:
-                            self.epics_dal.setAndMatch(dic['Knob'][j], KV[Iscan], dic['KnobReadback'][j],
-                                                       dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
-                        except Exception as inst:
-                            print('Exception in Scan loop')
-                            print(inst)
-                    if dic['KnobWaitingExtra']:
-                        sleep(dic['KnobWaitingExtra'])
+                            KV = dic['KnobValues'][j][Iscan]
+                    else:
+                        KV = dic['KnobSaved'][j]
+                    try:
+                        self.epics_dal.setAndMatch(dic['Knob'][j], KV, dic['KnobReadback'][j],
+                                                   dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+                    except Exception as inst:
+                        print('Exception in preAction')
+                        print(inst)
+                if dic['KnobWaitingExtra']:
+                    sleep(dic['KnobWaitingExtra'])
 
-                    if len(dic['In-loopPreAction']):
-                        self.PreAction(dic, 'In-loopPreAction')
+                if len(dic['In-loopPreAction']):
+                    self.PreAction(dic, 'In-loopPreAction')
 
-                    for j in range(0, dic['NumberOfMeasurements']):
-                        [v, s, sl] = self.epics_dal.getGroup('All')
-                        if dic['NumberOfMeasurements'] > 1:
-                            if self.allchc[0] == 1:
-                                Rback[Iscan].append(v[0])
-                            else:
-                                Rback[Iscan].append(v[0:self.allchc[0]])
-
-                            if len(dic['Validation']) == 1:
-                                Valid[Iscan].append(v[self.allchc[0]])
-                            else:
-                                Valid[Iscan].append(v[self.allchc[0]:self.allchc[0] + self.allchc[1]])
-
-                            if len(dic['Observable']) == 1:
-                                Obs[Iscan].append(v[-1])
-                            else:
-                                Obs[Iscan].append(
-                                    v[self.allchc[0] + self.allchc[1]:self.allchc[0] + self.allchc[1] + self.allchc[2]])
+                for j in range(0, dic['NumberOfMeasurements']):
+                    [v, s, sl] = self.epics_dal.getGroup('All')
+                    if dic['NumberOfMeasurements'] > 1:
+                        # if len(dic['Knob'])==1: # Maybe a bug
+                        if self.allchc[0] == 1:
+                            Rback[Kscan][Iscan].append(v[0])
                         else:
-                            if self.allchc[0] == 1:
-                                Rback[Iscan] = v[0]
-                            else:
-                                Rback[Iscan] = v[0:self.allchc[0]]
+                            Rback[Kscan][Iscan].append(v[0:self.allchc[0]])
 
-                            if len(dic['Validation']) == 1:
-                                Valid[Iscan] = v[self.allchc[0]]
-                            else:
-                                Valid[Iscan] = v[self.allchc[0]:self.allchc[0] + self.allchc[1]]
+                        if len(dic['Validation']) == 1:
+                            Valid[Kscan][Iscan].append(v[self.allchc[0]])
+                        else:
+                            Valid[Kscan][Iscan].append(v[self.allchc[0]:self.allchc[0] + self.allchc[1]])
 
-                            if len(dic['Observable']) == 1:
-                                Obs[Iscan] = v[-1]
-                            else:
-                                Obs[Iscan] = v[self.allchc[0] + self.allchc[1]:self.allchc[0] + self.allchc[1] +
-                                                                               self.allchc[2]]
+                        if len(dic['Observable']) == 1:
+                            Obs[Kscan][Iscan].append(v[-1])
+                        else:
+                            Obs[Kscan][Iscan].append(v[self.allchc[0] + self.allchc[1]:self.allchc[0] +
+                                                                                       self.allchc[1] +
+                                                                                       self.allchc[2]])
+                    else:
+                        if self.allchc[0] == 1:
+                            Rback[Kscan][Iscan] = v[0]
+                        else:
+                            Rback[Kscan][Iscan] = v[0:self.allchc[0]]
 
-                        sleep(dic['Waiting'])
+                        if len(dic['Validation']) == 1:
+                            Valid[Kscan][Iscan] = v[self.allchc[0]]
+                        else:
+                            Valid[Kscan][Iscan] = v[self.allchc[0]:self.allchc[0] + self.allchc[1]]
 
-                    Iscan = Iscan + 1
-                    self.Ndone = self.Ndone + 1
+                        if len(dic['Observable']) == 1:
+                            Obs[Kscan][Iscan] = v[-1]
+                        else:
+                            Obs[Kscan][Iscan] = v[self.allchc[0] + self.allchc[1]:self.allchc[0] + self.allchc[
+                                1] + self.allchc[2]]
 
-                    Stepback = 0
-                    count = [0] * len(self.stopScan)
-                    k_stop = None
-                    p_stop = None
-                    while self.stopScan.count(1) + self.pauseScan:  # Problem detected in the channel under monitoring
+                    sleep(dic['Waiting'])
+
+                Iscan = Iscan + 1
+                self.Ndone = self.Ndone + 1
+
+                Stepback = 0
+                count = [0] * len(self.stopScan)
+                k_stop = None
+                p_stop = None
+                while self.stopScan.count(1):  # Problem detected in the channel under monitoring
+                    for k in range(0, len(self.stopScan)):
                         Stepback = 1
-                        sleep(1.0)
-                        for k in range(0, len(self.stopScan)):
-                            if self.stopScan[k]:
-                                k_stop = k
-                                if dic['MonitorAction'][k] == 'Abort':
-                                    self.abortScan = 1
-                                count[k] = count[k] + 1
-                            else:
-                                count[k] = 0
-                            if dic['MonitorAction'][k] == 'WaitAndAbort' and count[k] > dic['MonitorTimeout'][k]:
+                    sleep(1.0)
+                    for k in range(0, len(self.stopScan)):
+                        if self.stopScan[k]:
+                            k_stop = k
+                            if dic['MonitorAction'][k] == 'Abort':
                                 self.abortScan = 1
+                            count[k] = count[k] + 1
+                        else:
+                            count[k] = 0
+                        if dic['MonitorAction'][k] == 'WaitAndAbort' and count[k] > dic['MonitorTimeout'][k]:
+                            self.abortScan = 1
 
-                        if self.abortScan:
-                            if len(dic['PostAction']):
-                                self.PostAction(dic)
-                            raise Exception("Scan aborted")
-                        print('Monitor??')
-                        print(self.stopScan)
-                        if self.pauseScan:
-                            p_stop = 1
-
-                    if k_stop and dic['MonitorAction'][k_stop] == 'WaitAndNoStepBack':
-                        # Take the action of the most persisting monitor...
-                        Stepback = 0
-
-                    if p_stop and not dic['StepbackOnPause']:
-                        Stepback = 0
-
-                    if Stepback:
-                        print('Stepping back')
-                        Iscan = Iscan - 1
-                        self.Ndone = self.Ndone - 1
-                        Rback[Iscan].pop()
-                        Valid[Iscan].pop()
-                        Obs[Iscan].pop()
-
-                    if self.fromGUI and self.ProgDisp.abortScan:
-                        self.abortScan = 1
                     if self.abortScan:
                         if len(dic['PostAction']):
                             self.PostAction(dic)
                         raise Exception("Scan aborted")
 
-                    if len(dic['In-loopPostAction']):
-                        self.PostAction(dic, 'In-loopPostAction')
+                    if self.pauseScan:
+                        p_stop = 1
 
-                    self.ProgDisp.Progress = 100.0 * self.Ndone / self.Ntot
-                    if self.fromGUI:
-                        self.ProgDisp.emit("pb")
+                if k_stop and dic['MonitorAction'][k_stop] == 'WaitAndNoStepBack':
+                    Stepback = 0
 
+                if p_stop and not dic['StepbackOnPause']:
+                    Stepback = 0
 
-            else:  # Series scan
-                Kscan = 0
-                while Kscan < len(dic['Knob']):
-                    Iscan = 0
-                    while Iscan < dic['Nstep'][Kscan]:
-                        print(Kscan, Iscan)
+                if Stepback:
+                    print('Stepping back')
+                    Iscan = Iscan - 1
+                    self.Ndone = self.Ndone - 1
+                    Rback[Iscan].pop()
+                    Valid[Iscan].pop()
+                    Obs[Iscan].pop()
 
-                        # set knob for this loop
-                        for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
-                            if j == Kscan:
-                                if dic['Additive']:
-                                    KV = dic['KnobSaved'][j] + dic['ScanValues'][j][Iscan]
-                                else:
-                                    KV = dic['KnobValues'][j][Iscan]
-                            else:
-                                KV = dic['KnobSaved'][j]
-                            try:
-                                self.epics_dal.setAndMatch(dic['Knob'][j], KV, dic['KnobReadback'][j],
-                                                           dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
-                            except Exception as inst:
-                                print('Exception in preAction')
-                                print(inst)
-                        if dic['KnobWaitingExtra']:
-                            sleep(dic['KnobWaitingExtra'])
+                if self.fromGUI and self.ProgDisp.abortScan:
+                    self.abortScan = 1
+                if self.abortScan:
+                    if len(dic['PostAction']):
+                        self.PostAction(dic)
+                    raise Exception("Scan aborted")
 
-                        if len(dic['In-loopPreAction']):
-                            self.PreAction(dic, 'In-loopPreAction')
+                if len(dic['In-loopPostAction']):
+                    self.In - loopPostAction(dic)
 
-                        for j in range(0, dic['NumberOfMeasurements']):
-                            [v, s, sl] = self.epics_dal.getGroup('All')
-                            if dic['NumberOfMeasurements'] > 1:
-                                # if len(dic['Knob'])==1: # Maybe a bug
-                                if self.allchc[0] == 1:
-                                    Rback[Kscan][Iscan].append(v[0])
-                                else:
-                                    Rback[Kscan][Iscan].append(v[0:self.allchc[0]])
+                self.ProgDisp.Progress = 100.0 * self.Ndone / self.Ntot
+                if self.fromGUI:
+                    self.ProgDisp.emit("pb")
+            Kscan = Kscan + 1
 
-                                if len(dic['Validation']) == 1:
-                                    Valid[Kscan][Iscan].append(v[self.allchc[0]])
-                                else:
-                                    Valid[Kscan][Iscan].append(v[self.allchc[0]:self.allchc[0] + self.allchc[1]])
+    def not_last_range_scan(self, Obs, Rback, Valid, dic):
+        Iscan = 0
+        while Iscan < dic['Nstep']:
+            print(Iscan)
 
-                                if len(dic['Observable']) == 1:
-                                    Obs[Kscan][Iscan].append(v[-1])
-                                else:
-                                    Obs[Kscan][Iscan].append(v[self.allchc[0] + self.allchc[1]:self.allchc[0] +
-                                                                                               self.allchc[1] +
-                                                                                               self.allchc[2]])
-                            else:
-                                if self.allchc[0] == 1:
-                                    Rback[Kscan][Iscan] = v[0]
-                                else:
-                                    Rback[Kscan][Iscan] = v[0:self.allchc[0]]
+            # set knob for this loop
+            for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+                if dic['Additive']:
+                    KV = np.array(dic['KnobExpanded'][j]) + dic['KnobSaved'][j]
+                else:
+                    KV = dic['KnobExpanded'][j]
+                print('Knob value', dic['KnobSaved'], dic['KnobExpanded'], KV[Iscan])
+                try:
+                    self.epics_dal.setAndMatch(dic['Knob'][j], KV[Iscan], dic['KnobReadback'][j],
+                                               dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+                except Exception as inst:
+                    print('Exception in Scan loop')
+                    print(inst)
+            if dic['KnobWaitingExtra']:
+                sleep(dic['KnobWaitingExtra'])
 
-                                if len(dic['Validation']) == 1:
-                                    Valid[Kscan][Iscan] = v[self.allchc[0]]
-                                else:
-                                    Valid[Kscan][Iscan] = v[self.allchc[0]:self.allchc[0] + self.allchc[1]]
+            if len(dic['In-loopPreAction']):
+                self.PreAction(dic, 'In-loopPreAction')
 
-                                if len(dic['Observable']) == 1:
-                                    Obs[Kscan][Iscan] = v[-1]
-                                else:
-                                    Obs[Kscan][Iscan] = v[self.allchc[0] + self.allchc[1]:self.allchc[0] + self.allchc[
-                                        1] + self.allchc[2]]
+            for j in range(0, dic['NumberOfMeasurements']):
+                [v, s, sl] = self.epics_dal.getGroup('All')
+                if dic['NumberOfMeasurements'] > 1:
+                    if self.allchc[0] == 1:
+                        Rback[Iscan].append(v[0])
+                    else:
+                        Rback[Iscan].append(v[0:self.allchc[0]])
 
-                            sleep(dic['Waiting'])
+                    if len(dic['Validation']) == 1:
+                        Valid[Iscan].append(v[self.allchc[0]])
+                    else:
+                        Valid[Iscan].append(v[self.allchc[0]:self.allchc[0] + self.allchc[1]])
 
-                        Iscan = Iscan + 1
-                        self.Ndone = self.Ndone + 1
+                    if len(dic['Observable']) == 1:
+                        Obs[Iscan].append(v[-1])
+                    else:
+                        Obs[Iscan].append(
+                            v[self.allchc[0] + self.allchc[1]:self.allchc[0] + self.allchc[1] + self.allchc[2]])
+                else:
+                    if self.allchc[0] == 1:
+                        Rback[Iscan] = v[0]
+                    else:
+                        Rback[Iscan] = v[0:self.allchc[0]]
 
-                        Stepback = 0
-                        count = [0] * len(self.stopScan)
-                        k_stop = None
-                        p_stop = None
-                        while self.stopScan.count(1):  # Problem detected in the channel under monitoring
-                            for k in range(0, len(self.stopScan)):
-                            Stepback = 1
-                            sleep(1.0)
-                            for k in range(0, len(self.stopScan)):
-                                if self.stopScan[k]:
-                                    k_stop = k
-                                    if dic['MonitorAction'][k] == 'Abort':
-                                        self.abortScan = 1
-                                    count[k] = count[k] + 1
-                                else:
-                                    count[k] = 0
-                                if dic['MonitorAction'][k] == 'WaitAndAbort' and count[k] > dic['MonitorTimeout'][k]:
-                                    self.abortScan = 1
+                    if len(dic['Validation']) == 1:
+                        Valid[Iscan] = v[self.allchc[0]]
+                    else:
+                        Valid[Iscan] = v[self.allchc[0]:self.allchc[0] + self.allchc[1]]
 
-                            if self.abortScan:
-                                if len(dic['PostAction']):
-                                    self.PostAction(dic)
-                                raise Exception("Scan aborted")
+                    if len(dic['Observable']) == 1:
+                        Obs[Iscan] = v[-1]
+                    else:
+                        Obs[Iscan] = v[self.allchc[0] + self.allchc[1]:self.allchc[0] + self.allchc[1] +
+                                                                       self.allchc[2]]
 
-                            if self.pauseScan:
-                                p_stop = 1
+                sleep(dic['Waiting'])
 
-                        if k_stop and dic['MonitorAction'][k_stop] == 'WaitAndNoStepBack':
-                            Stepback = 0
+            Iscan = Iscan + 1
+            self.Ndone = self.Ndone + 1
 
-                        if p_stop and not dic['StepbackOnPause']:
-                            Stepback = 0
-
-                        if Stepback:
-                            print('Stepping back')
-                            Iscan = Iscan - 1
-                            self.Ndone = self.Ndone - 1
-                            Rback[Iscan].pop()
-                            Valid[Iscan].pop()
-                            Obs[Iscan].pop()
-
-                        if self.fromGUI and self.ProgDisp.abortScan:
+            Stepback = 0
+            count = [0] * len(self.stopScan)
+            k_stop = None
+            p_stop = None
+            while self.stopScan.count(1) + self.pauseScan:  # Problem detected in the channel under monitoring
+                Stepback = 1
+                sleep(1.0)
+                for k in range(0, len(self.stopScan)):
+                    if self.stopScan[k]:
+                        k_stop = k
+                        if dic['MonitorAction'][k] == 'Abort':
                             self.abortScan = 1
-                        if self.abortScan:
-                            if len(dic['PostAction']):
-                                self.PostAction(dic)
-                            raise Exception("Scan aborted")
+                        count[k] = count[k] + 1
+                    else:
+                        count[k] = 0
+                    if dic['MonitorAction'][k] == 'WaitAndAbort' and count[k] > dic['MonitorTimeout'][k]:
+                        self.abortScan = 1
 
-                        if len(dic['In-loopPostAction']):
-                            self.In - loopPostAction(dic)
+                if self.abortScan:
+                    if len(dic['PostAction']):
+                        self.PostAction(dic)
+                    raise Exception("Scan aborted")
+                print('Monitor??')
+                print(self.stopScan)
+                if self.pauseScan:
+                    p_stop = 1
 
-                        self.ProgDisp.Progress = 100.0 * self.Ndone / self.Ntot
-                        if self.fromGUI:
-                            self.ProgDisp.emit("pb")
-                    Kscan = Kscan + 1
+            if k_stop and dic['MonitorAction'][k_stop] == 'WaitAndNoStepBack':
+                # Take the action of the most persisting monitor...
+                Stepback = 0
 
-            if len(dic['PostAction']):
-                self.PostAction(dic)
+            if p_stop and not dic['StepbackOnPause']:
+                Stepback = 0
+
+            if Stepback:
+                print('Stepping back')
+                Iscan = Iscan - 1
+                self.Ndone = self.Ndone - 1
+                Rback[Iscan].pop()
+                Valid[Iscan].pop()
+                Obs[Iscan].pop()
+
+            if self.fromGUI and self.ProgDisp.abortScan:
+                self.abortScan = 1
+            if self.abortScan:
+                if len(dic['PostAction']):
+                    self.PostAction(dic)
+                raise Exception("Scan aborted")
+
+            if len(dic['In-loopPostAction']):
+                self.PostAction(dic, 'In-loopPostAction')
+
+            self.ProgDisp.Progress = 100.0 * self.Ndone / self.Ntot
+            if self.fromGUI:
+                self.ProgDisp.emit("pb")
+
+    def range_scan(self, Obs, Rback, Valid, dic, ind):
+        for i in range(0, dic['Nstep']):
+            print('Dict' + str(ind) + '  Loop' + str(i))
+
+            for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+                if dic['Additive']:
+                    KV = np.array(dic['KnobExpanded'][j]) + dic['KnobSaved'][j]
+                else:
+                    KV = dic['KnobExpanded'][j]
+                try:
+                    self.epics_dal.setAndMatch(dic['Knob'][j], KV[i], dic['KnobReadback'][j],
+                                               dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+                except Exception as inst:
+                    print('Exception in preAction')
+                    print(inst)
+            if dic['KnobWaitingExtra']:
+                sleep(dic['KnobWaitingExtra'])
+            self.Scan(Rback[i], Valid[i], Obs[i],
+                      self.inlist[ind + 1])  # and then going to a deeper layer recursively
+
+            if self.abortScan:
+                if len(dic['PostAction']):
+                    self.PostAction(dic)
+                raise Exception("Scan aborted")
+
+    def series_scan(self, Obs, Rback, Valid, dic, ind):
+        for i in range(0, len(dic['Knob'])):
+
+            for j in range(0, dic['Nstep'][i]):
+                for k in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+                    if k == i:
+                        if dic['Additive']:
+                            KV = dic['KnobSaved'] + dic['ScanValues'][k][j]
+                        else:
+                            KV = dic['ScanValues'][k][j]
+                    else:
+                        KV = dic['KnobSaved'][k]
+                    try:
+                        self.epics_dal.setAndMatch(dic['Knob'][k], KV[i], dic['KnobReadback'][j],
+                                                   dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+                    except Exception as inst:
+                        print('Exception in preAction')
+                        print(inst)
+
+                if dic['KnobWaitingExtra']:
+                    sleep(dic['KnobWaitingExtra'])
+
+                self.Scan(Rback[i][j], Valid[i][j], Obs[i][j],
+                          self.inlist[ind + 1])  # and then going to a deeper layer recursively
+
+            if self.abortScan:
+                if len(dic['PostAction']):
+                    self.PostAction(dic)
+                raise Exception("Scan aborted")

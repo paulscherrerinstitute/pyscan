@@ -14,6 +14,9 @@ class Scan:
         self.epics_dal = None
         self.fromGUI = fromGUI
         self.outdict = None
+        self.n_validations = None
+        self.n_observables = None
+        self.n_readbacks = None
 
         if fromGUI:
             self.ProgDisp = SubPanel()
@@ -394,19 +397,18 @@ class Scan:
                     dic['StepbackOnPause'] = 1
 
             self.allch = []
-            self.allchc = []
-            Nrb = 0
+
+            self.n_readbacks = 0
             for d in inlist:
                 self.allch.append(d['KnobReadback'])
-                Nrb = Nrb + len(d['KnobReadback'])
+                self.n_readbacks += len(d['KnobReadback'])
 
             self.allch.append(inlist[-1]['Validation'])
-            Nvalid = len(inlist[-1]['Validation'])
+            self.n_validations = len(inlist[-1]['Validation'])
 
             self.allch.append(inlist[-1]['Observable'])
-            Nobs = len(inlist[-1]['Observable'])
+            self.n_observables = len(inlist[-1]['Observable'])
 
-            self.allchc = [Nrb, Nvalid, Nobs]
             self.allch = [item for sublist in self.allch for item in sublist]  # Recursive in one line!
 
             self._add_group(dic, 'All', self.allch, None, close=False)
@@ -434,6 +436,7 @@ class Scan:
 
     def startMonitor(self, dic):
         raise NotImplementedError("Monitors not yet supported.")
+
     #     def cbMonitor(h):
     #         def matchValue(h):
     #             en = self.MonitorInfo[h][1]
@@ -668,40 +671,31 @@ class Scan:
 
                 for j in range(0, dic['NumberOfMeasurements']):
                     [v, s, sl] = self.epics_dal.getGroup('All')
-                    if dic['NumberOfMeasurements'] > 1:
-                        # if len(dic['Knob'])==1: # Maybe a bug
-                        if self.allchc[0] == 1:
-                            Rback[Kscan][Iscan].append(v[0])
-                        else:
-                            Rback[Kscan][Iscan].append(v[0:self.allchc[0]])
 
-                        if len(dic['Validation']) == 1:
-                            Valid[Kscan][Iscan].append(v[self.allchc[0]])
-                        else:
-                            Valid[Kscan][Iscan].append(v[self.allchc[0]:self.allchc[0] + self.allchc[1]])
-
-                        if len(dic['Observable']) == 1:
-                            Obs[Kscan][Iscan].append(v[-1])
-                        else:
-                            Obs[Kscan][Iscan].append(v[self.allchc[0] + self.allchc[1]:self.allchc[0] +
-                                                                                       self.allchc[1] +
-                                                                                       self.allchc[2]])
+                    if self.n_readbacks == 1:
+                        rback_result = v[0]
                     else:
-                        if self.allchc[0] == 1:
-                            Rback[Kscan][Iscan] = v[0]
-                        else:
-                            Rback[Kscan][Iscan] = v[0:self.allchc[0]]
+                        rback_result = v[0:self.n_readbacks]
 
-                        if len(dic['Validation']) == 1:
-                            Valid[Kscan][Iscan] = v[self.allchc[0]]
-                        else:
-                            Valid[Kscan][Iscan] = v[self.allchc[0]:self.allchc[0] + self.allchc[1]]
+                    if len(dic['Validation']) == 1:
+                        valid_result = v[self.n_readbacks]
+                    else:
+                        valid_result = v[self.n_readbacks:self.n_readbacks + self.n_validations]
 
-                        if len(dic['Observable']) == 1:
-                            Obs[Kscan][Iscan] = v[-1]
-                        else:
-                            Obs[Kscan][Iscan] = v[self.allchc[0] + self.allchc[1]:self.allchc[0] + self.allchc[
-                                1] + self.allchc[2]]
+                    if len(dic['Observable']) == 1:
+                        obs_result = v[-1]
+                    else:
+                        obs_result = v[self.n_readbacks + self.n_validations:
+                                       self.n_readbacks + self.n_validations + self.n_observables]
+
+                    if dic['NumberOfMeasurements'] > 1:
+                        Rback[Kscan][Iscan].append(rback_result)
+                        Valid[Kscan][Iscan].append(valid_result)
+                        Obs[Kscan][Iscan].append(obs_result)
+                    else:
+                        Rback[Kscan][Iscan] = rback_result
+                        Valid[Kscan][Iscan] = valid_result
+                        Obs[Kscan][Iscan] = obs_result
 
                     sleep(dic['Waiting'])
 
@@ -791,37 +785,38 @@ class Scan:
             for j in range(0, dic['NumberOfMeasurements']):
                 [v, s, sl] = self.epics_dal.getGroup('All')
                 if dic['NumberOfMeasurements'] > 1:
-                    if self.allchc[0] == 1:
+                    if self.n_readbacks == 1:
                         Rback[Iscan].append(v[0])
                     else:
-                        Rback[Iscan].append(v[0:self.allchc[0]])
+                        Rback[Iscan].append(v[0:self.n_readbacks])
 
                     if len(dic['Validation']) == 1:
-                        Valid[Iscan].append(v[self.allchc[0]])
+                        Valid[Iscan].append(v[self.n_readbacks])
                     else:
-                        Valid[Iscan].append(v[self.allchc[0]:self.allchc[0] + self.allchc[1]])
+                        Valid[Iscan].append(v[self.n_readbacks:self.n_readbacks + self.n_validations])
 
                     if len(dic['Observable']) == 1:
                         Obs[Iscan].append(v[-1])
                     else:
                         Obs[Iscan].append(
-                            v[self.allchc[0] + self.allchc[1]:self.allchc[0] + self.allchc[1] + self.allchc[2]])
+                            v[
+                            self.n_readbacks + self.n_validations:self.n_readbacks + self.n_validations + self.n_observables])
                 else:
-                    if self.allchc[0] == 1:
+                    if self.n_readbacks == 1:
                         Rback[Iscan] = v[0]
                     else:
-                        Rback[Iscan] = v[0:self.allchc[0]]
+                        Rback[Iscan] = v[0:self.n_readbacks]
 
                     if len(dic['Validation']) == 1:
-                        Valid[Iscan] = v[self.allchc[0]]
+                        Valid[Iscan] = v[self.n_readbacks]
                     else:
-                        Valid[Iscan] = v[self.allchc[0]:self.allchc[0] + self.allchc[1]]
+                        Valid[Iscan] = v[self.n_readbacks:self.n_readbacks + self.n_validations]
 
                     if len(dic['Observable']) == 1:
                         Obs[Iscan] = v[-1]
                     else:
-                        Obs[Iscan] = v[self.allchc[0] + self.allchc[1]:self.allchc[0] + self.allchc[1] +
-                                                                       self.allchc[2]]
+                        Obs[Iscan] = v[self.n_readbacks + self.n_validations:self.n_readbacks + self.n_validations +
+                                                                             self.n_observables]
 
                 sleep(dic['Waiting'])
 
@@ -910,10 +905,13 @@ class Scan:
                 raise Exception("Scan aborted")
 
     def series_scan(self, Obs, Rback, Valid, dic, ind):
+        # For every PV.
         for i in range(0, len(dic['Knob'])):
-
+            # For the number of steps for this PV.
             for j in range(0, dic['Nstep'][i]):
-                for k in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+                # For every PV.
+                for k in range(0, len(dic['Knob'])):
+                    #
                     if k == i:
                         if dic['Additive']:
                             KV = dic['KnobSaved'] + dic['ScanValues'][k][j]

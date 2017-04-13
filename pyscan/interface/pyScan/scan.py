@@ -3,9 +3,9 @@ from datetime import datetime
 from time import sleep
 
 import numpy as np
-from pyscan.gui import SubPanel, DummyClass
 
-from pyscan.old.dal import PyCafeEpicsDal
+from pyscan.interface.pyScan.dal import PyCafeEpicsDal
+from pyscan.interface.pyScan.gui import SubPanel, DummyClass
 
 
 class Scan:
@@ -66,7 +66,6 @@ class Scan:
             inlist = [inlist]
 
         try:
-
             for dic in inlist:
                 dic['ID'] = i  # Just in case there are identical input dictionaries. (Normally, it may not happen.)
 
@@ -434,62 +433,63 @@ class Scan:
         return self.outdict
 
     def startMonitor(self, dic):
-        def cbMonitor(h):
-            def matchValue(h):
-                en = self.MonitorInfo[h][1]
-                c = self.epics_dal.getPVCache(h)
-                v = c.value[0]
-                if v == '':
-                    # To comply with RF-READY-STATUS channle, where ENUM is empty...
-                    c = self.epics_dal.getPVCache(h, dt='int')
-                    v = c.value[0]
-                if isinstance(self.MonitorInfo[h][2], list):  # Monitor value is in list, i.e. several cases are okay
-                    if v in self.MonitorInfo[h][2]:
-                        print('value OK')
-                        return 1
-                    else:
-                        print('kkkkkkk', en, self.MonitorInfo[h][2], v)
-                        print('value NG')
-                        return 0
-                elif isinstance(v, str):
-                    if v == self.MonitorInfo[h][2]:
-                        print('value OK')
-                        return 1
-                    else:
-                        print('nnnnn', en, self.MonitorInfo[h][2], v)
-                        print('value NG')
-                        return 0
-
-                elif isinstance(v, int) or isinstance(v, float):
-                    if abs(v - self.MonitorInfo[h][2]) <= self.MonitorInfo[h][3]:
-                        return 1
-                    else:
-                        print('value NG')
-                        print(v, self.MonitorInfo[h][2], self.MonitorInfo[h][3])
-                        return 0
-                else:
-                    'Return value from getPVCache', v
-
-            if matchValue(h):
-                self.stopScan[self.MonitorInfo[h][0]] = 0
-            else:
-                self.stopScan[self.MonitorInfo[h][0]] = 1
-
-        dic = self.inlist[-1]
-        self.stopScan = [0] * len(dic['Monitor'])
-        self.MonitorInfo = {}
-
-        HandleList = self.epics_dal.getHandlesFromWithinGroup(self.MonitorHandle)
-        # self.cafe.openPrepare()
-        for i in range(0, len(HandleList)):
-            h = HandleList[i]
-            self.MonitorInfo[h] = [i, dic['Monitor'][i], dic['MonitorValue'][i], dic['MonitorTolerance'][i],
-                                   dic['MonitorAction'][i], dic['MonitorTimeout']]
-
-        self.epics_dal.openMonitorPrepare()
-        m0 = self.epics_dal.groupMonitorStartWithCBList(self.MonitorHandle, cb=[cbMonitor] * len(dic['Monitor']))
-
-        self.epics_dal.openMonitorNowAndWait(2)
+        raise NotImplementedError("Monitors not yet supported.")
+    #     def cbMonitor(h):
+    #         def matchValue(h):
+    #             en = self.MonitorInfo[h][1]
+    #             c = self.epics_dal.getPVCache(h)
+    #             v = c.value[0]
+    #             if v == '':
+    #                 # To comply with RF-READY-STATUS channle, where ENUM is empty...
+    #                 c = self.epics_dal.getPVCache(h, dt='int')
+    #                 v = c.value[0]
+    #             if isinstance(self.MonitorInfo[h][2], list):  # Monitor value is in list, i.e. several cases are okay
+    #                 if v in self.MonitorInfo[h][2]:
+    #                     print('value OK')
+    #                     return 1
+    #                 else:
+    #                     print('kkkkkkk', en, self.MonitorInfo[h][2], v)
+    #                     print('value NG')
+    #                     return 0
+    #             elif isinstance(v, str):
+    #                 if v == self.MonitorInfo[h][2]:
+    #                     print('value OK')
+    #                     return 1
+    #                 else:
+    #                     print('nnnnn', en, self.MonitorInfo[h][2], v)
+    #                     print('value NG')
+    #                     return 0
+    #
+    #             elif isinstance(v, int) or isinstance(v, float):
+    #                 if abs(v - self.MonitorInfo[h][2]) <= self.MonitorInfo[h][3]:
+    #                     return 1
+    #                 else:
+    #                     print('value NG')
+    #                     print(v, self.MonitorInfo[h][2], self.MonitorInfo[h][3])
+    #                     return 0
+    #             else:
+    #                 'Return value from getPVCache', v
+    #
+    #         if matchValue(h):
+    #             self.stopScan[self.MonitorInfo[h][0]] = 0
+    #         else:
+    #             self.stopScan[self.MonitorInfo[h][0]] = 1
+    #
+    #     dic = self.inlist[-1]
+    #     self.stopScan = [0] * len(dic['Monitor'])
+    #     self.MonitorInfo = {}
+    #
+    #     HandleList = self.epics_dal.getHandlesFromWithinGroup(self.MonitorHandle)
+    #     # self.cafe.openPrepare()
+    #     for i in range(0, len(HandleList)):
+    #         h = HandleList[i]
+    #         self.MonitorInfo[h] = [i, dic['Monitor'][i], dic['MonitorValue'][i], dic['MonitorTolerance'][i],
+    #                                dic['MonitorAction'][i], dic['MonitorTimeout']]
+    #
+    #     self.epics_dal.openMonitorPrepare()
+    #     m0 = self.epics_dal.groupMonitorStartWithCBList(self.MonitorHandle, cb=[cbMonitor] * len(dic['Monitor']))
+    #
+    #     self.epics_dal.openMonitorNowAndWait(2)
 
     def PreAction(self, dic, key='PreAction'):
 
@@ -588,6 +588,7 @@ class Scan:
         self.stopScan = []
         self.abortScan = 0
         self.pauseScan = 0
+
         if self.inlist[-1]['Monitor']:
             self.startMonitor(self.inlist[-1])
 
@@ -595,8 +596,10 @@ class Scan:
             self.ProgDisp.showPanel(1)
             self.ProgDisp.abortScan = 0
             self.ProgDisp.emit("pb")
+
         self.Ndone = 0
         self.Scan(self.outdict['KnobReadback'], self.outdict['Validation'], self.outdict['Observable'], None)
+
         if self.fromGUI:
             self.ProgDisp.showPanel(0)
         self.finalizeScan()
@@ -612,16 +615,17 @@ class Scan:
 
         print('*****************', dic)
         ind = self.inlist.index(dic)
-        if ind != len(self.inlist) - 1:
 
-            if len(dic['PreAction']):
-                self.PreAction(dic)
+        # Execute pre actions.
+        if len(dic['PreAction']):
+            self.PreAction(dic)
+
+        if ind != len(self.inlist) - 1:
 
             if not dic['Series']:
                 for i in range(0, dic['Nstep']):
                     print('Dict' + str(ind) + '  Loop' + str(i))
 
-                    # self.cafe.setGroup(dic['KnobHandle'],dic['KnobExpanded'][i])
                     for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
                         if dic['Additive']:
                             KV = np.array(dic['KnobExpanded'][j]) + dic['KnobSaved'][j]
@@ -641,8 +645,10 @@ class Scan:
                     if self.abortScan:
                         if len(dic['PostAction']):
                             self.PostAction(dic)
-                        return
+                        raise Exception("Scan aborted")
             else:  # Series scan
+
+
 
                 for i in range(0, len(dic['Knob'])):
 
@@ -671,18 +677,14 @@ class Scan:
                     if self.abortScan:
                         if len(dic['PostAction']):
                             self.PostAction(dic)
-                        return
+                        raise Exception("Scan aborted")
 
             if len(dic['PostAction']):
                 self.PostAction(dic)
 
         else:  # The last dictionary is the most inside loop
 
-            if len(dic['PreAction']):
-                self.PreAction(dic)
-
             if not dic['Series']:
-
                 Iscan = 0
                 while Iscan < dic['Nstep']:
                     print(Iscan)
@@ -751,37 +753,6 @@ class Scan:
                     k_stop = None
                     p_stop = None
                     while self.stopScan.count(1) + self.pauseScan:  # Problem detected in the channel under monitoring
-                        ''' 
-                        # This is done by the monitor callback
-                        for k in range(0,len(self.stopScan)):
-                            if self.stopScan[k]:
-                                if dic['MonitorAction'][k]=='Abort':
-                                    self.abortScan=1
-                                else: #elif dic['MonitorAction'][k]=='Wait' or dic['MonitorAction'][k]=='WaitAndAbort':
-                                    count=0
-                                    while self.stopScan[k]:
-                                         en=dic['Monitor'][k]
-                                         v=self.cafe.get(en)
-                                         if isinstance(v,str):
-                                             if v==dic['MonitorValue'][k]:
-                                                 print ('value OK', self.stopScan)
-                                                 self.stopScan[k]=0
-                                             else:
-                                                 print ('value NG')
-                                         elif isinstance(v,int) or isinstance(v,float):
-                                             if abs(v-dic['MonitorValue'][k])<dic['MonitorTolerance'][k]:
-                                                 print ('value OK')
-                                                 self.stopScan[k]=0
-                                             else:
-                                                 print ('value NG')
-                                         else:
-                                             print ('Return value getPVCache',v)
-                                         sleep(1.0)
-                                         count=count+1
-                                         if dic['MonitorAction'][k]=='WaitAndAbort' and count>dic['MonitorTimeout'][k]:
-                                             self.abortScan=1
-                                             break
-                        '''
                         Stepback = 1
                         sleep(1.0)
                         for k in range(0, len(self.stopScan)):
@@ -798,7 +769,7 @@ class Scan:
                         if self.abortScan:
                             if len(dic['PostAction']):
                                 self.PostAction(dic)
-                            return
+                            raise Exception("Scan aborted")
                         print('Monitor??')
                         print(self.stopScan)
                         if self.pauseScan:
@@ -824,7 +795,7 @@ class Scan:
                     if self.abortScan:
                         if len(dic['PostAction']):
                             self.PostAction(dic)
-                        return
+                        raise Exception("Scan aborted")
 
                     if len(dic['In-loopPostAction']):
                         self.PostAction(dic, 'In-loopPostAction')
@@ -910,41 +881,6 @@ class Scan:
                         p_stop = None
                         while self.stopScan.count(1):  # Problem detected in the channel under monitoring
                             for k in range(0, len(self.stopScan)):
-                                '''
-                                if self.stopScan[k]:
-                                    if dic['MonitorAction'][k]=='Abort':
-                                        self.abortScan=1
-                                    else: #elif dic['MonitorAction'][k]=='Wait' or dic['MonitorAction'][k]=='WaitAndAbort':
-                                        count=0
-                                        while self.stopScan[k]:
-                                             en=dic['Monitor'][k]
-                                             v=self.cafe.get(en)
-                                             if isinstance(v,str):
-                                                 if v==dic['MonitorValue'][k]:
-                                                     print ('value OK', self.stopScan)
-                                                     self.stopScan[k]=0
-                                                 else:
-                                                     print ('value NG')
-                                             elif isinstance(v,int) or isinstance(v,float):
-                                                 if abs(v-dic['MonitorValue'][k])<dic['MonitorTolerance'][k]:
-                                                     print ('value OK')
-                                                     self.stopScan[k]=0
-                                                 else:
-                                                     print ('value NG')
-                                             else:
-                                                 print ('Return value getPVCache',v)
-                                             sleep(1.0)
-                                             count=count+1
-                                             if dic['MonitorAction'][k]=='WaitAndAbort' and count>dic['MonitorTimeout'][k]:
-                                                 self.abortScan=1
-                                                 break
-                            if not dic['MonitorAction'][k]=='WaitAndNoStepBack':
-                                Stepback=1
-                            if self.abortScan:
-                                if len(dic['PostAction']):
-                                    self.PostAction(dic)
-                                return
-                            '''
                             Stepback = 1
                             sleep(1.0)
                             for k in range(0, len(self.stopScan)):
@@ -961,7 +897,7 @@ class Scan:
                             if self.abortScan:
                                 if len(dic['PostAction']):
                                     self.PostAction(dic)
-                                return
+                                raise Exception("Scan aborted")
 
                             if self.pauseScan:
                                 p_stop = 1
@@ -985,7 +921,7 @@ class Scan:
                         if self.abortScan:
                             if len(dic['PostAction']):
                                 self.PostAction(dic)
-                            return
+                            raise Exception("Scan aborted")
 
                         if len(dic['In-loopPostAction']):
                             self.In - loopPostAction(dic)

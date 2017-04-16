@@ -644,42 +644,60 @@ class Scan:
     def last_series_scan(self, Obs, Rback, Valid, dic):
         Kscan = 0
         while Kscan < len(dic['Knob']):
-            Iscan = 0
-            while Iscan < dic['Nstep'][Kscan]:
-                print(Kscan, Iscan)
+
+            step_index = 0
+            while step_index < dic['Nstep'][Kscan]:
+                print(Kscan, step_index)
 
                 # set knob for this loop
-                for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
-                    if j == Kscan:
+                for knob_index in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+
+
+                    if knob_index == Kscan:
                         if dic['Additive']:
-                            KV = dic['KnobSaved'][j] + dic['ScanValues'][j][Iscan]
+                            KV = dic['KnobSaved'][knob_index] + dic['ScanValues'][knob_index][step_index]
                         else:
-                            KV = dic['KnobValues'][j][Iscan]
+                            KV = dic['KnobValues'][knob_index][step_index]
                     else:
-                        KV = dic['KnobSaved'][j]
+                        KV = dic['KnobSaved'][knob_index]
                     try:
-                        self.epics_dal.setAndMatch(dic['Knob'][j], KV, dic['KnobReadback'][j],
-                                                   dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+
+                        pv_value = KV
+
+                        set_pv_name = dic['Knob'][knob_index]
+                        readback_pv_name = dic['KnobReadback'][knob_index]
+                        pv_tolerance = dic['KnobTolerance'][knob_index]
+                        pv_wait_time = dic['KnobWaiting'][knob_index]
+
+                        self.epics_dal.setAndMatch(set_pv_name, pv_value, readback_pv_name, pv_tolerance, pv_wait_time,
+                                                   0)
+
+
                     except Exception as inst:
                         print('Exception in preAction')
                         print(inst)
-                if dic['KnobWaitingExtra']:
-                    sleep(dic['KnobWaitingExtra'])
 
-                if len(dic['In-loopPreAction']):
-                    self.PreAction(dic, 'In-loopPreAction')
+                self.pre_measurment_actions(dic)
 
-                self.measure_and_save(Iscan, Obs, Rback, Valid, Kscan)
+                self.measure_and_save(step_index, Obs, Rback, Valid, Kscan)
 
-                Iscan = Iscan + 1
-                self.Ndone = self.Ndone + 1
+                step_index = self.post_measurment_actions(Obs, Rback, Valid, dic, step_index)
 
-                Iscan = self.verify_and_stepback(Iscan, Obs, Rback, Valid, dic)
-
-                self.ProgDisp.Progress = 100.0 * self.Ndone / self.Ntot
-                if self.fromGUI:
-                    self.ProgDisp.emit("pb")
             Kscan = Kscan + 1
+
+    def post_measurment_actions(self, Obs, Rback, Valid, dic, step_index):
+        step_index = step_index + 1
+        self.Ndone = self.Ndone + 1
+
+        step_index = self.verify_and_stepback(step_index, Obs, Rback, Valid, dic)
+        self.update_progress()
+
+        return step_index
+
+    def update_progress(self):
+        self.ProgDisp.Progress = 100.0 * self.Ndone / self.Ntot
+        if self.fromGUI:
+            self.ProgDisp.emit("pb")
 
     def verify_and_stepback(self, Iscan, Obs, Rback, Valid, dic):
         Stepback = 0
@@ -739,40 +757,46 @@ class Scan:
         return Iscan
 
     def last_range_scan(self, Obs, Rback, Valid, dic):
-        Iscan = 0
-        while Iscan < dic['Nstep']:
-            print(Iscan)
+        step_index = 0
+        while step_index < dic['Nstep']:
+            print(step_index)
 
             # set knob for this loop
-            for j in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+            for knob_index in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+
+
                 if dic['Additive']:
-                    KV = np.array(dic['KnobExpanded'][j]) + dic['KnobSaved'][j]
+                    KV = np.array(dic['KnobExpanded'][knob_index]) + dic['KnobSaved'][knob_index]
                 else:
-                    KV = dic['KnobExpanded'][j]
-                print('Knob value', dic['KnobSaved'], dic['KnobExpanded'], KV[Iscan])
+                    KV = dic['KnobExpanded'][knob_index]
+
+                print('Knob value', dic['KnobSaved'], dic['KnobExpanded'], KV[step_index])
+
                 try:
-                    self.epics_dal.setAndMatch(dic['Knob'][j], KV[Iscan], dic['KnobReadback'][j],
-                                               dic['KnobTolerance'][j], dic['KnobWaiting'][j], 0)
+                    set_pv_name = dic['Knob'][knob_index]
+                    pv_value = KV[step_index]
+                    readback_pv_name = dic['KnobReadback'][knob_index]
+                    pv_tolerance = dic['KnobTolerance'][knob_index]
+                    pv_wait_time = dic['KnobWaiting'][knob_index]
+
+                    self.epics_dal.setAndMatch(set_pv_name, pv_value, readback_pv_name, pv_tolerance, pv_wait_time,0)
+
                 except Exception as inst:
                     print('Exception in Scan loop')
                     print(inst)
 
-            if dic['KnobWaitingExtra']:
-                sleep(dic['KnobWaitingExtra'])
+            self.pre_measurment_actions(dic)
 
-            if len(dic['In-loopPreAction']):
-                self.PreAction(dic, 'In-loopPreAction')
+            self.measure_and_save(step_index, Obs, Rback, Valid, dic)
 
-            self.measure_and_save(Iscan, Obs, Rback, Valid, dic)
+            step_index = self.post_measurment_actions(Obs, Rback, Valid, dic, step_index)
 
-            Iscan = Iscan + 1
-            self.Ndone = self.Ndone + 1
+    def pre_measurment_actions(self, dic):
+        if dic['KnobWaitingExtra']:
+            sleep(dic['KnobWaitingExtra'])
 
-            Iscan = self.verify_and_stepback(Iscan, Obs, Rback, Valid, dic)
-
-            self.ProgDisp.Progress = 100.0 * self.Ndone / self.Ntot
-            if self.fromGUI:
-                self.ProgDisp.emit("pb")
+        if len(dic['In-loopPreAction']):
+            self.PreAction(dic, 'In-loopPreAction')
 
     def measure_and_save(self, Iscan, Obs, Rback, Valid, dic, Kscan=None):
         for j in range(0, dic['NumberOfMeasurements']):
@@ -849,13 +873,13 @@ class Scan:
 
     def series_scan(self, Obs, Rback, Valid, dic, ind):
         # For every PV.
-        for i in range(0, len(dic['Knob'])):
+        for Kscan in range(0, len(dic['Knob'])):
             # For the number of steps for this PV.
-            for step_index in range(dic['Nstep'][i]):
+            for step_index in range(dic['Nstep'][Kscan]):
                 # For every PV.
                 for knob_index in range(len(dic['Knob'])):
                     #
-                    if knob_index == i:
+                    if knob_index == Kscan:
                         if dic['Additive']:
                             KV = dic['KnobSaved'] + dic['ScanValues'][knob_index][step_index]
                         else:
@@ -864,8 +888,8 @@ class Scan:
                         KV = dic['KnobSaved'][knob_index]
                     try:
                         set_pv_name = dic['Knob'][knob_index]
+                        pv_value = KV[Kscan]
                         readback_pv_name = dic['KnobReadback'][step_index]
-                        pv_value = KV[i]
                         pv_tolerance = dic['KnobTolerance'][step_index]
                         pv_wait_time = dic['KnobWaiting'][step_index]
 
@@ -878,9 +902,10 @@ class Scan:
                 if dic['KnobWaitingExtra']:
                     sleep(dic['KnobWaitingExtra'])
 
-                self.Scan(Rback[i][step_index], Valid[i][step_index], Obs[i][step_index], self.inlist[ind + 1])
+                self.Scan(Rback[Kscan][step_index], Valid[Kscan][step_index], Obs[Kscan][step_index], self.inlist[ind + 1])
 
             if self.abortScan:
                 if len(dic['PostAction']):
                     self.PostAction(dic)
                 raise Exception("Scan aborted")
+

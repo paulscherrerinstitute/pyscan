@@ -601,7 +601,7 @@ class Scan:
             self.ProgDisp.emit("pb")
 
         self.Ndone = 0
-        self.Scan(self.outdict['KnobReadback'], self.outdict['Validation'], self.outdict['Observable'], None)
+        self.Scan(self.outdict['KnobReadback'], self.outdict['Validation'], self.outdict['Observable'], 0)
 
         if self.fromGUI:
             self.ProgDisp.showPanel(0)
@@ -611,24 +611,22 @@ class Scan:
 
         return self.outdict
 
-    def Scan(self, Rback, Valid, Obs, dic=None):
+    def Scan(self, Rback, Valid, Obs, dic_index):
 
-        if dic == None:
-            dic = self.inlist[0]
+        dic = self.inlist[dic_index]
 
         print('*****************', dic)
-        ind = self.inlist.index(dic)
 
         # Execute pre actions.
         if len(dic['PreAction']):
             self.PreAction(dic)
 
-        if ind != len(self.inlist) - 1:
+        if dic_index != len(self.inlist) - 1:
 
             if not dic['Series']:
-                self.range_scan(Obs, Rback, Valid, dic, ind)
+                self.range_scan(Obs, Rback, Valid, dic_index)
             else:  # Series scan
-                self.series_scan(Obs, Rback, Valid, dic, ind)
+                self.series_scan(Obs, Rback, Valid, dic_index)
 
         else:  # The last dictionary is the most inside loop
 
@@ -839,9 +837,10 @@ class Scan:
 
             sleep(dic['Waiting'])
 
-    def range_scan(self, Obs, Rback, Valid, dic, ind):
+    def range_scan(self, Obs, Rback, Valid, dic_index):
+        dic = self.inlist[dic_index]
         for step_index in range(dic['Nstep']):
-            print('Dict' + str(ind) + '  Loop' + str(step_index))
+            print('Dict' + str(dic_index) + '  Loop' + str(step_index))
 
             for knob_index in range(len(dic['Knob'])):
                 if dic['Additive']:
@@ -864,14 +863,15 @@ class Scan:
             if dic['KnobWaitingExtra']:
                 sleep(dic['KnobWaitingExtra'])
 
-            self.Scan(Rback[step_index], Valid[step_index], Obs[step_index], self.inlist[ind + 1])
+            self.Scan(Rback[step_index], Valid[step_index], Obs[step_index], dic_index + 1)
 
             if self.abortScan:
                 if len(dic['PostAction']):
                     self.PostAction(dic)
                 raise Exception("Scan aborted")
 
-    def series_scan(self, Obs, Rback, Valid, dic, ind):
+    def series_scan(self, Obs, Rback, Valid, dic_index):
+        dic = self.inlist[dic_index]
         # For every PV.
         for Kscan in range(0, len(dic['Knob'])):
             # For the number of steps for this PV.
@@ -902,7 +902,7 @@ class Scan:
                 if dic['KnobWaitingExtra']:
                     sleep(dic['KnobWaitingExtra'])
 
-                self.Scan(Rback[Kscan][step_index], Valid[Kscan][step_index], Obs[Kscan][step_index], self.inlist[ind + 1])
+                self.Scan(Rback[Kscan][step_index], Valid[Kscan][step_index], Obs[Kscan][step_index], dic_index+1)
 
             if self.abortScan:
                 if len(dic['PostAction']):

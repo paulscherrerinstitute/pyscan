@@ -108,7 +108,7 @@ class Scan:
                     try:
                         dic['KnobWaitingExtra'] = float(dic['KnobWaitingExtra'])
                     except:
-                        raise ValueError('KnobWaitingExtra is not a number in the input dictionary ' + str(i) + '.')
+                        raise ValueError('KnobWaitingExtra is not a number in the input dictionary ' + str(index) + '.')
 
                 self._add_group(dic, str(index), dic['Knob'], 'KnobSaved')
 
@@ -131,7 +131,7 @@ class Scan:
 
                         if 'Nstep' in dic.keys():  # StepSize is ignored when Nstep is given
                             if not isinstance(dic['Nstep'], int):
-                                raise ValueError('Nstep should be an integer. Input dictionary ' + str(i) + '.')
+                                raise ValueError('Nstep should be an integer. Input dictionary ' + str(index) + '.')
                             ran = []
                             for r in dic['ScanRange']:
                                 s = (r[1] - r[0]) / (dic['Nstep'] - 1)

@@ -72,7 +72,7 @@ class Scan:
             for index, dic in enumerate(inlist):
                 dic['ID'] = index  # Just in case there are identical input dictionaries. (Normally, it may not happen.)
 
-                if inlist.index(dic) == len(inlist) - 1 and ('Waiting' not in dic.keys()):
+                if index == len(inlist) - 1 and ('Waiting' not in dic.keys()):
                     raise ValueError('Waiting for the scan was not given.')
 
                 if 'Knob' not in dic.keys():
@@ -193,13 +193,13 @@ class Scan:
 
                 # End of scan values set up
 
-                if inlist.index(dic) == len(inlist) - 1 and ('Observable' not in dic.keys()):
+                if index == len(inlist) - 1 and ('Observable' not in dic.keys()):
                     raise ValueError('The observable is not given.')
-                elif inlist.index(dic) == len(inlist) - 1:
+                elif index == len(inlist) - 1:
                     if not isinstance(dic['Observable'], list):
                         dic['Observable'] = [dic['Observable']]
 
-                if inlist.index(dic) == len(inlist) - 1 and ('NumberOfMeasurements' not in dic.keys()):
+                if index == len(inlist) - 1 and ('NumberOfMeasurements' not in dic.keys()):
                     dic['NumberOfMeasurements'] = 1
 
                 if 'PreAction' in dic.keys():
@@ -332,7 +332,7 @@ class Scan:
                 else:
                     dic['Validation'] = []
 
-                if inlist.index(dic) == len(inlist) - 1 and ('Monitor' in dic.keys()) and (dic['Monitor']):
+                if index == len(inlist) - 1 and ('Monitor' in dic.keys()) and (dic['Monitor']):
                     if isinstance(dic['Monitor'], str):
                         dic['Monitor'] = [dic['Monitor']]
 
@@ -383,7 +383,7 @@ class Scan:
                         except:
                             raise ValueError('MonitorTimeout should be a list of float(or int).')
 
-                elif inlist.index(dic) == len(inlist) - 1:
+                elif index == len(inlist) - 1:
                     dic['Monitor'] = []
                     dic['MonitorValue'] = []
                     dic['MonitorTolerance'] = []
@@ -393,7 +393,7 @@ class Scan:
                 if 'Additive' not in dic.keys():
                     dic['Additive'] = 0
 
-                if inlist.index(dic) == len(inlist) - 1 and ('StepbackOnPause' not in dic.keys()):
+                if index == len(inlist) - 1 and ('StepbackOnPause' not in dic.keys()):
                     dic['StepbackOnPause'] = 1
 
             self.allch = []
@@ -624,6 +624,9 @@ class Scan:
         series_scan = True if dic['Series'] else False
         last_pass = dic_index == len(self.inlist) - 1
 
+        # Knob, KnobReadback = Writer
+        # KnobExpanded = Vector scan.
+
         if last_pass:
             if series_scan:
                 self.last_series_scan(Obs, Rback, Valid, dic)
@@ -760,7 +763,7 @@ class Scan:
             print(step_index)
 
             # set knob for this loop
-            for knob_index in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+            for knob_index in range(len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
 
 
                 if dic['Additive']:

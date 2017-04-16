@@ -60,15 +60,18 @@ class MockDal(object):
         self.groups = {}
 
     def addGroup(self, group_name, pvs):
+        print("Creating group %s with PVs %s." % (group_name, pvs))
         self.groups[group_name] = pvs
         print(group_name, pvs)
         return group_name
 
     def groupClose(self, handle):
-        print("Close ", handle)
+        del(self.groups[handle])
+        print("Close group %s." % handle)
 
     def groupList(self):
-        print("GroupList")
+        print("GroupList: %s." % self.groups.keys())
+        return self.groups.keys()
 
     def getGroup(self, group_name):
         n_elements = len(self.groups[group_name])
@@ -98,4 +101,4 @@ class MockDal(object):
         return self.cafe.match(val, chread, tol, timeout, num)
 
     def setAndMatch(self, chset, val, chread, tol, timeout, num):
-        return self.cafe.setAndMatch(chset, val, chread, tol, timeout, num)
+        print("Move %s to position %s" % (chset, val))

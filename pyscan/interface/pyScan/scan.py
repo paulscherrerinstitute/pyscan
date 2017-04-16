@@ -669,94 +669,74 @@ class Scan:
                 if len(dic['In-loopPreAction']):
                     self.PreAction(dic, 'In-loopPreAction')
 
-                for j in range(0, dic['NumberOfMeasurements']):
-                    [v, s, sl] = self.epics_dal.getGroup('All')
-
-                    if self.n_readbacks == 1:
-                        rback_result = v[0]
-                    else:
-                        rback_result = v[0:self.n_readbacks]
-
-                    if len(dic['Validation']) == 1:
-                        valid_result = v[self.n_readbacks]
-                    else:
-                        valid_result = v[self.n_readbacks:self.n_readbacks + self.n_validations]
-
-                    if len(dic['Observable']) == 1:
-                        obs_result = v[-1]
-                    else:
-                        obs_result = v[self.n_readbacks + self.n_validations:
-                                       self.n_readbacks + self.n_validations + self.n_observables]
-
-                    if dic['NumberOfMeasurements'] > 1:
-                        Rback[Kscan][Iscan].append(rback_result)
-                        Valid[Kscan][Iscan].append(valid_result)
-                        Obs[Kscan][Iscan].append(obs_result)
-                    else:
-                        Rback[Kscan][Iscan] = rback_result
-                        Valid[Kscan][Iscan] = valid_result
-                        Obs[Kscan][Iscan] = obs_result
-
-                    sleep(dic['Waiting'])
+                self.measure_and_save(Iscan, Obs, Rback, Valid, Kscan)
 
                 Iscan = Iscan + 1
                 self.Ndone = self.Ndone + 1
 
-                Stepback = 0
-                count = [0] * len(self.stopScan)
-                k_stop = None
-                p_stop = None
-                while self.stopScan.count(1):  # Problem detected in the channel under monitoring
-                    for k in range(0, len(self.stopScan)):
-                        Stepback = 1
-                    sleep(1.0)
-                    for k in range(0, len(self.stopScan)):
-                        if self.stopScan[k]:
-                            k_stop = k
-                            if dic['MonitorAction'][k] == 'Abort':
-                                self.abortScan = 1
-                            count[k] = count[k] + 1
-                        else:
-                            count[k] = 0
-                        if dic['MonitorAction'][k] == 'WaitAndAbort' and count[k] > dic['MonitorTimeout'][k]:
-                            self.abortScan = 1
-
-                    if self.abortScan:
-                        if len(dic['PostAction']):
-                            self.PostAction(dic)
-                        raise Exception("Scan aborted")
-
-                    if self.pauseScan:
-                        p_stop = 1
-
-                if k_stop and dic['MonitorAction'][k_stop] == 'WaitAndNoStepBack':
-                    Stepback = 0
-
-                if p_stop and not dic['StepbackOnPause']:
-                    Stepback = 0
-
-                if Stepback:
-                    print('Stepping back')
-                    Iscan = Iscan - 1
-                    self.Ndone = self.Ndone - 1
-                    Rback[Iscan].pop()
-                    Valid[Iscan].pop()
-                    Obs[Iscan].pop()
-
-                if self.fromGUI and self.ProgDisp.abortScan:
-                    self.abortScan = 1
-                if self.abortScan:
-                    if len(dic['PostAction']):
-                        self.PostAction(dic)
-                    raise Exception("Scan aborted")
-
-                if len(dic['In-loopPostAction']):
-                    self.In - loopPostAction(dic)
+                Iscan = self.verify_and_stepback(Iscan, Obs, Rback, Valid, dic)
 
                 self.ProgDisp.Progress = 100.0 * self.Ndone / self.Ntot
                 if self.fromGUI:
                     self.ProgDisp.emit("pb")
             Kscan = Kscan + 1
+
+    def verify_and_stepback(self, Iscan, Obs, Rback, Valid, dic):
+        Stepback = 0
+        count = [0] * len(self.stopScan)
+        k_stop = None
+        p_stop = None
+        while self.stopScan.count(1) + self.pauseScan:  # Problem detected in the channel under monitoring
+            Stepback = 1
+            sleep(1.0)
+            for k in range(0, len(self.stopScan)):
+                if self.stopScan[k]:
+                    k_stop = k
+                    if dic['MonitorAction'][k] == 'Abort':
+                        self.abortScan = 1
+                    count[k] = count[k] + 1
+                else:
+                    count[k] = 0
+                if dic['MonitorAction'][k] == 'WaitAndAbort' and count[k] > dic['MonitorTimeout'][k]:
+                    self.abortScan = 1
+
+            if self.abortScan:
+                if len(dic['PostAction']):
+                    self.PostAction(dic)
+                raise Exception("Scan aborted")
+
+            print('Monitor??')
+            print(self.stopScan)
+
+            if self.pauseScan:
+                p_stop = 1
+
+        if k_stop and dic['MonitorAction'][k_stop] == 'WaitAndNoStepBack':
+            Stepback = 0
+
+        if p_stop and not dic['StepbackOnPause']:
+            Stepback = 0
+
+        if Stepback:
+            print('Stepping back')
+            Iscan = Iscan - 1
+            self.Ndone = self.Ndone - 1
+            Rback[Iscan].pop()
+            Valid[Iscan].pop()
+            Obs[Iscan].pop()
+
+        if self.fromGUI and self.ProgDisp.abortScan:
+            self.abortScan = 1
+
+        if self.abortScan:
+            if len(dic['PostAction']):
+                self.PostAction(dic)
+            raise Exception("Scan aborted")
+
+        if len(dic['In-loopPostAction']):
+            self.PostAction(dic, 'In-loopPostAction')
+
+        return Iscan
 
     def last_range_scan(self, Obs, Rback, Valid, dic):
         Iscan = 0
@@ -776,108 +756,64 @@ class Scan:
                 except Exception as inst:
                     print('Exception in Scan loop')
                     print(inst)
+
             if dic['KnobWaitingExtra']:
                 sleep(dic['KnobWaitingExtra'])
 
             if len(dic['In-loopPreAction']):
                 self.PreAction(dic, 'In-loopPreAction')
 
-            for j in range(0, dic['NumberOfMeasurements']):
-                [v, s, sl] = self.epics_dal.getGroup('All')
-                if dic['NumberOfMeasurements'] > 1:
-                    if self.n_readbacks == 1:
-                        Rback[Iscan].append(v[0])
-                    else:
-                        Rback[Iscan].append(v[0:self.n_readbacks])
-
-                    if len(dic['Validation']) == 1:
-                        Valid[Iscan].append(v[self.n_readbacks])
-                    else:
-                        Valid[Iscan].append(v[self.n_readbacks:self.n_readbacks + self.n_validations])
-
-                    if len(dic['Observable']) == 1:
-                        Obs[Iscan].append(v[-1])
-                    else:
-                        Obs[Iscan].append(
-                            v[
-                            self.n_readbacks + self.n_validations:self.n_readbacks + self.n_validations + self.n_observables])
-                else:
-                    if self.n_readbacks == 1:
-                        Rback[Iscan] = v[0]
-                    else:
-                        Rback[Iscan] = v[0:self.n_readbacks]
-
-                    if len(dic['Validation']) == 1:
-                        Valid[Iscan] = v[self.n_readbacks]
-                    else:
-                        Valid[Iscan] = v[self.n_readbacks:self.n_readbacks + self.n_validations]
-
-                    if len(dic['Observable']) == 1:
-                        Obs[Iscan] = v[-1]
-                    else:
-                        Obs[Iscan] = v[self.n_readbacks + self.n_validations:self.n_readbacks + self.n_validations +
-                                                                             self.n_observables]
-
-                sleep(dic['Waiting'])
+            self.measure_and_save(Iscan, Obs, Rback, Valid, dic)
 
             Iscan = Iscan + 1
             self.Ndone = self.Ndone + 1
 
-            Stepback = 0
-            count = [0] * len(self.stopScan)
-            k_stop = None
-            p_stop = None
-            while self.stopScan.count(1) + self.pauseScan:  # Problem detected in the channel under monitoring
-                Stepback = 1
-                sleep(1.0)
-                for k in range(0, len(self.stopScan)):
-                    if self.stopScan[k]:
-                        k_stop = k
-                        if dic['MonitorAction'][k] == 'Abort':
-                            self.abortScan = 1
-                        count[k] = count[k] + 1
-                    else:
-                        count[k] = 0
-                    if dic['MonitorAction'][k] == 'WaitAndAbort' and count[k] > dic['MonitorTimeout'][k]:
-                        self.abortScan = 1
-
-                if self.abortScan:
-                    if len(dic['PostAction']):
-                        self.PostAction(dic)
-                    raise Exception("Scan aborted")
-                print('Monitor??')
-                print(self.stopScan)
-                if self.pauseScan:
-                    p_stop = 1
-
-            if k_stop and dic['MonitorAction'][k_stop] == 'WaitAndNoStepBack':
-                # Take the action of the most persisting monitor...
-                Stepback = 0
-
-            if p_stop and not dic['StepbackOnPause']:
-                Stepback = 0
-
-            if Stepback:
-                print('Stepping back')
-                Iscan = Iscan - 1
-                self.Ndone = self.Ndone - 1
-                Rback[Iscan].pop()
-                Valid[Iscan].pop()
-                Obs[Iscan].pop()
-
-            if self.fromGUI and self.ProgDisp.abortScan:
-                self.abortScan = 1
-            if self.abortScan:
-                if len(dic['PostAction']):
-                    self.PostAction(dic)
-                raise Exception("Scan aborted")
-
-            if len(dic['In-loopPostAction']):
-                self.PostAction(dic, 'In-loopPostAction')
+            Iscan = self.verify_and_stepback(Iscan, Obs, Rback, Valid, dic)
 
             self.ProgDisp.Progress = 100.0 * self.Ndone / self.Ntot
             if self.fromGUI:
                 self.ProgDisp.emit("pb")
+
+    def measure_and_save(self, Iscan, Obs, Rback, Valid, dic, Kscan=None):
+        for j in range(0, dic['NumberOfMeasurements']):
+            [v, s, sl] = self.epics_dal.getGroup('All')
+
+            if self.n_readbacks == 1:
+                rback_result = v[0]
+            else:
+                rback_result = v[0:self.n_readbacks]
+
+            if len(dic['Validation']) == 1:
+                valid_result = v[self.n_readbacks]
+            else:
+                valid_result = v[self.n_readbacks:self.n_readbacks + self.n_validations]
+
+            if len(dic['Observable']) == 1:
+                obs_result = v[-1]
+            else:
+                obs_result = v[self.n_readbacks + self.n_validations:
+                self.n_readbacks + self.n_validations + self.n_observables]
+
+            if dic['NumberOfMeasurements'] > 1:
+                if Kscan:
+                    Rback[Kscan][Iscan].append(rback_result)
+                    Valid[Kscan][Iscan].append(valid_result)
+                    Obs[Kscan][Iscan].append(obs_result)
+                else:
+                    Rback[Iscan].append(rback_result)
+                    Valid[Iscan].append(valid_result)
+                    Obs[Iscan].append(obs_result)
+            else:
+                if Kscan:
+                    Rback[Kscan][Iscan] = rback_result
+                    Valid[Kscan][Iscan] = valid_result
+                    Obs[Kscan][Iscan] = obs_result
+                else:
+                    Rback[Iscan] = rback_result
+                    Valid[Iscan] = valid_result
+                    Obs[Iscan] = obs_result
+
+            sleep(dic['Waiting'])
 
     def range_scan(self, Obs, Rback, Valid, dic, ind):
         for step_index in range(dic['Nstep']):

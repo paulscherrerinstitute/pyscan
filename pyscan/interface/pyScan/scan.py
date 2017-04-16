@@ -4,7 +4,7 @@ from time import sleep
 
 import numpy as np
 
-from pyscan.interface.pyScan.dal import PyCafeEpicsDal
+from pyscan.interface.pyScan.dal import MockDal
 from pyscan.interface.pyScan.gui import SubPanel, DummyClass
 
 
@@ -61,7 +61,7 @@ class Scan:
             self.epics_dal.groupClose(temp_handle)
 
     def initializeScan(self, inlist):
-        self.epics_dal = PyCafeEpicsDal()
+        self.epics_dal = MockDal()
 
         self.inlist = []
 
@@ -69,8 +69,8 @@ class Scan:
             inlist = [inlist]
 
         try:
-            for dic in inlist:
-                dic['ID'] = i  # Just in case there are identical input dictionaries. (Normally, it may not happen.)
+            for index, dic in enumerate(inlist):
+                dic['ID'] = index  # Just in case there are identical input dictionaries. (Normally, it may not happen.)
 
                 if inlist.index(dic) == len(inlist) - 1 and ('Waiting' not in dic.keys()):
                     raise ValueError('Waiting for the scan was not given.')
@@ -110,7 +110,7 @@ class Scan:
                     except:
                         raise ValueError('KnobWaitingExtra is not a number in the input dictionary ' + str(i) + '.')
 
-                self._add_group(dic, str(i), dic['Knob'], 'KnobSaved')
+                self._add_group(dic, str(index), dic['Knob'], 'KnobSaved')
 
                 if 'Series' not in dic.keys():
                     dic['Series'] = 0
@@ -621,19 +621,19 @@ class Scan:
         if len(dic['PreAction']):
             self.PreAction(dic)
 
-        if dic_index != len(self.inlist) - 1:
+        series_scan = True if dic['Series'] else False
+        last_pass = dic_index == len(self.inlist) - 1
 
-            if not dic['Series']:
-                self.range_scan(Obs, Rback, Valid, dic_index)
-            else:  # Series scan
-                self.series_scan(Obs, Rback, Valid, dic_index)
-
-        else:  # The last dictionary is the most inside loop
-
-            if not dic['Series']:
-                self.last_range_scan(Obs, Rback, Valid, dic)
-            else:  # Series scan
+        if last_pass:
+            if series_scan:
                 self.last_series_scan(Obs, Rback, Valid, dic)
+            else:
+                self.last_range_scan(Obs, Rback, Valid, dic)
+        else:
+            if series_scan:
+                self.series_scan(Obs, Rback, Valid, dic_index)
+            else:
+                self.range_scan(Obs, Rback, Valid, dic_index)
 
         # Execute post actions.
         if len(dic['PostAction']):

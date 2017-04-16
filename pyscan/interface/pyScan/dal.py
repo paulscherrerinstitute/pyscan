@@ -1,5 +1,7 @@
-import PyCafe
-
+try:
+    import PyCafe
+except:
+    pass
 
 class PyCafeEpicsDal(object):
     def __init__(self):
@@ -25,6 +27,52 @@ class PyCafeEpicsDal(object):
 
     def getGroup(self, handle):
         return self.cafe.getGroup(handle)
+
+    def get(self, m):
+        return self.cafe.get(m)
+
+    def getPVCache(self, h):
+        return self.cafe.getPVCache(h)
+
+    def getHandlesFromWithinGroup(self, handle):
+        return self.cafe.getHandlesFromWithinGroup(handle)
+
+    def openMonitorPrepare(self):
+        return self.cafe.openMonitorPrepare()
+
+    def openMonitorNowAndWait(self, time):
+        return self.cafe.openMonitorNowAndWait(time)
+
+    def groupMonitorStartWithCBList(self, handle, cb):
+        dbr = self.cyca.CY_DBR_PLAIN
+        mask = self.cyca.CY_DBE_VALUE
+        return self.cafe.groupMonitorStartWithCBList(handle, cb=cb, dbr=dbr, mask=mask)
+
+    def match(self, val, chread, tol, timeout, num):
+        return self.cafe.match(val, chread, tol, timeout, num)
+
+    def setAndMatch(self, chset, val, chread, tol, timeout, num):
+        return self.cafe.setAndMatch(chset, val, chread, tol, timeout, num)
+
+
+class MockDal(object):
+    def __init__(self):
+        self.groups = {}
+
+    def addGroup(self, group_name, pvs):
+        self.groups[group_name] = pvs
+        print(group_name, pvs)
+        return group_name
+
+    def groupClose(self, handle):
+        print("Close ", handle)
+
+    def groupList(self):
+        print("GroupList")
+
+    def getGroup(self, group_name):
+        n_elements = len(self.groups[group_name])
+        return [0] * n_elements, 1, [0] * n_elements
 
     def get(self, m):
         return self.cafe.get(m)

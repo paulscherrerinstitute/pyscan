@@ -26,6 +26,20 @@ class PyScan(unittest.TestCase):
         pyscan.initializeScan([indict1, indict2], testDal)
         result = pyscan.startScan()
 
+        # Check if the results object has all the needed parameters.
+        expected_elements = ["TimeStampStart", "KnobReadback", "Observable",
+                             "TimeStampEnd", "Validation", "ErrorMessage"]
+        self.assertEqual(set(expected_elements), set(result), "Expected elements missing in result.")
+
+        # Test timestamps.
+        self.assertTrue(result["TimeStampEnd"] > result["TimeStampStart"],
+                        "The end timestamp is smaller than the start timestamp.")
+
+        # Test ErrorMessage (when everything is ok)
+        self.assertEqual(result["ErrorMessage"], 'Measurement finalized (finished/aborted) normally. '
+                                                 'Need initialisation before next measurement.',
+                         "The expected error message is missing.")
+
         expected_positions = [[-3, -3, 0, 0], [-3, -3, 1, 1], [-3, -3, 2, 2],
                               [-2, -2, 0, 0], [-2, -2, 1, 1], [-2, -2, 2, 2],
                               [-1, -1, 0, 0], [-1, -1, 1, 1], [-1, -1, 2, 2],
@@ -62,4 +76,4 @@ class PyScan(unittest.TestCase):
         # Check if only observables from the last dimension were read.
         self.assertEqual(observables[0][0], indict2['Observable'], "The last dimension observables are not read.")
 
-
+        # TODO: Test result["Validation"] -> why is it even empty?

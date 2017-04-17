@@ -59,7 +59,7 @@ class TestPyScanDal(object):
 
         # Create mock values for each given PV.
         for pv in pvs:
-            self.values[pv] = None
+            self.values[pv] = pv
 
         return group_name
 

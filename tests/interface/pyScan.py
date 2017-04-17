@@ -6,19 +6,19 @@ from tests.utils import TestPyScanDal
 
 class PyScan(unittest.TestCase):
 
-    def test_initializeScan(self):
+    def test_ScanRange(self):
         indict1 = dict()
         indict1['Knob'] = ["1.1", "1.2"]
         indict1['ScanRange'] = [[-3, 0], [-3, 0]]
         indict1['Nstep'] = 4
-        indict1['Observable'] = ["READ1", "READ2"]
+        indict1['Observable'] = ["READ1", "READ2", "READ3"]
         indict1['Waiting'] = 0.1
 
         indict2 = dict()
         indict2['Knob'] = ["2.1", "2.2"]
         indict2['ScanRange'] = [[0, 2], [0, 2]]
         indict2['Nstep'] = 3
-        indict2['Observable'] = ["READ3", "READ4"]
+        indict2['Observable'] = ["READ4", "READ5"]
         indict2['Waiting'] = 0.1
 
         testDal = TestPyScanDal()
@@ -38,16 +38,28 @@ class PyScan(unittest.TestCase):
 
         knob_readbacks = result["KnobReadback"]
 
+        # The slow dimension is always the slowest to change.
         self.assertEqual(len(knob_readbacks), indict1['Nstep'],
                          "The number of steps do not match with the first dimension.")
         self.assertEqual(len(knob_readbacks[0]), indict2["Nstep"],
                          "The number of steps do not match with the second dimension.")
 
+        # TODO: When online, check if there is a merge method on lists.
         knob_readbacks_expanded = []
         for knobs in knob_readbacks:
             knob_readbacks_expanded.extend(knobs)
 
+        # Check if the knob readbacks equal the expected positions (the motors were positioned to the correct values).
         self.assertEqual(knob_readbacks_expanded, expected_positions,
                          "The knob readback values do not match the expected one.")
+
+        observables = result["Observable"]
+        self.assertEqual(len(observables), indict1['Nstep'],
+                         "The number of steps do not match with the first dimension.")
+        # Only observables from the last dimension are taken into account.
+        self.assertEqual(len(observables[0]), indict2['Nstep'],
+                         "The number of steps do not match with the second dimension.")
+        # Check if only observables from the last dimension were read.
+        self.assertEqual(observables[0][0], indict2['Observable'], "The last dimension observables are not read.")
 
 

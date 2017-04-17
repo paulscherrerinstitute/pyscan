@@ -4,7 +4,7 @@ from time import sleep
 
 import numpy as np
 
-from pyscan.interface.pyScan.dal import MockDal
+from pyscan.interface.pyScan.dal import PyCafeEpicsDal
 from pyscan.interface.pyScan.gui import SubPanel, DummyClass
 
 
@@ -60,8 +60,8 @@ class Scan:
         if close:
             self.epics_dal.groupClose(temp_handle)
 
-    def initializeScan(self, inlist):
-        self.epics_dal = MockDal()
+    def initializeScan(self, inlist, dal=None):
+        self.epics_dal = dal or PyCafeEpicsDal()
 
         self.inlist = []
 

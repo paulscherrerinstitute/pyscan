@@ -45,3 +45,43 @@ def is_close(list1, list2, epsilon=0.00001):
     :return: True if all elements are in the specified error range.
     """
     return all((value1 - value2) < epsilon for value1, value2 in zip(list1, list2))
+
+
+class TestPyScanDal(object):
+    def __init__(self):
+        self.groups = {}
+        self.values = {}
+        self.positions = []
+
+    def addGroup(self, group_name, pvs):
+        print("Creating group %s with PVs %s." % (group_name, pvs))
+        self.groups[group_name] = pvs
+
+        # Create mock values for each given PV.
+        for pv in pvs:
+            self.values[pv] = None
+
+        return group_name
+
+    def groupClose(self, handle):
+        del(self.groups[handle])
+        print("Close group %s." % handle)
+
+    def groupList(self):
+        print("GroupList: %s." % self.groups.keys())
+        return self.groups.keys()
+
+    def getGroup(self, group_name):
+        result = []
+        for pv in self.groups[group_name]:
+            result.append(self.values[pv])
+
+        if group_name == "All":
+            self.positions.append(result)
+
+        print("Getting group %s: %s." % (group_name, result))
+        return result, 1, [0] * len(result)
+
+    def setAndMatch(self, chset, val, chread, tol, timeout, num):
+        self.values[chset] = val
+        print("Move %s to position %s" % (chset, val))

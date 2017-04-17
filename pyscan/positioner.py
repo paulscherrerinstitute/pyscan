@@ -89,8 +89,7 @@ class AreaPositioner(object):
             self.step_size = steps
         # Something went wrong
         else:
-            # TODO: Raise an exception.
-            pass
+            raise ValueError("Steps '%s' is not a list of int or float." % steps)
 
     def get_generator(self):
         for _ in range(self.passes):

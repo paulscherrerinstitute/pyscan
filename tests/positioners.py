@@ -212,8 +212,6 @@ class DiscreetPositionersTests(unittest.TestCase):
         # Check if the dimensions are correct for 3d, with steps size, multi passes.
         self.verify_result(AreaPositioner([0, 0, 0], [4, 2, 2], [1., 1., 2.], passes=3), expected_result * 3)
 
-        self.verify_result(AreaPositioner([[0, 0]], [[2, 4]], [[2, 2]]), [])
-
     def test_ZigZagAreaPositioner(self):
         self.standard_linear_tests(ZigZagAreaPositioner)
         # It is not a zigzag positioner in the classical sense. Between passes, it does not do zigzags.

@@ -6,7 +6,8 @@ from tests.utils import TestPyScanDal
 
 class PyScan(unittest.TestCase):
 
-    def test_ScanRange(self):
+    @staticmethod
+    def get_ScanRange_indices():
         indict1 = dict()
         indict1['Knob'] = ["1.1", "1.2"]
         indict1['ScanRange'] = [[-3, 0], [-3, 0]]
@@ -20,6 +21,13 @@ class PyScan(unittest.TestCase):
         indict2['Nstep'] = 3
         indict2['Observable'] = ["READ4", "READ5"]
         indict2['Waiting'] = 0.1
+
+        return indict1, indict2
+
+    def test_ScanRange(self):
+        indict1, indict2 = self.get_ScanRange_indices()
+        # Only the number of measurments on the last dimension can influence the result.
+        indict1["NumberOfMeasurements"] = 3
 
         testDal = TestPyScanDal()
         pyscan = Scan()
@@ -78,8 +86,44 @@ class PyScan(unittest.TestCase):
 
         # TODO: Test result["Validation"] -> why is it even empty?
 
-    # TODO: Test NumberOfMeasurements.
+    def test_ScanRange_multi_measurments(self):
+        indict1, indict2 = self.get_ScanRange_indices()
+        # Each measurement (KnobReadback, Observable, Validation) is repeated 4 times.
+        indict2["NumberOfMeasurements"] = 4
+        # This should not change anything - and we are testing this.
+        indict1["NumberOfMeasurements"] = 5
+
+        testDal = TestPyScanDal()
+        pyscan = Scan()
+        pyscan.initializeScan([indict1, indict2], testDal)
+        result = pyscan.startScan()
+
+        knob_readbacks = result["KnobReadback"]
+
+        self.assertEqual(len(knob_readbacks), indict1['Nstep'],
+                         "The number of steps do not match with the first dimension.")
+        self.assertEqual(len(knob_readbacks[0]), indict2["Nstep"],
+                         "The number of steps do not match with the second dimension.")
+        self.assertEqual(len(knob_readbacks[0][0]), indict2["NumberOfMeasurements"],
+                         "The number of measurements do not match with the second dimension NumberOfMeasurements.")
+
+        observables = result["Observable"]
+
+        self.assertEqual(len(observables), indict1['Nstep'],
+                         "The number of steps do not match with the first dimension.")
+        # Only observables from the last dimension are taken into account.
+        self.assertEqual(len(observables[0]), indict2['Nstep'],
+                         "The number of steps do not match with the second dimension.")
+        # Check if only observables from the last dimension were read.
+        self.assertEqual(observables[0][0], [indict2['Observable']] * indict2["NumberOfMeasurements"],
+                         "Not the correct number of observables was read.")
+
+        # TODO: Test result["Validation"] -> why is it even empty?
+
+
+
     # TODO: Test PreAction and PostAction.
     # TODO: Test In-loopPreAction, In-loopPostAction
     # TODO: Test Monitor.
     # TODO: Test ScanValues.
+    # TODO: Test additive - Does that mean relative?

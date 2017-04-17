@@ -32,7 +32,7 @@ class Scan:
         if self.inlist[-1]['Monitor']:
             self.epics_dal.groupClose('Monitor')
 
-        print('in pycan finalization', self.epics_dal.groupList())
+        # print('in pycan finalization', self.epics_dal.groupList())
 
         self.outdict[
             'ErrorMessage'] = 'Measurement finalized (finished/aborted) normally. ' \
@@ -514,10 +514,10 @@ class Scan:
                         tol = dic[key][j][3]
                         timeout = dic[key][j][4]
                         if chset.lower() == 'match':
-                            print('****************************----')
+                            # print('****************************----')
                             try:
                                 status = self.epics_dal.match(val, chread, tol, timeout, 1)
-                                print('--------------', status)
+                                # print('--------------', status)
                             except Exception as inst:
                                 print('Exception in preAction')
                                 print(inst)
@@ -526,7 +526,7 @@ class Scan:
                         else:
                             try:
                                 status = self.epics_dal.setAndMatch(chset, val, chread, tol, timeout, 0)
-                                print('===========', status)
+                                # print('===========', status)
                             except Exception as inst:
                                 print('Exception in preAction')
                                 print(inst)
@@ -615,7 +615,7 @@ class Scan:
 
         dic = self.inlist[dic_index]
 
-        print('*****************', dic)
+        # print('*****************', dic)
 
         # Execute pre actions.
         if len(dic['PreAction']):
@@ -648,7 +648,7 @@ class Scan:
 
             step_index = 0
             while step_index < dic['Nstep'][Kscan]:
-                print(Kscan, step_index)
+                # print(Kscan, step_index)
 
                 # set knob for this loop
                 for knob_index in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
@@ -724,8 +724,8 @@ class Scan:
                     self.PostAction(dic)
                 raise Exception("Scan aborted")
 
-            print('Monitor??')
-            print(self.stopScan)
+            # print('Monitor??')
+            # print(self.stopScan)
 
             if self.pauseScan:
                 p_stop = 1
@@ -737,7 +737,7 @@ class Scan:
             Stepback = 0
 
         if Stepback:
-            print('Stepping back')
+            # print('Stepping back')
             Iscan = Iscan - 1
             self.Ndone = self.Ndone - 1
             Rback[Iscan].pop()
@@ -760,7 +760,7 @@ class Scan:
     def last_range_scan(self, Obs, Rback, Valid, dic):
         step_index = 0
         while step_index < dic['Nstep']:
-            print(step_index)
+            # print(step_index)
 
             # set knob for this loop
             for knob_index in range(len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
@@ -771,7 +771,7 @@ class Scan:
                 else:
                     KV = dic['KnobExpanded'][knob_index]
 
-                print('Knob value', dic['KnobSaved'], dic['KnobExpanded'], KV[step_index])
+                # print('Knob value', dic['KnobSaved'], dic['KnobExpanded'], KV[step_index])
 
                 try:
                     set_pv_name = dic['Knob'][knob_index]
@@ -843,7 +843,7 @@ class Scan:
     def range_scan(self, Obs, Rback, Valid, dic_index):
         dic = self.inlist[dic_index]
         for step_index in range(dic['Nstep']):
-            print('Dict' + str(dic_index) + '  Loop' + str(step_index))
+            # print('Dict' + str(dic_index) + '  Loop' + str(step_index))
 
             for knob_index in range(len(dic['Knob'])):
                 if dic['Additive']:

@@ -62,7 +62,6 @@ class MockDal(object):
     def addGroup(self, group_name, pvs):
         print("Creating group %s with PVs %s." % (group_name, pvs))
         self.groups[group_name] = pvs
-        print(group_name, pvs)
         return group_name
 
     def groupClose(self, handle):

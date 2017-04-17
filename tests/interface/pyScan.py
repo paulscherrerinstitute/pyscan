@@ -77,3 +77,9 @@ class PyScan(unittest.TestCase):
         self.assertEqual(observables[0][0], indict2['Observable'], "The last dimension observables are not read.")
 
         # TODO: Test result["Validation"] -> why is it even empty?
+
+    # TODO: Test NumberOfMeasurements.
+    # TODO: Test PreAction and PostAction.
+    # TODO: Test In-loopPreAction, In-loopPostAction
+    # TODO: Test Monitor.
+    # TODO: Test ScanValues.

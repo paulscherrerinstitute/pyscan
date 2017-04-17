@@ -10,7 +10,7 @@ def scan(prefix="MA-"):
     indict1['KnobReadback'] = [prefix + 'SARUN04-UIND030-MOT:X-SET']
     indict1['KnobTolerance'] = [0.01]
     indict1['KnobWaiting'] = [10]
-    # indict0['KnobWaitingExtra']=0
+    indict1['KnobWaitingExtra']=0
 
     indict1['ScanRange'] = [[-0.3, 0.3]]
     indict1['Nstep'] = 10
@@ -25,11 +25,11 @@ def scan(prefix="MA-"):
 
     indict1['NumberOfMeasurements'] = 3
 
-    # indict1['Monitor'] = [prefix + 'SINSS-LPSA:SHUTTER']
-    # indict1['MonitorValue'] = ['Open']
-    # indict1['MonitorTolerance'] = [0]
-    # indict1['MonitorAction'] = ['WaitAndAbort']
-    # indict1['MonitorTimeout'] = [5]
+    indict1['Monitor'] = [prefix + 'SINSS-LPSA:SHUTTER']
+    indict1['MonitorValue'] = ['Open']
+    indict1['MonitorTolerance'] = [0]
+    indict1['MonitorAction'] = ['WaitAndAbort']
+    indict1['MonitorTimeout'] = [5]
 
     indict1['PreAction'] = [[prefix + 'SARUN04-MQUA020-MOT:X', prefix + 'SARUN04-MQUA020-MOT:X', 1, 0.1, 10]]
     # indict1['PreActionWaiting']=0

@@ -75,123 +75,9 @@ class Scan:
                 if index == len(inlist) - 1 and ('Waiting' not in dic.keys()):
                     raise ValueError('Waiting for the scan was not given.')
 
-                if 'Knob' not in dic.keys():
-                    raise ValueError('Knob for the scan was not given for the input dictionary' + str(i) + '.')
-                else:
-                    if not isinstance(dic['Knob'], list):
-                        dic['Knob'] = [dic['Knob']]
+                self._setup_knobs(index, dic)
 
-                if 'KnobReadback' not in dic.keys():
-                    dic['KnobReadback'] = dic['Knob']
-                if not isinstance(dic['KnobReadback'], list):
-                    dic['KnobReadback'] = [dic['KnobReadback']]
-                if len(dic['KnobReadback']) != len(dic['Knob']):
-                    raise ValueError('The number of KnobReadback does not meet to the number of Knobs.')
-
-                if 'KnobTolerance' not in dic.keys():
-                    dic['KnobTolerance'] = [1.0] * len(dic['Knob'])
-                if not isinstance(dic['KnobTolerance'], list):
-                    dic['KnobTolerance'] = [dic['KnobTolerance']]
-                if len(dic['KnobTolerance']) != len(dic['Knob']):
-                    raise ValueError('The number of KnobTolerance does not meet to the number of Knobs.')
-
-                if 'KnobWaiting' not in dic.keys():
-                    dic['KnobWaiting'] = [10.0] * len(dic['Knob'])
-                if not isinstance(dic['KnobWaiting'], list):
-                    dic['KnobWaiting'] = [dic['KnobWaiting']]
-                if len(dic['KnobWaiting']) != len(dic['Knob']):
-                    raise ValueError('The number of KnobWaiting does not meet to the number of Knobs.')
-
-                if 'KnobWaitingExtra' not in dic.keys():
-                    dic['KnobWaitingExtra'] = 0.0
-                else:
-                    try:
-                        dic['KnobWaitingExtra'] = float(dic['KnobWaitingExtra'])
-                    except:
-                        raise ValueError('KnobWaitingExtra is not a number in the input dictionary ' + str(index) + '.')
-
-                self._add_group(dic, str(index), dic['Knob'], 'KnobSaved')
-
-                if 'Series' not in dic.keys():
-                    dic['Series'] = 0
-
-                if not dic['Series']:  # Setting up scan values for SKS and MKS
-                    if 'ScanValues' not in dic.keys():
-                        if 'ScanRange' not in dic.keys():
-                            raise ValueError('Neither ScanRange nor ScanValues is given '
-                                             'in the input dictionary ' + str(i) + '.')
-                        elif not isinstance(dic['ScanRange'], list):
-                            raise ValueError('ScanRange is not given in the right format. '
-                                             'Input dictionary ' + str(i) + '.')
-                        elif not isinstance(dic['ScanRange'][0], list):
-                            dic['ScanRange'] = [dic['ScanRange']]
-
-                        if ('Nstep' not in dic.keys()) and ('StepSize' not in dic.keys()):
-                            raise ValueError('Neither Nstep nor StepSize is given.')
-
-                        if 'Nstep' in dic.keys():  # StepSize is ignored when Nstep is given
-                            if not isinstance(dic['Nstep'], int):
-                                raise ValueError('Nstep should be an integer. Input dictionary ' + str(index) + '.')
-                            ran = []
-                            for r in dic['ScanRange']:
-                                s = (r[1] - r[0]) / (dic['Nstep'] - 1)
-                                f = np.arange(r[0], r[1], s)
-                                f = np.append(f, np.array(r[1]))
-                                ran.append(f.tolist())
-                            dic['KnobExpanded'] = ran
-                        else:  # StepSize given
-                            if len(dic['Knob']) > 1:
-                                raise ValueError('Give Nstep instead of StepSize for MKS. '
-                                                 'Input dictionary ' + str(i) + '.')
-                            # StepSize is only valid for SKS
-                            r = dic['ScanRange'][0]
-                            f = np.arange(r[0], r[1], s)
-                            f = np.append(f, np.array(r[1]))
-                            dic['Nstep'] = len(f)
-                            dic['KnobExpanded'] = [f.tolist()]
-                    else:
-                        if not isinstance(dic['ScanValues'], list):
-                            raise ValueError('ScanValues is not given in the right fromat. '
-                                             'Input dictionary ' + str(i) + '.')
-
-                        if len(dic['ScanValues']) != len(dic['Knob']) and len(dic['Knob']) != 1:
-                            raise ValueError('The length of ScanValues does not meet to the number of Knobs.')
-
-                        if len(dic['Knob']) > 1:
-                            minlen = 100000
-                            for r in dic['ScanValues']:
-                                if minlen > len(r):
-                                    minlen = len(r)
-                            ran = []
-                            for r in dic['ScanValues']:
-                                ran.append(r[0:minlen])  # Cut at the length of the shortest list.
-                            dic['KnobExpanded'] = ran
-                            dic['Nstep'] = minlen
-                        else:
-                            dic['KnobExpanded'] = [dic['ScanValues']]
-                            dic['Nstep'] = len(dic['ScanValues'])
-                else:  # Setting up scan values for Series scan
-                    if 'ScanValues' not in dic.keys():
-                        raise ValueError('ScanValues should be given for Series '
-                                         'scan in the input dictionary ' + str(i) + '.')
-
-                    if not isinstance(dic['ScanValues'], list):
-                        raise ValueError('ScanValues should be given as a list (of lists) '
-                                         'for Series scan in the input dictionary ' + str(i) + '.')
-
-                    if len(dic['Knob']) != len(dic['ScanValues']):
-                        raise ValueError('Scan values length does not match to the '
-                                         'number of knobs in the input dictionary ' + str(i) + '.')
-
-                    Nstep = []
-                    for vl in dic['ScanValues']:
-                        if not isinstance(vl, list):
-                            raise ValueError('ScanValue element should be given as a list for '
-                                             'Series scan in the input dictionary ' + str(i) + '.')
-                        Nstep.append(len(vl))
-                    dic['Nstep'] = Nstep
-
-                # End of scan values set up
+                self._setup_knob_scan_values(index, dic)
 
                 if index == len(inlist) - 1 and ('Observable' not in dic.keys()):
                     raise ValueError('The observable is not given.')
@@ -433,6 +319,129 @@ class Scan:
             self.outdict = {"ErrorMessage": str(e)}
 
         return self.outdict
+
+    def _setup_knob_scan_values(self, index, dic):
+        if 'Series' not in dic.keys():
+            dic['Series'] = 0
+
+        if not dic['Series']:  # Setting up scan values for SKS and MKS
+            if 'ScanValues' not in dic.keys():
+                if 'ScanRange' not in dic.keys():
+                    raise ValueError('Neither ScanRange nor ScanValues is given '
+                                     'in the input dictionary ' + str(index) + '.')
+                elif not isinstance(dic['ScanRange'], list):
+                    raise ValueError('ScanRange is not given in the right format. '
+                                     'Input dictionary ' + str(index) + '.')
+                elif not isinstance(dic['ScanRange'][0], list):
+                    dic['ScanRange'] = [dic['ScanRange']]
+
+                if ('Nstep' not in dic.keys()) and ('StepSize' not in dic.keys()):
+                    raise ValueError('Neither Nstep nor StepSize is given.')
+
+                if 'Nstep' in dic.keys():  # StepSize is ignored when Nstep is given
+                    if not isinstance(dic['Nstep'], int):
+                        raise ValueError('Nstep should be an integer. Input dictionary ' + str(index) + '.')
+                    ran = []
+                    for r in dic['ScanRange']:
+                        s = (r[1] - r[0]) / (dic['Nstep'] - 1)
+                        f = np.arange(r[0], r[1], s)
+                        f = np.append(f, np.array(r[1]))
+                        ran.append(f.tolist())
+                    dic['KnobExpanded'] = ran
+                else:  # StepSize given
+                    if len(dic['Knob']) > 1:
+                        raise ValueError('Give Nstep instead of StepSize for MKS. '
+                                         'Input dictionary ' + str(index) + '.')
+                    # StepSize is only valid for SKS
+                    r = dic['ScanRange'][0]
+                    f = np.arange(r[0], r[1], s)
+                    f = np.append(f, np.array(r[1]))
+                    dic['Nstep'] = len(f)
+                    dic['KnobExpanded'] = [f.tolist()]
+            else:
+                if not isinstance(dic['ScanValues'], list):
+                    raise ValueError('ScanValues is not given in the right fromat. '
+                                     'Input dictionary ' + str(index) + '.')
+
+                if len(dic['ScanValues']) != len(dic['Knob']) and len(dic['Knob']) != 1:
+                    raise ValueError('The length of ScanValues does not meet to the number of Knobs.')
+
+                if len(dic['Knob']) > 1:
+                    minlen = 100000
+                    for r in dic['ScanValues']:
+                        if minlen > len(r):
+                            minlen = len(r)
+                    ran = []
+                    for r in dic['ScanValues']:
+                        ran.append(r[0:minlen])  # Cut at the length of the shortest list.
+                    dic['KnobExpanded'] = ran
+                    dic['Nstep'] = minlen
+                else:
+                    dic['KnobExpanded'] = [dic['ScanValues']]
+                    dic['Nstep'] = len(dic['ScanValues'])
+        else:  # Setting up scan values for Series scan
+            if 'ScanValues' not in dic.keys():
+                raise ValueError('ScanValues should be given for Series '
+                                 'scan in the input dictionary ' + str(index) + '.')
+
+            if not isinstance(dic['ScanValues'], list):
+                raise ValueError('ScanValues should be given as a list (of lists) '
+                                 'for Series scan in the input dictionary ' + str(index) + '.')
+
+            if len(dic['Knob']) != len(dic['ScanValues']):
+                raise ValueError('Scan values length does not match to the '
+                                 'number of knobs in the input dictionary ' + str(index) + '.')
+
+            Nstep = []
+            for vl in dic['ScanValues']:
+                if not isinstance(vl, list):
+                    raise ValueError('ScanValue element should be given as a list for '
+                                     'Series scan in the input dictionary ' + str(index) + '.')
+                Nstep.append(len(vl))
+            dic['Nstep'] = Nstep
+
+    def _setup_knobs(self, index, dic):
+        """
+        Setup the values for moving knobs in the scan.
+        :param index: Index in the dictionary.
+        :param dic: The dictionary.
+        """
+        if 'Knob' not in dic.keys():
+            raise ValueError('Knob for the scan was not given for the input dictionary' + str(index) + '.')
+        else:
+            if not isinstance(dic['Knob'], list):
+                dic['Knob'] = [dic['Knob']]
+
+        if 'KnobReadback' not in dic.keys():
+            dic['KnobReadback'] = dic['Knob']
+        if not isinstance(dic['KnobReadback'], list):
+            dic['KnobReadback'] = [dic['KnobReadback']]
+        if len(dic['KnobReadback']) != len(dic['Knob']):
+            raise ValueError('The number of KnobReadback does not meet to the number of Knobs.')
+
+        if 'KnobTolerance' not in dic.keys():
+            dic['KnobTolerance'] = [1.0] * len(dic['Knob'])
+        if not isinstance(dic['KnobTolerance'], list):
+            dic['KnobTolerance'] = [dic['KnobTolerance']]
+        if len(dic['KnobTolerance']) != len(dic['Knob']):
+            raise ValueError('The number of KnobTolerance does not meet to the number of Knobs.')
+
+        if 'KnobWaiting' not in dic.keys():
+            dic['KnobWaiting'] = [10.0] * len(dic['Knob'])
+        if not isinstance(dic['KnobWaiting'], list):
+            dic['KnobWaiting'] = [dic['KnobWaiting']]
+        if len(dic['KnobWaiting']) != len(dic['Knob']):
+            raise ValueError('The number of KnobWaiting does not meet to the number of Knobs.')
+
+        if 'KnobWaitingExtra' not in dic.keys():
+            dic['KnobWaitingExtra'] = 0.0
+        else:
+            try:
+                dic['KnobWaitingExtra'] = float(dic['KnobWaitingExtra'])
+            except:
+                raise ValueError('KnobWaitingExtra is not a number in the input dictionary ' + str(index) + '.')
+
+        self._add_group(dic, str(index), dic['Knob'], 'KnobSaved')
 
     def startMonitor(self, dic):
         raise NotImplementedError("Monitors not yet supported.")

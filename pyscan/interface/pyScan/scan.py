@@ -652,50 +652,6 @@ class Scan:
         if len(dic['PostAction']):
             self.PostAction(dic)
 
-    def last_series_scan(self, Obs, Rback, Valid, dic):
-        Kscan = 0
-        while Kscan < len(dic['Knob']):
-
-            step_index = 0
-            while step_index < dic['Nstep'][Kscan]:
-                # print(Kscan, step_index)
-
-                # set knob for this loop
-                for knob_index in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
-
-
-                    if knob_index == Kscan:
-                        if dic['Additive']:
-                            KV = dic['KnobSaved'][knob_index] + dic['ScanValues'][knob_index][step_index]
-                        else:
-                            KV = dic['ScanValues'][knob_index][step_index]
-                    else:
-                        KV = dic['KnobSaved'][knob_index]
-                    try:
-
-                        pv_value = KV
-
-                        set_pv_name = dic['Knob'][knob_index]
-                        readback_pv_name = dic['KnobReadback'][knob_index]
-                        pv_tolerance = dic['KnobTolerance'][knob_index]
-                        pv_wait_time = dic['KnobWaiting'][knob_index]
-
-                        self.epics_dal.setAndMatch(set_pv_name, pv_value, readback_pv_name, pv_tolerance, pv_wait_time,
-                                                   0)
-
-
-                    except Exception as inst:
-                        print('Exception in preAction')
-                        print(inst)
-
-                self.pre_measurment_actions(dic)
-
-                self.measure_and_save(step_index, Obs, Rback, Valid, dic, Kscan)
-
-                step_index = self.post_measurment_actions(Obs, Rback, Valid, dic, step_index)
-
-            Kscan = Kscan + 1
-
     def post_measurment_actions(self, Obs, Rback, Valid, dic, step_index):
         step_index = step_index + 1
         self.Ndone = self.Ndone + 1
@@ -766,41 +722,6 @@ class Scan:
             self.PostAction(dic, 'In-loopPostAction')
 
         return Iscan
-
-    def last_range_scan(self, Obs, Rback, Valid, dic):
-        step_index = 0
-        while step_index < dic['Nstep']:
-            # print(step_index)
-
-            # set knob for this loop
-            for knob_index in range(len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
-
-
-                if dic['Additive']:
-                    KV = np.array(dic['KnobExpanded'][knob_index]) + dic['KnobSaved'][knob_index]
-                else:
-                    KV = dic['KnobExpanded'][knob_index]
-
-                # print('Knob value', dic['KnobSaved'], dic['KnobExpanded'], KV[step_index])
-
-                try:
-                    set_pv_name = dic['Knob'][knob_index]
-                    pv_value = KV[step_index]
-                    readback_pv_name = dic['KnobReadback'][knob_index]
-                    pv_tolerance = dic['KnobTolerance'][knob_index]
-                    pv_wait_time = dic['KnobWaiting'][knob_index]
-
-                    self.epics_dal.setAndMatch(set_pv_name, pv_value, readback_pv_name, pv_tolerance, pv_wait_time,0)
-
-                except Exception as inst:
-                    print('Exception in Scan loop')
-                    print(inst)
-
-            self.pre_measurment_actions(dic)
-
-            self.measure_and_save(step_index, Obs, Rback, Valid, dic)
-
-            step_index = self.post_measurment_actions(Obs, Rback, Valid, dic, step_index)
 
     def pre_measurment_actions(self, dic):
         if dic['KnobWaitingExtra']:
@@ -883,6 +804,41 @@ class Scan:
                     self.PostAction(dic)
                 raise Exception("Scan aborted")
 
+    def last_range_scan(self, Obs, Rback, Valid, dic):
+        step_index = 0
+        while step_index < dic['Nstep']:
+            # print(step_index)
+
+            # set knob for this loop
+            for knob_index in range(len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+
+
+                if dic['Additive']:
+                    KV = np.array(dic['KnobExpanded'][knob_index]) + dic['KnobSaved'][knob_index]
+                else:
+                    KV = dic['KnobExpanded'][knob_index]
+
+                # print('Knob value', dic['KnobSaved'], dic['KnobExpanded'], KV[step_index])
+
+                try:
+                    set_pv_name = dic['Knob'][knob_index]
+                    pv_value = KV[step_index]
+                    readback_pv_name = dic['KnobReadback'][knob_index]
+                    pv_tolerance = dic['KnobTolerance'][knob_index]
+                    pv_wait_time = dic['KnobWaiting'][knob_index]
+
+                    self.epics_dal.setAndMatch(set_pv_name, pv_value, readback_pv_name, pv_tolerance, pv_wait_time,0)
+
+                except Exception as inst:
+                    print('Exception in Scan loop')
+                    print(inst)
+
+            self.pre_measurment_actions(dic)
+
+            self.measure_and_save(step_index, Obs, Rback, Valid, dic)
+
+            step_index = self.post_measurment_actions(Obs, Rback, Valid, dic, step_index)
+
     def series_scan(self, Obs, Rback, Valid, dic_index):
         dic = self.inlist[dic_index]
         # For every PV.
@@ -921,4 +877,47 @@ class Scan:
                 if len(dic['PostAction']):
                     self.PostAction(dic)
                 raise Exception("Scan aborted")
+
+    def last_series_scan(self, Obs, Rback, Valid, dic):
+        Kscan = 0
+        while Kscan < len(dic['Knob']):
+
+            step_index = 0
+            while step_index < dic['Nstep'][Kscan]:
+                # print(Kscan, step_index)
+
+                # set knob for this loop
+                for knob_index in range(0, len(dic['Knob'])):  # Replace later with a group method, setAndMatchGroup?
+
+                    if knob_index == Kscan:
+                        if dic['Additive']:
+                            KV = dic['KnobSaved'][knob_index] + dic['ScanValues'][knob_index][step_index]
+                        else:
+                            KV = dic['ScanValues'][knob_index][step_index]
+                    else:
+                        KV = dic['KnobSaved'][knob_index]
+                    try:
+
+                        pv_value = KV
+
+                        set_pv_name = dic['Knob'][knob_index]
+                        readback_pv_name = dic['KnobReadback'][knob_index]
+                        pv_tolerance = dic['KnobTolerance'][knob_index]
+                        pv_wait_time = dic['KnobWaiting'][knob_index]
+
+                        self.epics_dal.setAndMatch(set_pv_name, pv_value, readback_pv_name, pv_tolerance, pv_wait_time,
+                                                   0)
+
+
+                    except Exception as inst:
+                        print('Exception in preAction')
+                        print(inst)
+
+                self.pre_measurment_actions(dic)
+
+                self.measure_and_save(step_index, Obs, Rback, Valid, dic, Kscan)
+
+                step_index = self.post_measurment_actions(Obs, Rback, Valid, dic, step_index)
+
+            Kscan = Kscan + 1
 

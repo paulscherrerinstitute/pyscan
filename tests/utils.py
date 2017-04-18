@@ -48,18 +48,19 @@ def is_close(list1, list2, epsilon=0.00001):
 
 
 class TestPyScanDal(object):
-    def __init__(self):
+    def __init__(self, initial_values=None):
         self.groups = {}
-        self.values = {}
+        self.values = initial_values or {}
         self.positions = []
 
     def addGroup(self, group_name, pvs):
         print("Creating group %s with PVs %s." % (group_name, pvs))
         self.groups[group_name] = pvs
 
-        # Create mock values for each given PV.
+        # Create mock values for each given PV, if the value was not provided in the initial values.
         for pv in pvs:
-            self.values[pv] = pv
+            if pv not in self.values:
+                self.values[pv] = pv
 
         return group_name
 

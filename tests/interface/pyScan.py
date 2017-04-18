@@ -10,8 +10,7 @@ class PyScan(unittest.TestCase):
     def get_ScanRange_indices():
         indict1 = dict()
         indict1['Knob'] = ["1.1", "1.2"]
-        indict1['ScanRange'] = [[-3, 0], [-3, 0]]
-        indict1['Nstep'] = 4
+        indict1["ScanValues"] = [[-3, -2, -1, 0], [-3, -2, -1, 0]]
         indict1['Observable'] = ["READ1", "READ2", "READ3"]
         indict1['Waiting'] = 0.1
 
@@ -21,18 +20,45 @@ class PyScan(unittest.TestCase):
         indict2['Nstep'] = 3
         indict2['Observable'] = ["READ4", "READ5"]
         indict2['Waiting'] = 0.1
-
         return indict1, indict2
+
+    @staticmethod
+    def get_ScanSeries_indices():
+        indict1 = dict()
+        indict1['Knob'] = ["1.1", "1.2"]
+        indict1["ScanValues"] = [[-3, -2, -1, 0], [-3, -2, -1, 0]]
+        indict1['Series'] = 1
+        indict1['Observable'] = ["READ1", "READ2", "READ3"]
+        indict1['Waiting'] = 0.1
+
+        indict2 = dict()
+        indict2['Knob'] = ["2.1", "2.2"]
+        indict2["ScanValues"] = [[0, 1, 2], [0, 1, 2]]
+        indict2['Series'] = 1
+        indict2['Observable'] = ["READ4", "READ5"]
+        indict2['Waiting'] = 0.1
+        return indict1, indict2
+
+    @staticmethod
+    def get_ScanValues_indices():
+        pass
 
     def test_ScanRange(self):
         indict1, indict2 = self.get_ScanRange_indices()
-        # Only the number of measurments on the last dimension can influence the result.
+        # Only the number of measurements on the last dimension can influence the result.
         indict1["NumberOfMeasurements"] = 3
 
-        testDal = TestPyScanDal()
+        test_dal = TestPyScanDal()
         pyscan = Scan()
-        pyscan.initializeScan([indict1, indict2], testDal)
+        result = pyscan.initializeScan([indict1, indict2], test_dal)
+
+        self.assertEqual(result["ErrorMessage"], None, "Initialization failed.")
+
         result = pyscan.startScan()
+
+        self.assertEqual(result["ErrorMessage"], "Measurement finalized (finished/aborted) normally. "
+                                                 "Need initialisation before next measurement.",
+                         "Scan failed.")
 
         # Check if the results object has all the needed parameters.
         expected_elements = ["TimeStampStart", "KnobReadback", "Observable",
@@ -53,8 +79,13 @@ class PyScan(unittest.TestCase):
                               [-1, -1, 0, 0], [-1, -1, 1, 1], [-1, -1, 2, 2],
                               [-0, -0, 0, 0], [-0, -0, 1, 1], [-0, -0, 2, 2]]
 
-        # First 4 PVs are readbacks, the first read is NULL.
-        sampled_positions = [single_position[:4] for single_position in testDal.positions[1:]]
+        # The first element of the result must be the initial PV values.
+        original_values = test_dal.positions[0]
+        self.assertEqual(original_values, indict1["Knob"] + indict2["Knob"] + indict2["Observable"],
+                         "The first element of the read positions should be the initial condition.")
+
+        # First 4 PVs are readbacks, the first array entry is the original values before changing them for measuring.
+        sampled_positions = [single_position[:4] for single_position in test_dal.positions[1:]]
         self.assertEqual(sampled_positions, expected_positions,
                          "The expected positions do not match the one read by the mock dal.")
 
@@ -66,10 +97,8 @@ class PyScan(unittest.TestCase):
         self.assertEqual(len(knob_readbacks[0]), indict2["Nstep"],
                          "The number of steps do not match with the second dimension.")
 
-        # TODO: When online, check if there is a merge method on lists.
-        knob_readbacks_expanded = []
-        for knobs in knob_readbacks:
-            knob_readbacks_expanded.extend(knobs)
+        # Flatten the list.
+        knob_readbacks_expanded = [knob for sublist in knob_readbacks for knob in sublist]
 
         # Check if the knob readbacks equal the expected positions (the motors were positioned to the correct values).
         self.assertEqual(knob_readbacks_expanded, expected_positions,
@@ -93,10 +122,22 @@ class PyScan(unittest.TestCase):
         # This should not change anything - and we are testing this.
         indict1["NumberOfMeasurements"] = 5
 
-        testDal = TestPyScanDal()
+        test_dal = TestPyScanDal()
         pyscan = Scan()
-        pyscan.initializeScan([indict1, indict2], testDal)
+        result = pyscan.initializeScan([indict1, indict2], test_dal)
+
+        self.assertEqual(result["ErrorMessage"], None, "Initialization failed.")
+
         result = pyscan.startScan()
+
+        self.assertEqual(result["ErrorMessage"], "Measurement finalized (finished/aborted) normally. "
+                                                 "Need initialisation before next measurement.",
+                         "Scan failed.")
+
+        # The first element of the result must be the initial PV values.
+        original_values = test_dal.positions[0]
+        self.assertEqual(original_values, indict1["Knob"] + indict2["Knob"] + indict2["Observable"],
+                         "The first element of the read positions should be the initial condition.")
 
         knob_readbacks = result["KnobReadback"]
 
@@ -120,10 +161,23 @@ class PyScan(unittest.TestCase):
 
         # TODO: Test result["Validation"] -> why is it even empty?
 
+    def test_ScanSeries(self):
+        indict1, indict2 = self.get_ScanSeries_indices()
+
+        test_dal = TestPyScanDal()
+        pyscan = Scan()
+        result = pyscan.initializeScan([indict1], test_dal)
+
+        self.assertEqual(result["ErrorMessage"], None, "Initialization failed.")
+
+        result = pyscan.startScan()
+
+        self.assertEqual(result["ErrorMessage"], "Measurement finalized (finished/aborted) normally. "
+                                                 "Need initialisation before next measurement.",
+                         "Scan failed.")
 
 
     # TODO: Test PreAction and PostAction.
     # TODO: Test In-loopPreAction, In-loopPostAction
     # TODO: Test Monitor.
-    # TODO: Test ScanValues.
-    # TODO: Test additive - Does that mean relative?
+    # TODO: Test additive - Does that mean relative? YES!

@@ -359,6 +359,7 @@ class Scan:
                     dic['Nstep'] = len(f)
                     dic['KnobExpanded'] = [f.tolist()]
             else:
+                # Scan values explicitly defined.
                 if not isinstance(dic['ScanValues'], list):
                     raise ValueError('ScanValues is not given in the right fromat. '
                                      'Input dictionary ' + str(index) + '.')
@@ -667,7 +668,7 @@ class Scan:
                         if dic['Additive']:
                             KV = dic['KnobSaved'][knob_index] + dic['ScanValues'][knob_index][step_index]
                         else:
-                            KV = dic['KnobValues'][knob_index][step_index]
+                            KV = dic['ScanValues'][knob_index][step_index]
                     else:
                         KV = dic['KnobSaved'][knob_index]
                     try:
@@ -689,7 +690,7 @@ class Scan:
 
                 self.pre_measurment_actions(dic)
 
-                self.measure_and_save(step_index, Obs, Rback, Valid, Kscan)
+                self.measure_and_save(step_index, Obs, Rback, Valid, dic, Kscan)
 
                 step_index = self.post_measurment_actions(Obs, Rback, Valid, dic, step_index)
 
@@ -809,7 +810,7 @@ class Scan:
             self.PreAction(dic, 'In-loopPreAction')
 
     def measure_and_save(self, Iscan, Obs, Rback, Valid, dic, Kscan=None):
-        for j in range(0, dic['NumberOfMeasurements']):
+        for j in range(dic['NumberOfMeasurements']):
             [v, s, sl] = self.epics_dal.getGroup('All')
 
             if self.n_readbacks == 1:
@@ -829,7 +830,7 @@ class Scan:
                 self.n_readbacks + self.n_validations + self.n_observables]
 
             if dic['NumberOfMeasurements'] > 1:
-                if Kscan:
+                if Kscan is not None:
                     Rback[Kscan][Iscan].append(rback_result)
                     Valid[Kscan][Iscan].append(valid_result)
                     Obs[Kscan][Iscan].append(obs_result)
@@ -838,7 +839,7 @@ class Scan:
                     Valid[Iscan].append(valid_result)
                     Obs[Iscan].append(obs_result)
             else:
-                if Kscan:
+                if Kscan is not None:
                     Rback[Kscan][Iscan] = rback_result
                     Valid[Kscan][Iscan] = valid_result
                     Obs[Kscan][Iscan] = obs_result

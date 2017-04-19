@@ -239,13 +239,33 @@ class VectorPositioner(object):
                 yield position
 
 
+class StepByStepVectorPositioner(VectorPositioner):
+    """
+    Scan over all provided points, one by one, returning the previous to the initial state.
+    """
+    def __init__(self, positions, initial_positions, passes=1, offsets=None):
+        super(StepByStepVectorPositioner, self).__init__(positions, passes, offsets)
+        self.initial_positions = initial_positions
+
+    def get_generator(self):
+        # Number of steps for each axis.
+        n_steps = len(self.positions[0]) if isinstance(self.positions, list) else 1
+
+        for _ in range(self.passes):
+            # For each axis.
+            for axis_index in range(self.n_positions):
+                current_state = copy(self.initial_positions)
+                for position_index in range(n_steps):
+                    current_state[axis_index] = self.positions[axis_index][position_index]
+                    yield copy(current_state)
+
+
 class ZigZagVectorPositioner(VectorPositioner):
     def get_generator(self):
-
         # This creates a generator for [0, 1, 2, 3... n, n-1, n-2.. 2, 1, 0.....]
-        indexes = cycle(chain(range(0, self.n_positions, 1), range(self.n_positions-2, 0, -1)))
+        indexes = cycle(chain(range(0, self.n_positions, 1), range(self.n_positions - 2, 0, -1)))
         # First pass has the full number of items, each subsequent has one less (extreme sequence item).
-        n_indexes = self.n_positions + ((self.passes-1) * (self.n_positions - 1))
+        n_indexes = self.n_positions + ((self.passes - 1) * (self.n_positions - 1))
 
         for x in range(n_indexes):
             yield self.positions[next(indexes)]

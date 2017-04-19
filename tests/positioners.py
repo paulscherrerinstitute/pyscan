@@ -2,7 +2,7 @@ import unittest
 from itertools import count
 
 from pyscan.positioner import LinearPositioner, ZigZagLinearPositioner, VectorPositioner, \
-    ZigZagVectorPositioner, AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner
+    ZigZagVectorPositioner, AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner, StepByStepVectorPositioner
 from tests.utils import is_close
 
 
@@ -118,6 +118,7 @@ class DiscreetPositionersTests(unittest.TestCase):
         self.standard_linear_tests(LinearPositioner)
         self.standard_linear_multipass_tests(LinearPositioner)
 
+        # Advance each given motor for each step.
         expected_result = [[0, 0, 0], [1.0, 1.0, 1.0], [2.0, 2.0, 2.0]]
 
         # Generate 3d steps, with number of steps.
@@ -272,3 +273,21 @@ class DiscreetPositionersTests(unittest.TestCase):
         # # Multi pass, step size, 2 values per axis.
         self.verify_multi_result(MultiAreaPositioner([[0, 0], [4, 4]], [[2, 2], [6, 6]], [[1., 1.], [1., 1.]],
                                                      passes=3), expected_result * 3)
+
+    def test_StepByStepVectorPositioner(self):
+        expected_result = [[0], [1], [2], [3]]
+        # This should simply scan over all the values.
+        self.verify_result(StepByStepVectorPositioner([[0, 1, 2, 3]], [-1]), expected_result)
+
+        expected_result = [[0, -1], [1, -1], [2, -1],
+                           [-1, 0], [-1, 1], [-1, 2]]
+        # One axis at the time, returning each value back to the original when finished.
+        self.verify_result(StepByStepVectorPositioner([[0, 1, 2], [0, 1, 2]], [-1, -1]),
+                           expected_result)
+
+        expected_result = [[0, -1, -1], [1, -1, -1],
+                           [-1, 0, -1], [-1, 1, -1],
+                           [-1, -1, 0], [-1, -1, 1]]
+        # Same as above, but for 3 axis.
+        self.verify_result(StepByStepVectorPositioner([[0, 1], [0, 1], [0, 1]], [-1, -1, -1]),
+                           expected_result)

@@ -14,6 +14,7 @@ class PyScan(unittest.TestCase):
         indict1['Waiting'] = 0.1
 
         indict2 = dict()
+        # TODO: Check what happens if only a single Knob is specified.
         indict2['Knob'] = ["2.1", "2.2"]
         indict2['ScanRange'] = [[0, 2], [0, 2]]
         indict2['Nstep'] = 3
@@ -161,17 +162,10 @@ class PyScan(unittest.TestCase):
         n_measurements = indict2["NumberOfMeasurements"]
         knob_readbacks = result["KnobReadback"]
 
-        # Flatten the list.
-        knob_readbacks_expanded = [knob for sublist in result["KnobReadback"] for knob in sublist]
-
         # Re-group the expanded expected positions by the number of measurements.
         if n_measurements > 1:
             for index, position in enumerate(expected_positions):
                 expected_positions[index] = [position] * n_measurements
-
-        # # Check if the knob readbacks equal the expected positions (the motors were positioned to the correct values).
-        # self.assertEqual(knob_readbacks_expanded, expected_positions,
-        #                  "The knob readback values do not match the expected one.")
 
         # There should be 2 dimensions in the results (indict1, indict2).
         self.assertEqual(len(knob_readbacks), 2,
@@ -258,7 +252,45 @@ class PyScan(unittest.TestCase):
         self.standard_series_tests(result, indict1, indict2, expected_positions)
 
     def test_ScanMixed(self):
-        pass
+        # First dimension is Range scan, second is Series scan.
+        indict1, _ = self.get_ScanLine_indices()
+        _, indict2 = self.get_ScanSeries_indices()
+        # Only the number of measurements on the last dimension can influence the result.
+        indict1["NumberOfMeasurements"] = 3
+
+        test_dal = TestPyScanDal()
+        pyscan = Scan()
+        self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
+
+        # First dimension LineScan, second dimension first change one, than another.
+        expected_positions = [[-3, -3, 0, "2.2"], [-3, -3, 1, "2.2"], [-3, -3, 2, "2.2"],
+                              [-3, -3, "2.1", 0], [-3, -3, "2.1", 1], [-3, -3, "2.1", 2],
+                              [-2, -2, 0, "2.2"], [-2, -2, 1, "2.2"], [-2, -2, 2, "2.2"],
+                              [-2, -2, "2.1", 0], [-2, -2, "2.1", 1], [-2, -2, "2.1", 2],
+                              [-1, -1, 0, "2.2"], [-1, -1, 1, "2.2"], [-1, -1, 2, "2.2"],
+                              [-1, -1, "2.1", 0], [-1, -1, "2.1", 1], [-1, -1, "2.1", 2],
+                              [-0, -0, 0, "2.2"], [-0, -0, 1, "2.2"], [-0, -0, 2, "2.2"],
+                              [-0, -0, "2.1", 0], [-0, -0, "2.1", 1], [-0, -0, "2.1", 2]]
+
+        result = pyscan.startScan()
+        self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
+
+        # TODO: Profile the outputs.
+
+        # Repeat the same test with multiple measurements.
+
+        indict1, _ = self.get_ScanLine_indices()
+        _, indict2 = self.get_ScanSeries_indices()
+        # Only the number of measurements on the last dimension can influence the result.
+        indict1["NumberOfMeasurements"] = 3
+        # Each measurement (KnobReadback, Observable, Validation) is repeated 4 times.
+        indict2["NumberOfMeasurements"] = 4
+
+        test_dal = TestPyScanDal()
+        pyscan = Scan()
+        self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
+
+        # TODO: Profile the outputs.
 
     def test_Monitors(self):
         pass

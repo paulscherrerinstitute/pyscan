@@ -5,9 +5,8 @@ from tests.utils import TestPyScanDal
 
 
 class PyScan(unittest.TestCase):
-
     @staticmethod
-    def get_ScanRange_indices():
+    def get_ScanLine_indices():
         indict1 = dict()
         indict1['Knob'] = ["1.1", "1.2"]
         indict1["ScanValues"] = [[-3, -2, -1, 0], [-3, -2, -1, 0]]
@@ -18,8 +17,10 @@ class PyScan(unittest.TestCase):
         indict2['Knob'] = ["2.1", "2.2"]
         indict2['ScanRange'] = [[0, 2], [0, 2]]
         indict2['Nstep'] = 3
+        # TODO: Check what happens if single value observable is given.
         indict2['Observable'] = ["READ4", "READ5"]
         indict2['Waiting'] = 0.1
+
         return indict1, indict2
 
     @staticmethod
@@ -37,6 +38,7 @@ class PyScan(unittest.TestCase):
         indict2['Series'] = 1
         indict2['Observable'] = ["READ4", "READ5"]
         indict2['Waiting'] = 0.1
+
         return indict1, indict2
 
     def standard_init_tests(self, result):
@@ -76,6 +78,9 @@ class PyScan(unittest.TestCase):
         self.assertEqual(sampled_positions, expanded_expected_positions,
                          "The expected positions do not match the one read by the mock dal.")
 
+    def standard_line_tests(self, result, indict1, indict2, expected_positions):
+        n_measurements = indict2["NumberOfMeasurements"]
+
         knob_readbacks = result["KnobReadback"]
 
         # Flatten the list.
@@ -92,16 +97,16 @@ class PyScan(unittest.TestCase):
 
         # The slow dimension is always the slowest to change.
         self.assertEqual(len(knob_readbacks), indict1['Nstep'],
-                         "The number of steps do not match with the first dimension.")
+                         "The number of knob_readbacks do not match with the first dimension steps.")
         self.assertEqual(len(knob_readbacks[0]), indict2["Nstep"],
-                         "The number of steps do not match with the second dimension.")
+                         "The number of knob_readbacks do not match with the second dimension steps.")
 
         observables = result["Observable"]
         self.assertEqual(len(observables), indict1['Nstep'],
-                         "The number of steps do not match with the first dimension.")
+                         "The number of observables do not match with the first dimension steps.")
         # Only observables from the last dimension are taken into account.
         self.assertEqual(len(observables[0]), indict2['Nstep'],
-                         "The number of steps do not match with the second dimension.")
+                         "The number of observables do not match with the second dimension steps.")
 
         # TODO: Test result["Validation"] -> why is it even empty?
 
@@ -110,19 +115,17 @@ class PyScan(unittest.TestCase):
             self.assertEqual(len(knob_readbacks[0][0]), n_measurements,
                              "The number of measurements do not match with the second dimension NumberOfMeasurements.")
 
-            self.assertEqual(observables[0][0], [indict2['Observable']] * n_measurements,
-                             "Not the correct number of observables was read.")
-
             # Check if only observables from the last dimension were read.
             self.assertEqual(observables[0][0], [indict2['Observable']] * n_measurements,
                              "The last dimension observables are not read.")
 
         else:
             # Check if only observables from the last dimension were read.
-            self.assertEqual(observables[0][0], indict2['Observable'], "The last dimension observables are not read.")
+            self.assertEqual(observables[0][0], indict2['Observable'],
+                             "The last dimension observables are not read.")
 
-    def test_ScanRange(self):
-        indict1, indict2 = self.get_ScanRange_indices()
+    def test_ScanLine(self):
+        indict1, indict2 = self.get_ScanLine_indices()
         # Only the number of measurements on the last dimension can influence the result.
         indict1["NumberOfMeasurements"] = 3
 
@@ -137,9 +140,11 @@ class PyScan(unittest.TestCase):
 
         result = pyscan.startScan()
         self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
+        self.standard_line_tests(result, indict1, indict2, expected_positions)
 
-    def test_ScanRange_multi_measurments(self):
-        indict1, indict2 = self.get_ScanRange_indices()
+        # Repeat the same test with multiple measurements.
+
+        indict1, indict2 = self.get_ScanLine_indices()
         # Each measurement (KnobReadback, Observable, Validation) is repeated 4 times.
         indict2["NumberOfMeasurements"] = 4
         # This should not change anything - and we are testing this.
@@ -148,32 +153,118 @@ class PyScan(unittest.TestCase):
         test_dal = TestPyScanDal()
         pyscan = Scan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
-
-        # Only the last axis counts for the number of measurements.
-        expected_positions = [[-3, -3, 0, 0], [-3, -3, 1, 1], [-3, -3, 2, 2],
-                              [-2, -2, 0, 0], [-2, -2, 1, 1], [-2, -2, 2, 2],
-                              [-1, -1, 0, 0], [-1, -1, 1, 1], [-1, -1, 2, 2],
-                              [-0, -0, 0, 0], [-0, -0, 1, 1], [-0, -0, 2, 2]]
-
         result = pyscan.startScan()
         self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
+        self.standard_line_tests(result, indict1, indict2, expected_positions)
+
+    def standard_series_tests(self, result, indict1, indict2, expected_positions):
+        n_measurements = indict2["NumberOfMeasurements"]
+        knob_readbacks = result["KnobReadback"]
+
+        # Flatten the list.
+        knob_readbacks_expanded = [knob for sublist in result["KnobReadback"] for knob in sublist]
+
+        # Re-group the expanded expected positions by the number of measurements.
+        if n_measurements > 1:
+            for index, position in enumerate(expected_positions):
+                expected_positions[index] = [position] * n_measurements
+
+        # # Check if the knob readbacks equal the expected positions (the motors were positioned to the correct values).
+        # self.assertEqual(knob_readbacks_expanded, expected_positions,
+        #                  "The knob readback values do not match the expected one.")
+
+        # There should be 2 dimensions in the results (indict1, indict2).
+        self.assertEqual(len(knob_readbacks), 2,
+                         "The number of knob_readbacks do not match with the number of axis.")
+        # Each row represents the number of steps in the first axis.
+        self.assertEqual(len(knob_readbacks[0]), indict1["Nstep"][0],
+                         "The number of knob_readbacks do not match with the first dimension steps.")
+        # Again one entry for each axis.
+        self.assertEqual(len(knob_readbacks[0][0]), 2,
+                         "The number of knob_readbacks do not match with the number of axis.")
+        # And finally the last dimension represents the number of steps in the last axis.
+        self.assertEqual(len(knob_readbacks[0][0][0]), indict2["Nstep"][0],
+                         "The number of knob_readbacks do not match with the second dimension steps.")
+
+        observables = result["Observable"]
+        # Same logic as for the knob readbacks.
+        self.assertEqual(len(observables), 2,
+                         "The number of observables do not match with the number of axis.")
+        self.assertEqual(len(observables[0]), indict1['Nstep'][0],
+                         "The number of observables do not match with the first dimension steps.")
+        self.assertEqual(len(observables[0][0]), 2,
+                         "The number of observables do not match with the number of axis.")
+        self.assertEqual(len(observables[0][0][0]), indict2["Nstep"][0],
+                         "The number of observables do not match with the second dimension steps.")
+
+        # TODO: Test result["Validation"] -> why is it even empty?
+
+        # Check if the number of measurements is correct for the results.
+        if n_measurements > 1:
+            self.assertEqual(len(knob_readbacks[0][0][0][0]), n_measurements,
+                             "The number of measurements do not match with the second dimension NumberOfMeasurements.")
+
+            self.assertEqual(observables[0][0][0][0], [indict2['Observable']] * n_measurements,
+                             "Not the correct number of observables was read.")
+        else:
+            # Check if only observables from the last dimension were read.
+            self.assertEqual(observables[0][0][0][0], indict2['Observable'],
+                             "The last dimension observables are not read.")
 
     def test_ScanSeries(self):
         indict1, indict2 = self.get_ScanSeries_indices()
+        # Only the number of measurements on the last dimension can influence the result.
+        indict1["NumberOfMeasurements"] = 3
 
         test_dal = TestPyScanDal()
         pyscan = Scan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
-        result = pyscan.startScan()
+        # Vary one value in its entire range, per axis. Other values are initial positions.
+        expected_positions = [[-3, "1.2", 0, "2.2"], [-3, "1.2", 1, "2.2"], [-3, "1.2", 2, "2.2"],
+                              [-3, "1.2", "2.1", 0], [-3, "1.2", "2.1", 1], [-3, "1.2", "2.1", 2],
+                              [-2, "1.2", 0, "2.2"], [-2, "1.2", 1, "2.2"], [-2, "1.2", 2, "2.2"],
+                              [-2, "1.2", "2.1", 0], [-2, "1.2", "2.1", 1], [-2, "1.2", "2.1", 2],
+                              [-1, "1.2", 0, "2.2"], [-1, "1.2", 1, "2.2"], [-1, "1.2", 2, "2.2"],
+                              [-1, "1.2", "2.1", 0], [-1, "1.2", "2.1", 1], [-1, "1.2", "2.1", 2],
+                              [-0, "1.2", 0, "2.2"], [-0, "1.2", 1, "2.2"], [-0, "1.2", 2, "2.2"],
+                              [-0, "1.2", "2.1", 0], [-0, "1.2", "2.1", 1], [-0, "1.2", "2.1", 2],
+                              ["1.1", -3, 0, "2.2"], ["1.1", -3, 1, "2.2"], ["1.1", -3, 2, "2.2"],
+                              ["1.1", -3, "2.1", 0], ["1.1", -3, "2.1", 1], ["1.1", -3, "2.1", 2],
+                              ["1.1", -2, 0, "2.2"], ["1.1", -2, 1, "2.2"], ["1.1", -2, 2, "2.2"],
+                              ["1.1", -2, "2.1", 0], ["1.1", -2, "2.1", 1], ["1.1", -2, "2.1", 2],
+                              ["1.1", -1, 0, "2.2"], ["1.1", -1, 1, "2.2"], ["1.1", -1, 2, "2.2"],
+                              ["1.1", -1, "2.1", 0], ["1.1", -1, "2.1", 1], ["1.1", -1, "2.1", 2],
+                              ["1.1", -0, 0, "2.2"], ["1.1", -0, 1, "2.2"], ["1.1", -0, 2, "2.2"],
+                              ["1.1", -0, "2.1", 0], ["1.1", -0, "2.1", 1], ["1.1", -0, "2.1", 2]]
 
+        result = pyscan.startScan()
+        self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
+        self.standard_series_tests(result, indict1, indict2, expected_positions)
+
+        # Repeat the same test with multiple measurements.
+
+        indict1, indict2 = self.get_ScanSeries_indices()
+        # Each measurement (KnobReadback, Observable, Validation) is repeated 4 times.
+        indict2["NumberOfMeasurements"] = 2
+        # Only the number of measurements on the last dimension can influence the result.
+        indict1["NumberOfMeasurements"] = 3
+
+        test_dal = TestPyScanDal()
+        pyscan = Scan()
+        self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
+        result = pyscan.startScan()
+        self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
+        self.standard_series_tests(result, indict1, indict2, expected_positions)
 
     def test_ScanMixed(self):
-        # TODO: Test mixture of series and area scan.
         pass
 
+    def test_Monitors(self):
+        pass
 
-    # TODO: Test PreAction and PostAction.
-    # TODO: Test In-loopPreAction, In-loopPostAction
-    # TODO: Test Monitor.
-    # TODO: Test additive - Does that mean relative? YES!
+    def test_Additive(self):
+        pass
+
+    def test_Actions(self):
+        pass

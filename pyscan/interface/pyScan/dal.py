@@ -3,7 +3,8 @@ try:
 except:
     pass
 
-class PyCafeEpicsDal(object):
+
+class PyEpicsDal(object):
     def __init__(self):
         self.cafe = PyCafe.CyCafe()
         self.cafe.init()

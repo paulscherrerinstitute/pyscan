@@ -4,7 +4,7 @@ from time import sleep
 
 import numpy as np
 
-from pyscan.interface.pyScan.dal import PyCafeEpicsDal
+from pyscan.interface.pyScan.dal import PyEpicsDal
 from pyscan.interface.pyScan.gui import SubPanel, DummyClass
 
 
@@ -61,7 +61,7 @@ class Scan:
             self.epics_dal.groupClose(temp_handle)
 
     def initializeScan(self, inlist, dal=None):
-        self.epics_dal = dal or PyCafeEpicsDal()
+        self.epics_dal = dal or PyEpicsDal()
 
         self.inlist = []
 
@@ -592,12 +592,6 @@ class Scan:
 
         return l
 
-    def new_startScan(self):
-        # Only the last dimension PVs and n_measurements counts.
-        n_measurments = self.inlist[-1]
-        pvs_to_read = []
-        for dimension in self.inlist:
-            pass
 
     def startScan(self):
 
@@ -652,12 +646,12 @@ class Scan:
             if series_scan:
                 self.last_series_scan(Obs, Rback, Valid, dic)
             else:
-                self.last_range_scan(Obs, Rback, Valid, dic)
+                self.last_line_scan(Obs, Rback, Valid, dic)
         else:
             if series_scan:
                 self.series_scan(Obs, Rback, Valid, dic_index)
             else:
-                self.range_scan(Obs, Rback, Valid, dic_index)
+                self.line_scan(Obs, Rback, Valid, dic_index)
 
         # Execute post actions.
         if len(dic['PostAction']):
@@ -782,7 +776,7 @@ class Scan:
 
             sleep(dic['Waiting'])
 
-    def range_scan(self, Obs, Rback, Valid, dic_index):
+    def line_scan(self, Obs, Rback, Valid, dic_index):
         dic = self.inlist[dic_index]
         for step_index in range(dic['Nstep']):
             # print('Dict' + str(dic_index) + '  Loop' + str(step_index))
@@ -816,7 +810,7 @@ class Scan:
         pv_wait_time = dic['KnobWaiting'][knob_index]
         self.epics_dal.setAndMatch(set_pv_name, pv_value, readback_pv_name, pv_tolerance, pv_wait_time, 0)
 
-    def last_range_scan(self, Obs, Rback, Valid, dic):
+    def last_line_scan(self, Obs, Rback, Valid, dic):
         step_index = 0
         while step_index < dic['Nstep']:
             # print(step_index)

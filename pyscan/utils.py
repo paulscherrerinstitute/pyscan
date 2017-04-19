@@ -12,6 +12,15 @@ def convert_to_list(value):
     return [value] if (value is not None) and (not isinstance(value, list)) else value
 
 
+def convert_to_position_list(axis_list):
+    """
+    # Change the PER KNOB to PER INDEX of positions.
+    :param axis_list: PER KNOB list of positions.
+    :return: PER INDEX list of positions.
+    """
+    return [list(positions) for positions in zip(*axis_list)]
+
+
 def connect_to_pv(pv_name):
     """
     Start a connection to a PV.
@@ -112,3 +121,30 @@ class SimpleDataProcessor(object):
 
     def get_data(self):
         return [(position, data) for position, data in zip(self.positions, self.data)]
+
+
+class PyScanDataProcessor(object):
+    def __init__(self, output, n_pvs, n_validation, n_observable):
+        self.n_pvs = n_pvs
+        self.n_validation = n_validation
+        self.n_observable = n_observable
+        self.output = output
+
+    def process(self, position, data):
+        if self.n_readbacks == 1:
+            rback_result = data[0]
+        else:
+            rback_result = data[0:self.n_readbacks]
+
+        if self.n_validation == 1:
+            valid_result = data[self.n_readbacks]
+        else:
+            valid_result = data[self.n_readbacks:self.n_readbacks + self.n_validations]
+
+        if self.n_observable:
+            obs_result = data[-1]
+        else:
+            obs_result = data[self.n_readbacks + self.n_validations:
+            self.n_readbacks + self.n_validations + self.n_observables]
+
+        self.output["Validation"]

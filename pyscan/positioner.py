@@ -249,14 +249,15 @@ class StepByStepVectorPositioner(VectorPositioner):
 
     def get_generator(self):
         # Number of steps for each axis.
-        n_steps = len(self.positions[0]) if isinstance(self.positions, list) else 1
+        n_steps = len(self.positions)
+        n_axis = len(self.positions[0]) if isinstance(self.positions, list) else 1
 
         for _ in range(self.passes):
             # For each axis.
-            for axis_index in range(self.n_positions):
+            for axis_index in range(n_axis):
                 current_state = copy(self.initial_positions)
-                for position_index in range(n_steps):
-                    current_state[axis_index] = self.positions[axis_index][position_index]
+                for step_index in range(n_steps):
+                    current_state[axis_index] = self.positions[step_index][axis_index]
                     yield copy(current_state)
 
 
@@ -269,3 +270,19 @@ class ZigZagVectorPositioner(VectorPositioner):
 
         for x in range(n_indexes):
             yield self.positions[next(indexes)]
+
+
+class CompoundPositioner(object):
+    def __init__(self, positioners):
+        self.positioners = positioners
+        self.n_positioners = len(positioners)
+
+    def get_generator(self):
+        def walk_positioner(index, output_positions):
+            if index == self.n_positioners:
+                yield copy(output_positions)
+            else:
+                for current_positions in self.positioners[index].get_generator():
+                    yield from walk_positioner(index+1, output_positions + current_positions)
+
+        yield from walk_positioner(0, [])

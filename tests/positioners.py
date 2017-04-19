@@ -2,7 +2,9 @@ import unittest
 from itertools import count
 
 from pyscan.positioner import LinearPositioner, ZigZagLinearPositioner, VectorPositioner, \
-    ZigZagVectorPositioner, AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner, StepByStepVectorPositioner
+    ZigZagVectorPositioner, AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner, StepByStepVectorPositioner, \
+    CompoundPositioner
+from pyscan.utils import convert_to_position_list
 from tests.utils import is_close
 
 
@@ -277,17 +279,104 @@ class DiscreetPositionersTests(unittest.TestCase):
     def test_StepByStepVectorPositioner(self):
         expected_result = [[0], [1], [2], [3]]
         # This should simply scan over all the values.
-        self.verify_result(StepByStepVectorPositioner([[0, 1, 2, 3]], [-1]), expected_result)
+        self.verify_result(StepByStepVectorPositioner([[0], [1], [2], [3]], [-1]), expected_result)
 
         expected_result = [[0, -1], [1, -1], [2, -1],
                            [-1, 0], [-1, 1], [-1, 2]]
         # One axis at the time, returning each value back to the original when finished.
-        self.verify_result(StepByStepVectorPositioner([[0, 1, 2], [0, 1, 2]], [-1, -1]),
+        self.verify_result(StepByStepVectorPositioner([[0, 0], [1, 1], [2, 2]], [-1, -1]),
                            expected_result)
 
         expected_result = [[0, -1, -1], [1, -1, -1],
                            [-1, 0, -1], [-1, 1, -1],
                            [-1, -1, 0], [-1, -1, 1]]
         # Same as above, but for 3 axis.
-        self.verify_result(StepByStepVectorPositioner([[0, 1], [0, 1], [0, 1]], [-1, -1, -1]),
+        self.verify_result(StepByStepVectorPositioner(convert_to_position_list([[0, 1], [0, 1], [0, 1]]), [-1, -1, -1]),
+                           expected_result)
+
+        # Test for PyScan.
+        expected_result = [[-3, -12], [-2, -12], [-1, -12], [0, -12],
+                           [-11, -3], [-11, -2], [-11, -1], [-11, 0]]
+
+        first_initial = [-11, -12]
+        first_input = [[-3, -2, -1, 0], [-3, -2, -1, 0]]
+        first_input = convert_to_position_list(first_input)
+
+        self.verify_result(StepByStepVectorPositioner(first_input, first_initial), expected_result)
+
+        expected_result = [[0, -22], [1, -22], [2, -22],
+                           [-21, 0], [-21, 1], [-21, 2]]
+
+        second_initial = [-21, -22]
+        second_input = [[0, 1, 2], [0, 1, 2]]
+        second_input = convert_to_position_list(second_input)
+
+        self.verify_result(StepByStepVectorPositioner(second_input, second_initial), expected_result)
+
+    def test_CompoundPositioner(self):
+        expected_result = [[0], [1], [2], [3]]
+        # The compound positioner should not modify the behaviour if only 1 positioner was supplied.
+        self.verify_result(CompoundPositioner([StepByStepVectorPositioner(expected_result, [-1])]), expected_result)
+
+        expected_result = [[0.0, 0.0], [0.0, 3.0],
+                           [3.0, 3.0], [3.0, 0.0]]
+        # Test with other positioners as well.
+        self.verify_result(CompoundPositioner([ZigZagAreaPositioner([0, 0], [3, 3], [1, 1])]), expected_result)
+
+        self.verify_result(CompoundPositioner([VectorPositioner(expected_result, passes=3)]), expected_result * 3)
+
+        # Perform tests for PyScan.
+        first_input = [[-3, -2, -1, 0], [-3, -2, -1, 0]]
+        second_input = [[0, 1, 2], [0, 1, 2]]
+        # Transform the list to be position by position, not axis by axis.
+        first_input = convert_to_position_list(first_input)
+        second_input = convert_to_position_list(second_input)
+
+        # 2 ScanLine axes.
+        expected_result = [[-3, -3, 0, 0], [-3, -3, 1, 1], [-3, -3, 2, 2],
+                           [-2, -2, 0, 0], [-2, -2, 1, 1], [-2, -2, 2, 2],
+                           [-1, -1, 0, 0], [-1, -1, 1, 1], [-1, -1, 2, 2],
+                           [-0, -0, 0, 0], [-0, -0, 1, 1], [-0, -0, 2, 2]]
+
+        self.verify_result(CompoundPositioner([VectorPositioner(first_input),
+                                               VectorPositioner(second_input)]), expected_result)
+
+        # 2 ScanSeries axes.
+        expected_result = [[-3, -12, 0, -22], [-3, -12, 1, -22], [-3, -12, 2, -22],
+                           [-3, -12, -21, 0], [-3, -12, -21, 1], [-3, -12, -21, 2],
+                           [-2, -12, 0, -22], [-2, -12, 1, -22], [-2, -12, 2, -22],
+                           [-2, -12, -21, 0], [-2, -12, -21, 1], [-2, -12, -21, 2],
+                           [-1, -12, 0, -22], [-1, -12, 1, -22], [-1, -12, 2, -22],
+                           [-1, -12, -21, 0], [-1, -12, -21, 1], [-1, -12, -21, 2],
+                           [-0, -12, 0, -22], [-0, -12, 1, -22], [-0, -12, 2, -22],
+                           [-0, -12, -21, 0], [-0, -12, -21, 1], [-0, -12, -21, 2],
+                           [-11, -3, 0, -22], [-11, -3, 1, -22], [-11, -3, 2, -22],
+                           [-11, -3, -21, 0], [-11, -3, -21, 1], [-11, -3, -21, 2],
+                           [-11, -2, 0, -22], [-11, -2, 1, -22], [-11, -2, 2, -22],
+                           [-11, -2, -21, 0], [-11, -2, -21, 1], [-11, -2, -21, 2],
+                           [-11, -1, 0, -22], [-11, -1, 1, -22], [-11, -1, 2, -22],
+                           [-11, -1, -21, 0], [-11, -1, -21, 1], [-11, -1, -21, 2],
+                           [-11, -0, 0, -22], [-11, -0, 1, -22], [-11, -0, 2, -22],
+                           [-11, -0, -21, 0], [-11, -0, -21, 1], [-11, -0, -21, 2]]
+
+        # Initial positions to be used.
+        first_initial = [-11, -12]
+        second_initial = [-21, -22]
+
+        self.verify_result(CompoundPositioner([StepByStepVectorPositioner(first_input, first_initial),
+                                               StepByStepVectorPositioner(second_input, second_initial)]),
+                           expected_result)
+
+        # First dimension LineScan, second dimension first change one, than another.
+        expected_result = [[-3, -3, 0, -22], [-3, -3, 1, -22], [-3, -3, 2, -22],
+                           [-3, -3, -21, 0], [-3, -3, -21, 1], [-3, -3, -21, 2],
+                           [-2, -2, 0, -22], [-2, -2, 1, -22], [-2, -2, 2, -22],
+                           [-2, -2, -21, 0], [-2, -2, -21, 1], [-2, -2, -21, 2],
+                           [-1, -1, 0, -22], [-1, -1, 1, -22], [-1, -1, 2, -22],
+                           [-1, -1, -21, 0], [-1, -1, -21, 1], [-1, -1, -21, 2],
+                           [-0, -0, 0, -22], [-0, -0, 1, -22], [-0, -0, 2, -22],
+                           [-0, -0, -21, 0], [-0, -0, -21, 1], [-0, -0, -21, 2]]
+
+        self.verify_result(CompoundPositioner([VectorPositioner(first_input),
+                                               StepByStepVectorPositioner(second_input, second_initial)]),
                            expected_result)

@@ -857,7 +857,7 @@ class Scan:
                         KV = dic['KnobSaved'][knob_index]
                     try:
                         set_pv_name = dic['Knob'][knob_index]
-                        pv_value = KV[Kscan]
+                        pv_value = KV
                         readback_pv_name = dic['KnobReadback'][step_index]
                         pv_tolerance = dic['KnobTolerance'][step_index]
                         pv_wait_time = dic['KnobWaiting'][step_index]
@@ -865,8 +865,7 @@ class Scan:
                         self.epics_dal.setAndMatch(set_pv_name, pv_value, readback_pv_name, pv_tolerance, pv_wait_time,
                                                    0)
                     except Exception as inst:
-                        print('Exception in series_scan')
-                        print(inst)
+                        raise ValueError('Exception in series_scan', inst)
 
                 if dic['KnobWaitingExtra']:
                     sleep(dic['KnobWaitingExtra'])
@@ -899,7 +898,6 @@ class Scan:
                     try:
 
                         pv_value = KV
-
                         set_pv_name = dic['Knob'][knob_index]
                         readback_pv_name = dic['KnobReadback'][knob_index]
                         pv_tolerance = dic['KnobTolerance'][knob_index]

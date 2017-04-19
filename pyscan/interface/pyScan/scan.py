@@ -8,7 +8,7 @@ from pyscan.interface.pyScan.dal import PyEpicsDal
 from pyscan.interface.pyScan.gui import SubPanel, DummyClass
 
 
-class Scan:
+class Scan(object):
     def __init__(self, fromGUI=0):
 
         self.epics_dal = None
@@ -592,9 +592,10 @@ class Scan:
 
         return l
 
+    def execute_scan(self):
+        self.Scan(self.outdict['KnobReadback'], self.outdict['Validation'], self.outdict['Observable'], 0)
 
     def startScan(self):
-
         if self.outdict['ErrorMessage']:
             if 'After the last scan,' not in self.outdict['ErrorMessage']:
                 self.outdict[
@@ -616,7 +617,8 @@ class Scan:
             self.ProgDisp.emit("pb")
 
         self.Ndone = 0
-        self.Scan(self.outdict['KnobReadback'], self.outdict['Validation'], self.outdict['Observable'], 0)
+
+        self.execute_scan()
 
         if self.fromGUI:
             self.ProgDisp.showPanel(0)
@@ -744,12 +746,12 @@ class Scan:
             else:
                 rback_result = v[0:self.n_readbacks]
 
-            if len(dic['Validation']) == 1:
+            if self.n_validations == 1:
                 valid_result = v[self.n_readbacks]
             else:
                 valid_result = v[self.n_readbacks:self.n_readbacks + self.n_validations]
 
-            if len(dic['Observable']) == 1:
+            if self.n_observables == 1:
                 obs_result = v[-1]
             else:
                 obs_result = v[self.n_readbacks + self.n_validations:

@@ -39,6 +39,7 @@ class EpicsWriter(object):
     """
     Sequentially write the PV value and wait for the PV to reach the desired value.
     """
+
     def __init__(self, list_of_pvs):
         self.pvs = [connect_to_pv(pv_name) for pv_name in convert_to_list(list_of_pvs)]
 
@@ -79,6 +80,7 @@ class EpicsReader(object):
     """
     Sequentially read the PVs and return a list of results.
     """
+
     def __init__(self, list_of_pvs):
         self.pvs = [connect_to_pv(pv_name) for pv_name in convert_to_list(list_of_pvs)]
 
@@ -99,6 +101,7 @@ class SimpleExecuter(object):
     Execute all callbacks in the same thread.
     Each callback method should accept 2 parameters: position, sampled values.
     """
+
     def __init__(self, callbacks):
         self.callbacks = callbacks
 
@@ -111,6 +114,7 @@ class SimpleDataProcessor(object):
     """
     Save the position and the received data at this position.
     """
+
     def __init__(self):
         self.positions = []
         self.data = []
@@ -132,19 +136,22 @@ class PyScanDataProcessor(object):
 
     def process(self, position, data):
         if self.n_readbacks == 1:
-            rback_result = data[0]
+            readback_result = data[0]
         else:
-            rback_result = data[0:self.n_readbacks]
+            readback_result = data[0:self.n_readbacks]
 
         if self.n_validation == 1:
-            valid_result = data[self.n_readbacks]
+            validation_result = data[self.n_readbacks]
         else:
-            valid_result = data[self.n_readbacks:self.n_readbacks + self.n_validations]
+            validation_result = data[self.n_readbacks:self.n_readbacks + self.n_validations]
 
         if self.n_observable:
-            obs_result = data[-1]
+            observable_result = data[-1]
         else:
-            obs_result = data[self.n_readbacks + self.n_validations:
-            self.n_readbacks + self.n_validations + self.n_observables]
+            observable_result = data[self.n_readbacks + self.n_validations:self.n_readbacks +
+                                                                           self.n_validations + self.n_observables]
 
-        self.output["Validation"]
+        # TODO: This might not work because of pre-initialization. Remove from original Scan class?
+        self.output["KnobReadback"].append(readback_result)
+        self.output["Validation"].append(validation_result)
+        self.output["Observable"].append(observable_result)

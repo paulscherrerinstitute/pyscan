@@ -84,8 +84,9 @@ class EpicsReader(object):
     """
 
     # TODO: Check for first time connection speed.
-    def __init__(self, list_of_pvs):
+    def __init__(self, list_of_pvs, n_measurments=1):
         self.pvs = [connect_to_pv(pv_name) for pv_name in convert_to_list(list_of_pvs)]
+        self.n_measurments = n_measurments
 
     def read(self):
         """
@@ -94,7 +95,13 @@ class EpicsReader(object):
         """
         result = []
         for pv in self.pvs:
-            result.append(pv.get())
+            if self.n_measurments == 1:
+                result.append(pv.get())
+            else:
+                pv_result = []
+                for i in range(self.n_measurments):
+                    pv_result.append(pv.get())
+                result.append(pv_result)
 
         return result
 

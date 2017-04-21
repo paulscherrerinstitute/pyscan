@@ -1,13 +1,16 @@
 from pyscan.interface import pyScan
 from pyscan.positioner import VectorPositioner, StepByStepVectorPositioner, CompoundPositioner
 from pyscan.scan import Scanner
-from pyscan.utils import PyScanDataProcessor, EpicsReader, convert_to_list, EpicsWriter, convert_to_position_list
+from pyscan.utils import EpicsReader, convert_to_list, EpicsWriter, convert_to_position_list, \
+    SimpleDataProcessor, PyScanDataProcessor
 
 
 class Scan(pyScan.Scan):
     def execute_scan(self):
         # The number of measurments is sampled only from the last dimension.
         n_measurments = self.inlist[-1]["NumberOfMeasurements"]
+        # TODO: Do we need settling time per dimension?
+        settling_time = self.inlist[-1]["KnobWaitingExtra"]
 
         # Knob PVs defined in all dimensions.
         write_pvs = [[pvs for pvs in dimension["Knob"]] for dimension in self.inlist]
@@ -25,7 +28,7 @@ class Scan(pyScan.Scan):
                                              n_pvs=len(readback_pvs),
                                              n_validation=len(validation_pvs),
                                              n_observable=len(observable_pvs))
-        reader = EpicsReader(all_read_pvs)
+        reader = EpicsReader(all_read_pvs, n_measurments)
         writer = EpicsWriter(write_pvs)
 
         # Read and store the initial values.
@@ -58,6 +61,4 @@ class Scan(pyScan.Scan):
         positioner = CompoundPositioner(positioners)
 
         scanner = Scanner(positioner, writer, data_processor, reader)
-        # TODO: Latency from KnobWaitingExtra if per dimension, which is not supported right now.
-        scanner.discrete_scan()
-
+        scanner.discrete_scan(settling_time)

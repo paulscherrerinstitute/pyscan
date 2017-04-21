@@ -218,63 +218,7 @@ class Scan(object):
                 else:
                     dic['Validation'] = []
 
-                if index == len(inlist) - 1 and ('Monitor' in dic.keys()) and (dic['Monitor']):
-                    if isinstance(dic['Monitor'], str):
-                        dic['Monitor'] = [dic['Monitor']]
-
-                    self._add_group(dic, 'Monitor', dic['Monitor'], None)
-
-                    if 'MonitorValue' not in dic.keys():
-                        [dic['MonitorValue'], summary, status] = self.epics_dal.getGroup('Monitor')
-                    elif not isinstance(dic['MonitorValue'], list):
-                        dic['MonitorValue'] = [dic['MonitorValue']]
-                    if len(dic['MonitorValue']) != len(dic['Monitor']):
-                        raise ValueError('The length of MonitorValue does not meet to the length of Monitor.')
-
-                    if 'MonitorTolerance' not in dic.keys():
-                        dic['MonitorTolerance'] = []
-                        [Value, summary, status] = self.epics_dal.getGroup('Monitor')
-                        for v in Value:
-                            v = self.epics_dal.get(m)
-                            if isinstance(v, str):
-                                dic['MonitorTolerance'].append(None)
-                            elif v == 0:
-                                dic['MonitorTolerance'].append(0.1)
-                            else:
-                                dic['MonitorTolerance'].append(
-                                    abs(v * 0.1))  # 10% of the current value will be the torelance when not given
-                    elif not isinstance(dic['MonitorTolerance'], list):
-                        dic['MonitorTolerance'] = [dic['MonitorTolerance']]
-                    if len(dic['MonitorTolerance']) != len(dic['Monitor']):
-                        raise ValueError('The length of MonitorTolerance does not meet to the length of Monitor.')
-
-                    if 'MonitorAction' not in dic.keys():
-                        raise ValueError('MonitorAction is not give though Monitor is given.')
-
-                    if not isinstance(dic['MonitorAction'], list):
-                        dic['MonitorAction'] = [dic['MonitorAction']]
-                    for m in dic['MonitorAction']:
-                        if m != 'Abort' and m != 'Wait' and m != 'WaitAndAbort':
-                            raise ValueError('MonitorAction shold be Wait, Abort, or WaitAndAbort.')
-
-                    if 'MonitorTimeout' not in dic.keys():
-                        dic['MonitorTimeout'] = [30.0] * len(dic['Monitor'])
-                    elif not isinstance(dic['MonitorTimeout'], list):
-                        dic['MonitorValue'] = [dic['MonitorValue']]
-                    if len(dic['MonitorValue']) != len(dic['Monitor']):
-                        raise ValueError('The length of MonitorValue does not meet to the length of Monitor.')
-                    for m in dic['MonitorTimeout']:
-                        try:
-                            float(m)
-                        except:
-                            raise ValueError('MonitorTimeout should be a list of float(or int).')
-
-                elif index == len(inlist) - 1:
-                    dic['Monitor'] = []
-                    dic['MonitorValue'] = []
-                    dic['MonitorTolerance'] = []
-                    dic['MonitorAction'] = []
-                    dic['MonitorTimeout'] = []
+                self._setup_monitors(dic, index, inlist)
 
                 if 'Additive' not in dic.keys():
                     dic['Additive'] = 0
@@ -319,6 +263,65 @@ class Scan(object):
             self.outdict = {"ErrorMessage": str(e)}
 
         return self.outdict
+
+    def _setup_monitors(self, dic, index, inlist):
+        if index == len(inlist) - 1 and ('Monitor' in dic.keys()) and (dic['Monitor']):
+            if isinstance(dic['Monitor'], str):
+                dic['Monitor'] = [dic['Monitor']]
+
+            self._add_group(dic, 'Monitor', dic['Monitor'], None)
+
+            if 'MonitorValue' not in dic.keys():
+                [dic['MonitorValue'], summary, status] = self.epics_dal.getGroup('Monitor')
+            elif not isinstance(dic['MonitorValue'], list):
+                dic['MonitorValue'] = [dic['MonitorValue']]
+            if len(dic['MonitorValue']) != len(dic['Monitor']):
+                raise ValueError('The length of MonitorValue does not meet to the length of Monitor.')
+
+            if 'MonitorTolerance' not in dic.keys():
+                dic['MonitorTolerance'] = []
+                [Value, summary, status] = self.epics_dal.getGroup('Monitor')
+                for v in Value:
+                    v = self.epics_dal.get(m)
+                    if isinstance(v, str):
+                        dic['MonitorTolerance'].append(None)
+                    elif v == 0:
+                        dic['MonitorTolerance'].append(0.1)
+                    else:
+                        dic['MonitorTolerance'].append(
+                            abs(v * 0.1))  # 10% of the current value will be the torelance when not given
+            elif not isinstance(dic['MonitorTolerance'], list):
+                dic['MonitorTolerance'] = [dic['MonitorTolerance']]
+            if len(dic['MonitorTolerance']) != len(dic['Monitor']):
+                raise ValueError('The length of MonitorTolerance does not meet to the length of Monitor.')
+
+            if 'MonitorAction' not in dic.keys():
+                raise ValueError('MonitorAction is not give though Monitor is given.')
+
+            if not isinstance(dic['MonitorAction'], list):
+                dic['MonitorAction'] = [dic['MonitorAction']]
+            for m in dic['MonitorAction']:
+                if m != 'Abort' and m != 'Wait' and m != 'WaitAndAbort':
+                    raise ValueError('MonitorAction shold be Wait, Abort, or WaitAndAbort.')
+
+            if 'MonitorTimeout' not in dic.keys():
+                dic['MonitorTimeout'] = [30.0] * len(dic['Monitor'])
+            elif not isinstance(dic['MonitorTimeout'], list):
+                dic['MonitorValue'] = [dic['MonitorValue']]
+            if len(dic['MonitorValue']) != len(dic['Monitor']):
+                raise ValueError('The length of MonitorValue does not meet to the length of Monitor.')
+            for m in dic['MonitorTimeout']:
+                try:
+                    float(m)
+                except:
+                    raise ValueError('MonitorTimeout should be a list of float(or int).')
+
+        elif index == len(inlist) - 1:
+            dic['Monitor'] = []
+            dic['MonitorValue'] = []
+            dic['MonitorTolerance'] = []
+            dic['MonitorAction'] = []
+            dic['MonitorTimeout'] = []
 
     def _setup_knob_scan_values(self, index, dic):
         if 'Series' not in dic.keys():

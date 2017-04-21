@@ -1,6 +1,5 @@
 import time
 from itertools import count
-
 from epics import PV
 
 
@@ -21,18 +20,21 @@ def convert_to_position_list(axis_list):
     return [list(positions) for positions in zip(*axis_list)]
 
 
-def connect_to_pv(pv_name):
+def connect_to_pv(pv_name, n_connection_attempts=3):
     """
     Start a connection to a PV.
     :param pv_name: PV name to connect to.
+    :param n_connection_attempts: How many times you should try to connect before raising an exception.
     :return: PV object.
     :raises ValueError if cannot connect to PV.
     """
     pv = PV(pv_name, auto_monitor=False)
-    if not pv.connect():
-        raise ValueError("Cannot connect to PV '%s'." % pv_name)
+    for i in range(n_connection_attempts):
+        if pv.connect():
+            return pv
+        time.sleep(0.1)
 
-    return pv
+    raise ValueError("Cannot connect to PV '%s'." % pv_name)
 
 
 class EpicsWriter(object):
@@ -81,6 +83,7 @@ class EpicsReader(object):
     Sequentially read the PVs and return a list of results.
     """
 
+    # TODO: Check for first time connection speed.
     def __init__(self, list_of_pvs):
         self.pvs = [connect_to_pv(pv_name) for pv_name in convert_to_list(list_of_pvs)]
 
@@ -133,6 +136,11 @@ class PyScanDataProcessor(object):
         self.n_validation = n_validation
         self.n_observable = n_observable
         self.output = output
+
+        # Reset the pre-allocated variables.
+        self.outdict["KnobReadback"] = []
+        self.outdict["Validation"] = []
+        self.outdict["Observable"] = []
 
     def process(self, position, data):
         if self.n_readbacks == 1:

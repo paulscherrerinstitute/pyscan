@@ -1,7 +1,7 @@
 import unittest
 from itertools import count
 
-from pyscan.positioner import LinearPositioner, ZigZagLinearPositioner, VectorPositioner, \
+from pyscan.positioner import LinePositioner, ZigZagLinePositioner, VectorPositioner, \
     ZigZagVectorPositioner, AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner, StepByStepVectorPositioner, \
     CompoundPositioner
 from pyscan.utils import convert_to_position_list
@@ -117,16 +117,16 @@ class DiscreetPositionersTests(unittest.TestCase):
         self.verify_result(positioner_type([2], [-2], [-1.2], passes=3), expected_3pass_result)
 
     def test_LinearPositioner(self):
-        self.standard_linear_tests(LinearPositioner)
-        self.standard_linear_multipass_tests(LinearPositioner)
+        self.standard_linear_tests(LinePositioner)
+        self.standard_linear_multipass_tests(LinePositioner)
 
         # Advance each given motor for each step.
         expected_result = [[0, 0, 0], [1.0, 1.0, 1.0], [2.0, 2.0, 2.0]]
 
         # Generate 3d steps, with number of steps.
-        self.verify_result(LinearPositioner([0, 0, 0], [2, 2, 2], [2, 2, 2]), expected_result)
+        self.verify_result(LinePositioner([0, 0, 0], [2, 2, 2], [2, 2, 2]), expected_result)
         # Generate 3d steps, with step size
-        self.verify_result(LinearPositioner([0, 0, 0], [2, 2, 2], [1., 1., 1.]), expected_result)
+        self.verify_result(LinePositioner([0, 0, 0], [2, 2, 2], [1., 1., 1.]), expected_result)
 
     def test_LinearPositioner_exceptions(self):
         # TODO: Implement tests for input validation.
@@ -139,8 +139,8 @@ class DiscreetPositionersTests(unittest.TestCase):
         pass
 
     def test_ZigZagLinearPositioner(self):
-        self.standard_linear_tests(ZigZagLinearPositioner)
-        self.standard_linear_multipass_zigzag_tests(ZigZagLinearPositioner)
+        self.standard_linear_tests(ZigZagLinePositioner)
+        self.standard_linear_multipass_zigzag_tests(ZigZagLinePositioner)
 
     def test_ZigZagLinearPositioner_exceptions(self):
         # TODO: Implement tests for input validation.

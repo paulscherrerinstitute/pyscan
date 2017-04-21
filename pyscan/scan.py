@@ -22,15 +22,15 @@ class Scanner(object):
         self.before_executer = before_executer
         self.after_executer = after_executer
 
-    def discrete_scan(self, latency=0):
+    def discrete_scan(self, settling_time=0):
         """
         Perform a discrete scan - set a position, read, continue. Return value at the end.
-        :param latency: Interval between the writing of the position and the reading of data. Default = 0.
+        :param settling_time: Interval between the writing of the position and the reading of data. Default = 0.
         """
         for position in self.positioner.get_generator():
             # Position yourself before reading.
             self.writer.write(position)
-            sleep(latency)
+            sleep(settling_time)
 
             # Pre reading callbacks.
             if self.before_executer:

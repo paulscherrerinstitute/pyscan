@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pyscan.positioner import ZigZagLinearPositioner, LinearPositioner, AreaPositioner, ZigZagAreaPositioner
+from pyscan.positioner import ZigZagLinePositioner, LinePositioner, AreaPositioner, ZigZagAreaPositioner
 from pyscan.scan import Scanner
 from pyscan.utils import convert_to_list, EpicsReader, EpicsWriter, SimpleExecuter, SimpleDataProcessor
 
@@ -46,6 +46,7 @@ def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
     :param after_read: List of callback functions on each step after readback.
     :return: Data from the scan.
     """
+    # TODO: On all interfaces: Check if readablers and writables are already objects with methods to call.
 
     # Allow the user to specify a single item or a list of items, but always convert to a list of items.
     writables = convert_to_list(writables)
@@ -60,9 +61,9 @@ def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
     offsets = reader.read() if relative else None
 
     if zigzag:
-        positioner = ZigZagLinearPositioner(start, end, steps, passes, offsets)
+        positioner = ZigZagLinePositioner(start, end, steps, passes, offsets)
     else:
-        positioner = LinearPositioner(start, end, steps, passes, offsets)
+        positioner = LinePositioner(start, end, steps, passes, offsets)
 
     before_executer = config[Config.BEFORE_EXECUTOR](before_read)
     after_executer = config[Config.AFTER_EXECUTOR](after_read)

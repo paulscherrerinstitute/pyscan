@@ -4,7 +4,7 @@ import math
 from itertools import chain, cycle
 
 
-class LinearPositioner(object):
+class LinePositioner(object):
     def __init__(self, start, end, steps, passes=1, offsets=None):
         self.offsets = offsets
         self.passes = passes
@@ -44,7 +44,7 @@ class LinearPositioner(object):
                 yield current_positions
 
 
-class ZigZagLinearPositioner(LinearPositioner):
+class ZigZagLinePositioner(LinePositioner):
     def get_generator(self):
         # The initial position is always the start position.
         current_positions = copy(self.start)

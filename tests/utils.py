@@ -53,7 +53,7 @@ class TestPyScanDal(object):
         self.values = initial_values or {}
         self.positions = []
 
-    def addGroup(self, group_name, pvs):
+    def add_group(self, group_name, pvs):
         print("Creating group %s with PVs %s." % (group_name, pvs))
         self.groups[group_name] = pvs
 
@@ -64,15 +64,11 @@ class TestPyScanDal(object):
 
         return group_name
 
-    def groupClose(self, handle):
+    def close_group(self, handle):
         del(self.groups[handle])
         print("Close group %s." % handle)
 
-    def groupList(self):
-        print("GroupList: %s." % self.groups.keys())
-        return self.groups.keys()
-
-    def getGroup(self, group_name):
+    def get_group(self, group_name):
         result = []
         for pv in self.groups[group_name]:
             result.append(self.values[pv])
@@ -83,6 +79,6 @@ class TestPyScanDal(object):
         print("Getting group %s: %s." % (group_name, result))
         return result, 1, [0] * len(result)
 
-    def setAndMatch(self, chset, val, chread, tol, timeout, num):
+    def set_and_match(self, chset, val, chread, tol, timeout, num):
         self.values[chset] = val
         print("Move %s to position %s" % (chset, val))

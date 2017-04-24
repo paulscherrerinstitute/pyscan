@@ -4,8 +4,19 @@ from time import sleep
 
 import numpy as np
 
-from pyscan.interface.pyScan.dal import PyEpicsDal
-from pyscan.interface.pyScan.gui import SubPanel, DummyClass
+from tests.utils import TestPyScanDal
+
+
+# This is just a dummy GUI class.
+class DummyClass:
+    def __init__(self):
+        self.Progress = 1  # For Thomas!!
+
+    def showPanel(self, s):
+        pass
+
+    def emit(self, signal):
+        pass
 
 
 class Scan(object):
@@ -18,11 +29,7 @@ class Scan(object):
         self.n_observables = None
         self.n_readbacks = None
 
-        if fromGUI:
-            self.ProgDisp = SubPanel()
-            self.ProgDisp.setVisible(False)
-        else:
-            self.ProgDisp = DummyClass()
+        self.ProgDisp = DummyClass()
 
         self.abortScan = 0
         self.pauseScan = 0
@@ -57,8 +64,8 @@ class Scan(object):
         if close:
             self.epics_dal.close_group(temp_handle)
 
-    def initializeScan(self, inlist, dal=None):
-        self.epics_dal = dal or PyEpicsDal()
+    def initializeScan(self, inlist, dal):
+        self.epics_dal = dal or TestPyScanDal()
 
         self.inlist = []
 
@@ -897,4 +904,3 @@ class Scan(object):
                 step_index = self.post_measurment_actions(Obs, Rback, Valid, dic, step_index)
 
             Kscan = Kscan + 1
-

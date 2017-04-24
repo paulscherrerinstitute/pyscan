@@ -3,14 +3,13 @@ from datetime import datetime
 import numpy as np
 
 from pyscan.interface.pyScan.dal import PyEpicsDal
-from pyscan.interface.pyScan.old_scan import OldScan
 from pyscan.interface.pyScan.utils import PyScanDataProcessor
 from pyscan.positioner import VectorPositioner, StepByStepVectorPositioner, CompoundPositioner
 from pyscan.scan import Scanner
 from pyscan.utils import EpicsReader, convert_to_list, EpicsWriter, convert_to_position_list
 
 
-class Scan(OldScan):
+class Scan(object):
 
     def execute_scan(self):
         # The number of measurements is sampled only from the last dimension.
@@ -35,11 +34,9 @@ class Scan(OldScan):
                                              n_pvs=len(readback_pvs),
                                              n_validation=len(validation_pvs),
                                              n_observable=len(observable_pvs))
-        reader = self.dal_reader_type(all_read_pvs, n_measurments)
-        writer = EpicsWriter(write_pvs)
 
         # Read and store the initial values.
-        data_processor.process(reader.read())
+        data_processor.process(self.epics_dal.get_group("All"))
 
         positioners = []
         for dimension in self.dimensions:
@@ -67,7 +64,7 @@ class Scan(OldScan):
 
         positioner = CompoundPositioner(positioners)
 
-        scanner = Scanner(positioner, writer, data_processor, reader)
+        scanner = Scanner(positioner, self.epics_dal, data_processor, self.epics_dal)
         scanner.discrete_scan(settling_time)
 
     def __init__(self):

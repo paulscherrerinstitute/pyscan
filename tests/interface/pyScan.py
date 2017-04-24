@@ -1,6 +1,6 @@
 import unittest
 
-from pyscan.interface.pyScan import Scan
+from tests.interface.old_scan import Scan as CurrentScan
 from tests.utils import TestPyScanDal
 
 
@@ -131,7 +131,7 @@ class PyScan(unittest.TestCase):
         indict1["NumberOfMeasurements"] = 3
 
         test_dal = TestPyScanDal()
-        pyscan = Scan()
+        pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
         expected_positions = [[-3, -3, 0, 0], [-3, -3, 1, 1], [-3, -3, 2, 2],
@@ -152,7 +152,7 @@ class PyScan(unittest.TestCase):
         indict1["NumberOfMeasurements"] = 5
 
         test_dal = TestPyScanDal()
-        pyscan = Scan()
+        pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
         result = pyscan.startScan()
         self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
@@ -211,7 +211,7 @@ class PyScan(unittest.TestCase):
         indict1["NumberOfMeasurements"] = 3
 
         test_dal = TestPyScanDal()
-        pyscan = Scan()
+        pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
         # Vary one value in its entire range, per axis. Other values are initial positions.
@@ -245,7 +245,7 @@ class PyScan(unittest.TestCase):
         indict1["NumberOfMeasurements"] = 3
 
         test_dal = TestPyScanDal()
-        pyscan = Scan()
+        pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
         result = pyscan.startScan()
         self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
@@ -259,7 +259,7 @@ class PyScan(unittest.TestCase):
         indict1["NumberOfMeasurements"] = 3
 
         test_dal = TestPyScanDal()
-        pyscan = Scan()
+        pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
         # First dimension LineScan, second dimension first change one, than another.
@@ -287,7 +287,7 @@ class PyScan(unittest.TestCase):
         indict2["NumberOfMeasurements"] = 4
 
         test_dal = TestPyScanDal()
-        pyscan = Scan()
+        pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
         # TODO: Profile the outputs.

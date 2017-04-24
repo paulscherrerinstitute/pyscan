@@ -25,3 +25,10 @@ class PyEpicsDal(object):
     def close_all_groups(self):
         for group in self.groups.values():
             group.close()
+
+    def read(self):
+        return self.get_group("All")
+
+    def write(self, values):
+        # TODO: Implement tolerance, timeout ETC.
+        self.groups["Knobs"].write(values)

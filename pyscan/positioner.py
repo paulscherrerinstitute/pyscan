@@ -239,6 +239,17 @@ class VectorPositioner(object):
                 yield position
 
 
+class ZigZagVectorPositioner(VectorPositioner):
+    def get_generator(self):
+        # This creates a generator for [0, 1, 2, 3... n, n-1, n-2.. 2, 1, 0.....]
+        indexes = cycle(chain(range(0, self.n_positions, 1), range(self.n_positions - 2, 0, -1)))
+        # First pass has the full number of items, each subsequent has one less (extreme sequence item).
+        n_indexes = self.n_positions + ((self.passes - 1) * (self.n_positions - 1))
+
+        for x in range(n_indexes):
+            yield self.positions[next(indexes)]
+
+
 class StepByStepVectorPositioner(VectorPositioner):
     """
     Scan over all provided points, one by one, returning the previous to the initial state.
@@ -259,17 +270,6 @@ class StepByStepVectorPositioner(VectorPositioner):
                 for step_index in range(n_steps):
                     current_state[axis_index] = self.positions[step_index][axis_index]
                     yield copy(current_state)
-
-
-class ZigZagVectorPositioner(VectorPositioner):
-    def get_generator(self):
-        # This creates a generator for [0, 1, 2, 3... n, n-1, n-2.. 2, 1, 0.....]
-        indexes = cycle(chain(range(0, self.n_positions, 1), range(self.n_positions - 2, 0, -1)))
-        # First pass has the full number of items, each subsequent has one less (extreme sequence item).
-        n_indexes = self.n_positions + ((self.passes - 1) * (self.n_positions - 1))
-
-        for x in range(n_indexes):
-            yield self.positions[next(indexes)]
 
 
 class CompoundPositioner(object):

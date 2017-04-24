@@ -77,6 +77,10 @@ class EpicsWriter(object):
         if not all(within_tolerance):
             raise ValueError("Cannot achieve position in specified time.")
 
+    def close(self):
+        for pv in self.pvs:
+            pv.disconnect()
+
 
 class EpicsReader(object):
     """
@@ -104,6 +108,10 @@ class EpicsReader(object):
                 result.append(pv_result)
 
         return result
+
+    def close(self):
+        for pv in self.pvs:
+            pv.disconnect()
 
 
 class SimpleExecuter(object):
@@ -135,38 +143,3 @@ class SimpleDataProcessor(object):
 
     def get_data(self):
         return [(position, data) for position, data in zip(self.positions, self.data)]
-
-
-class PyScanDataProcessor(object):
-    def __init__(self, output, n_pvs, n_validation, n_observable):
-        self.n_pvs = n_pvs
-        self.n_validation = n_validation
-        self.n_observable = n_observable
-        self.output = output
-
-        # Reset the pre-allocated variables.
-        self.outdict["KnobReadback"] = []
-        self.outdict["Validation"] = []
-        self.outdict["Observable"] = []
-
-    def process(self, position, data):
-        if self.n_readbacks == 1:
-            readback_result = data[0]
-        else:
-            readback_result = data[0:self.n_readbacks]
-
-        if self.n_validation == 1:
-            validation_result = data[self.n_readbacks]
-        else:
-            validation_result = data[self.n_readbacks:self.n_readbacks + self.n_validations]
-
-        if self.n_observable:
-            observable_result = data[-1]
-        else:
-            observable_result = data[self.n_readbacks + self.n_validations:self.n_readbacks +
-                                                                           self.n_validations + self.n_observables]
-
-        # TODO: This might not work because of pre-initialization. Remove from original Scan class?
-        self.output["KnobReadback"].append(readback_result)
-        self.output["Validation"].append(validation_result)
-        self.output["Observable"].append(observable_result)

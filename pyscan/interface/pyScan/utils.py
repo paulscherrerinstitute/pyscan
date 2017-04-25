@@ -1,3 +1,5 @@
+from time import sleep
+
 
 class AbortMonitor(object):
     def __init__(self, reader_function, expected_value):
@@ -13,24 +15,25 @@ class AbortMonitor(object):
 
 
 class PyScanDataProcessor(object):
-    def __init__(self, output, n_pvs, n_validation, n_observable):
-        self.n_pvs = n_pvs
-        self.n_validation = n_validation
+    def __init__(self, output, n_readbacks, n_validations, n_observable, waiting):
+        self.n_readbacks = n_readbacks
+        self.n_validations = n_validations
         self.n_observable = n_observable
         self.output = output
+        self.waiting = waiting
 
         # Reset the pre-allocated variables.
-        self.outdict["KnobReadback"] = []
-        self.outdict["Validation"] = []
-        self.outdict["Observable"] = []
+        self.output["KnobReadback"] = []
+        self.output["Validation"] = []
+        self.output["Observable"] = []
 
-    def process(self, position, data):
+    def process(self, data):
         if self.n_readbacks == 1:
             readback_result = data[0]
         else:
             readback_result = data[0:self.n_readbacks]
 
-        if self.n_validation == 1:
+        if self.n_validations == 1:
             validation_result = data[self.n_readbacks]
         else:
             validation_result = data[self.n_readbacks:self.n_readbacks + self.n_validations]
@@ -45,3 +48,8 @@ class PyScanDataProcessor(object):
         self.output["KnobReadback"].append(readback_result)
         self.output["Validation"].append(validation_result)
         self.output["Observable"].append(observable_result)
+
+        sleep(self.waiting)
+
+    def get_data(self):
+        return self.output

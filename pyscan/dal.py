@@ -131,18 +131,14 @@ class EpicsInterface(object):
         while not all(within_tolerance) and time.time() - initial_timestamp < timeout:
             for index, pv in ((index, pv) for index, reached, pv
                               in zip(count(), within_tolerance, self.readback_pvs) if not reached):
-                # The get method might return a None. In this case we do not care about the method.
-                current_value = pv.get()
-                if not current_value:
-                    continue
-
                 pv_value = pv.get()
                 abs_difference = abs(pv_value - values[index])
                 if abs_difference < tolerance:
                     within_tolerance[index] = True
 
         if not all(within_tolerance):
-            raise ValueError("Cannot achieve position in specified time %d and tolerance %d." % (timeout, tolerance))
+            raise ValueError("Cannot achieve position for %s in specified time %f and tolerance %f."
+                             % (self.pv_names, timeout, tolerance))
 
     def close(self):
         for pv in self.pvs:

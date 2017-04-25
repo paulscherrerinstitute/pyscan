@@ -7,5 +7,5 @@ setup(
     description="PyScan is a python class that performs a scan for single or multiple given knobs.",
     author='Paul Scherrer Institute',
     requires=["numpy", 'pcaspy'],
-    packages=['pyscan']
+    packages=['pyscan', "pyscan.interface", "pyscan.interface.pyScan"]
 )

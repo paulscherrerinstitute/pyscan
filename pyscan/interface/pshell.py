@@ -1,32 +1,6 @@
-from enum import Enum
-
 from pyscan.positioner import ZigZagLinePositioner, LinePositioner, AreaPositioner, ZigZagAreaPositioner
 from pyscan.scan import Scanner
-from pyscan.utils import convert_to_list, EpicsReader, EpicsWriter, SimpleExecuter, SimpleDataProcessor
-
-
-class Config(Enum):
-    READER = "reader"
-    WRITER = "writer"
-    BEFORE_EXECUTOR = "before_executor"
-    AFTER_EXECUTOR = "after_executor"
-    DATA_PROCESSOR = "data_processor"
-
-config = {Config.READER: EpicsReader,
-          Config.WRITER: EpicsWriter,
-          Config.BEFORE_EXECUTOR: SimpleExecuter,
-          Config.AFTER_EXECUTOR: SimpleExecuter,
-          Config.DATA_PROCESSOR: SimpleDataProcessor}
-
-
-def set_config(key, value):
-    """
-    Configure the pshell interface module.
-    :param key: Key enum from the Config class.
-    :type key: Config
-    :param value: Value to add to the key.
-    """
-    config[key] = value
+from pyscan.utils import convert_to_list, EpicsInterface, SimpleExecutor
 
 
 def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
@@ -55,8 +29,8 @@ def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
     end = convert_to_list(end)
     steps = convert_to_list(steps)
 
-    writer = config[Config.WRITER](writables)
-    reader = config[Config.READER](readables)
+    writer = EpicsInterface(writables)
+    reader = EpicsInterface(readables)
 
     offsets = reader.read() if relative else None
 
@@ -65,8 +39,8 @@ def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
     else:
         positioner = LinePositioner(start, end, steps, passes, offsets)
 
-    before_executer = config[Config.BEFORE_EXECUTOR](before_read)
-    after_executer = config[Config.AFTER_EXECUTOR](after_read)
+    before_executer = SimpleExecutor(before_read)
+    after_executer = SimpleExecutor(after_read)
 
     scanner = Scanner(positioner, writer, reader, before_executer, after_executer)
     scanner.discrete_scan(latency)
@@ -97,8 +71,8 @@ def ascan(writables, readables, start, end, steps, latency=0.0, relative=False,
     end = convert_to_list(end)
     steps = convert_to_list(steps)
 
-    writer = config[Config.WRITER](writables)
-    reader = config[Config.READER](readables)
+    writer = EpicsInterface(writables)
+    reader = EpicsInterface(readables)
 
     offsets = reader.read() if relative else None
 
@@ -107,8 +81,8 @@ def ascan(writables, readables, start, end, steps, latency=0.0, relative=False,
     else:
         positioner = ZigZagAreaPositioner(start, end, steps, passes, offsets)
 
-    before_executer = config[Config.BEFORE_EXECUTOR](before_read)
-    after_executer = config[Config.AFTER_EXECUTOR](after_read)
+    before_executer = SimpleExecutor(before_read)
+    after_executer = SimpleExecutor(after_read)
 
     scanner = Scanner(positioner, writer, reader, before_executer, after_executer)
     scanner.discrete_scan(latency)

@@ -12,9 +12,8 @@ requirements:
     build:
         - python
     run:
-        - python 3.4*
+        - python
         - numpy
-        - pyqt 4.*
         - pyepics
 
     test:

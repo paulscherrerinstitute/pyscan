@@ -2,11 +2,11 @@ from datetime import datetime
 
 import numpy as np
 
-from pyscan.interface.pyScan.dal import PyEpicsDal
+from pyscan.dal import EpicsInterface, PyEpicsDal
 from pyscan.interface.pyScan.utils import PyScanDataProcessor
 from pyscan.positioner import VectorPositioner, StepByStepVectorPositioner, CompoundPositioner
 from pyscan.scan import Scanner
-from pyscan.utils import EpicsReader, convert_to_list, EpicsWriter, convert_to_position_list
+from pyscan.utils import convert_to_list, convert_to_position_list
 
 
 class Scan(object):
@@ -19,25 +19,42 @@ class Scan(object):
         settling_time = self.dimensions[-1]["KnobWaitingExtra"]
 
         # Knob PVs defined in all dimensions.
-        write_pvs = [[pvs for pvs in dimension["Knob"]] for dimension in self.dimensions]
-        # Readback PVs defined in all dimensions.
-        readback_pvs = [[pvs for pvs in dimension["KnobReadback"]] for dimension in self.dimensions]
-        # Only validation PVs defined in the last dimension.
-        validation_pvs = [pvs for pvs in self.dimensions[-1].get("Validation", [])]
-        # Only observable PVs defined in the last dimension.
-        observable_pvs = [pvs for pvs in self.dimensions[-1].get("Observable", [])]
+        write_pvs = []
+        readback_pvs = []
+        for dimension in self.dimensions:
+            for pv in dimension["Knob"]:
+                write_pvs.append(pv)
 
-        # Concatenate readback, validation, and observable PVs.
-        all_read_pvs = readback_pvs + validation_pvs + observable_pvs
+            for readback_pv in dimension["KnobReadback"]:
+                readback_pvs.append(readback_pv)
 
+        waiting_time = self.dimensions[-1]["Waiting"]
         data_processor = PyScanDataProcessor(self.outdict,
-                                             n_pvs=len(readback_pvs),
-                                             n_validation=len(validation_pvs),
-                                             n_observable=len(observable_pvs))
+                                             n_readbacks=self.n_readbacks,
+                                             n_validations=self.n_validations,
+                                             n_observable=self.n_observables,
+                                             waiting=waiting_time)
 
-        # Read and store the initial values.
         data_processor.process(self.epics_dal.get_group("All"))
+        self.epics_dal.close_group("All")
 
+        scanner = Scanner(positioner=self.get_positioner(),
+                          writer=EpicsInterface(write_pvs, list_of_readback_pvs=readback_pvs),
+                          data_processor=data_processor,
+                          reader=EpicsInterface(self.all_pvs, n_measurments=n_measurments),
+                          before_executer=self.get_executor("In-loopPreAction"),
+                          after_executer=self.get_executor("In-loopPostAction"),
+                          initialization_executer=self.get_executor("PreAction"),
+                          finalization_executer=self.get_executor("PostAction"))
+
+        scanner.setup_monitors()
+        self.outdict.update(scanner.discrete_scan(settling_time))
+
+    def get_positioner(self):
+        """
+        Generate a positioner for the provided dimensions.
+        :return: Positioner object.
+        """
         positioners = []
         for dimension in self.dimensions:
             is_additive = bool(dimension.get("Additive", 0))
@@ -46,7 +63,7 @@ class Scan(object):
             # This dimension uses relative positions, read the PVs initial state.
             # We also need initial positions for the series scan.
             if is_additive or is_series:
-                offsets = EpicsReader(dimension["KnobReadback"]).read()
+                offsets = EpicsInterface(dimension["KnobReadback"]).read()
             else:
                 offsets = None
 
@@ -62,10 +79,37 @@ class Scan(object):
             else:
                 positioners.append(VectorPositioner(positions, offsets=offsets))
 
+        # Assemble all individual positioners together.
         positioner = CompoundPositioner(positioners)
+        return positioner
 
-        scanner = Scanner(positioner, self.epics_dal, data_processor, self.epics_dal)
-        scanner.discrete_scan(settling_time)
+    def get_executor(self, entry_name):
+        actions = []
+        max_waiting = 0
+        for dim in self.dimensions:
+            for action in dim[entry_name]:
+                actions.append(action)
+
+            if entry_name + "Waiting" in dim:
+                max_waiting = max(max_waiting, dim[entry_name + "Waiting"])
+
+        def execute(scanner):
+            for action in actions:
+
+                chset, chread, val, tol, timeout = action
+                if chset == "match":
+                    raise NotImplementedError("match not yet implemented for PreAction.")
+
+                writer = EpicsInterface(list_of_pvs=chset, list_of_readback_pvs=chread)
+                writer.set_and_match(val, tol, timeout)
+
+        return execute
+
+    def get_finalization_executor(self):
+        def execute():
+            pass
+
+        return execute
 
     def __init__(self):
         self.dimensions = None
@@ -179,9 +223,9 @@ class Scan(object):
 
             # Prealocating the place for the output
             self.outdict = {"ErrorMessage": None,
-                            "KnobReadback": self.allocateOutput(),
-                            "Validation": self.allocateOutput(),
-                            "Observable": self.allocateOutput()}
+                            "KnobReadback": None,
+                            "Validation": None,
+                            "Observable": None}
 
         except ValueError as e:
             self.outdict = {"ErrorMessage": str(e)}
@@ -232,7 +276,8 @@ class Scan(object):
         # Originally dic["Knob"] values were saved. I'm supposing this was a bug - readback values needed to be saved.
         self.epics_dal.add_group("KnobReadback", dic['KnobReadback'])
         dic['KnobSaved'] = self.epics_dal.get_group("KnobReadback")
-        self.epics_dal.close_group("KnobReadback")
+        # Initialize the Knob group (used for writing values).
+        self.epics_dal.add_group("Knob", dic['Knob'])
 
     def _setup_knob_scan_values(self, index, dic):
         if 'Series' not in dic.keys():

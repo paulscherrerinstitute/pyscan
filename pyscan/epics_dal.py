@@ -22,6 +22,9 @@ class PyEpicsDal(object):
         self.groups[group_name] = group_interface
         return group_name
 
+    def get_group(self, handle):
+        return self.groups[handle]
+
     def close_group(self, group_name):
         if group_name not in self.groups:
             raise ValueError("Group does not exist. Available groups:\n%s" % self.groups.keys())
@@ -29,22 +32,9 @@ class PyEpicsDal(object):
         # Close the PV connection.
         self.groups[group_name].close()
 
-    def get_group(self, handle):
-        return self.groups[handle].read()
-
-    def close_group(self, group_name):
-        self.groups[group_name].close()
-
     def close_all_groups(self):
         for group in self.groups.values():
             group.close()
-
-    def read(self):
-        return self.get_group("All")
-
-    def write(self, values):
-        # TODO: Implement tolerance, timeout ETC.
-        self.groups["Knobs"].write_and_match(values)
 
 
 class WriteGroupInterface(object):
@@ -88,7 +78,7 @@ class WriteGroupInterface(object):
             timeout = self.timeout
 
         # Verify if all provided lists are of same size.
-        validate_lists_length(self.pvs, values, tolerances, timeout)
+        validate_lists_length(self.pvs, values, tolerances)
 
         # Check if timeout is int or float.
         if not isinstance(timeout, (int, float)):

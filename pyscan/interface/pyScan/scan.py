@@ -1,3 +1,4 @@
+import traceback
 from datetime import datetime
 
 import numpy as np
@@ -30,9 +31,9 @@ class Scan(object):
             after_executor(scanner_instance)
 
             # Update progress.
-            scanner_instance.n_done_measurements += 1
-            scanner_instance.ProgDisp.Progress = 100.0 * (scanner_instance.n_done_measurements /
-                                                          scanner_instance.n_total_positions)
+            self.n_done_measurements += 1
+            self.ProgDisp.Progress = 100.0 * (self.n_done_measurements /
+                                              self.n_total_positions)
 
             # Check if the abort flag was set and propagate it.
             if self.ProgDisp.abortScan or self.abortScan:
@@ -136,6 +137,7 @@ class Scan(object):
         self.dimensions = None
         self.epics_dal = None
         self.scanner = None
+        self.outdict = None
 
         self.all_read_pvs = None
         self.n_readbacks = None
@@ -241,8 +243,8 @@ class Scan(object):
                             "Validation": None,
                             "Observable": None}
 
-        except ValueError as e:
-            self.outdict = {"ErrorMessage": str(e)}
+        except ValueError:
+            self.outdict = {"ErrorMessage": traceback.format_exc()}
 
         # Backward compatibility.
         self.ProgDisp = Scan.DummyProgress()
@@ -280,9 +282,9 @@ class Scan(object):
         self.all_read_pvs = [item for sublist in self.all_read_pvs for item in sublist]
 
         # Expand Knobs and readbacks PVs.
-        all_write_pvs = [item for sublist in self.all_write_pvs for item in sublist]
-        all_readback_pvs = [item for sublist in self.all_readback_pvs for item in sublist]
-        all_tolerances = [item for sublist in self.all_tolerances for item in sublist]
+        all_write_pvs = [item for sublist in all_write_pvs for item in sublist]
+        all_readback_pvs = [item for sublist in all_readback_pvs for item in sublist]
+        all_tolerances = [item for sublist in all_tolerances for item in sublist]
 
         # The number of measurements is sampled only from the last dimension.
         n_measurements = self.dimensions[-1]["NumberOfMeasurements"]

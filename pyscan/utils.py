@@ -1,3 +1,5 @@
+from time import sleep
+
 from epics.pv import PV
 
 
@@ -13,7 +15,7 @@ def connect_to_pv(pv_name, n_connection_attempts=3):
     for i in range(n_connection_attempts):
         if pv.connect():
             return pv
-
+        sleep(0.1)
     raise ValueError("Cannot connect to PV '%s'." % pv_name)
 
 
@@ -26,7 +28,7 @@ def validate_lists_length(*args):
     if not args:
         raise ValueError("Cannot compare lengths of None.")
 
-    initial_length = args[0]
+    initial_length = len(args[0])
     if not all([len(element) == initial_length for element in args]):
         error = "The provided lists must be of same length.\n"
         for element in args:

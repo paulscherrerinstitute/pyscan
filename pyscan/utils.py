@@ -1,3 +1,40 @@
+from epics.pv import PV
+
+
+def connect_to_pv(pv_name, n_connection_attempts=3):
+    """
+    Start a connection to a PV.
+    :param pv_name: PV name to connect to.
+    :param n_connection_attempts: How many times you should try to connect before raising an exception.
+    :return: PV object.
+    :raises ValueError if cannot connect to PV.
+    """
+    pv = PV(pv_name, auto_monitor=False)
+    for i in range(n_connection_attempts):
+        if pv.connect():
+            return pv
+
+    raise ValueError("Cannot connect to PV '%s'." % pv_name)
+
+
+def validate_lists_length(*args):
+    """
+    Check if all the provided lists are of the same length.
+    :param args: Lists.
+    :raise ValueError if they are not of the same length.
+    """
+    if not args:
+        raise ValueError("Cannot compare lengths of None.")
+
+    initial_length = args[0]
+    if not all([len(element) == initial_length for element in args]):
+        error = "The provided lists must be of same length.\n"
+        for element in args:
+            error += "%s\n" % element
+
+        raise ValueError(error)
+
+
 def convert_to_list(value):
     """
     If the input parameter is not a list, convert to one.

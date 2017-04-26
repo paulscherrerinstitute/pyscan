@@ -25,38 +25,55 @@ class Scanner(object):
         self.initialization_executer = initialization_executer
         self.finalization_executer = finalization_executer
 
+        self._user_abort_scan_flag = False
+
+    def abort_scan(self):
+        """
+        Abort the scan after the next measurement.
+        """
+        self._user_abort_scan_flag = True
+
     def setup_monitors(self):
         pass
+
+    def _verify_scan_status(self):
+        if self._user_abort_scan_flag:
+            raise Exception("User aborted scan.")
 
     def discrete_scan(self, settling_time=0):
         """
         Perform a discrete scan - set a position, read, continue. Return value at the end.
         :param settling_time: Interval between the writing of the position and the reading of data. Default = 0.
         """
-        # Set up the experiment.
-        if self.initialization_executer:
-            self.initialization_executer(self)
 
-        for next_positions in self.positioner.get_generator():
-            # Position yourself before reading.
-            self.writer.set_and_match(next_positions)
-            sleep(settling_time)
+        try:
+            # Set up the experiment.
+            if self.initialization_executer:
+                self.initialization_executer(self)
 
-            # Pre reading callbacks.
-            if self.before_executer:
-                self.before_executer(self)
+            for next_positions in self.positioner.get_generator():
+                # Position yourself before reading.
+                self.writer.set_and_match(next_positions)
+                sleep(settling_time)
 
-            # Collect and process the data.
-            position_data = self.reader.read()
-            self.data_processor.process(position_data)
+                # Pre reading callbacks.
+                if self.before_executer:
+                    self.before_executer(self)
 
-            # Post reading callbacks.
-            if self.after_executer:
-                self.after_executer(self)
+                # Collect and process the data.
+                position_data = self.reader.read()
+                self.data_processor.process(position_data)
 
-        # Clean up after yourself.
-        if self.finalization_executer:
-            self.finalization_executer(self)
+                # Verify is the scan should continue.
+                self._verify_scan_status()
+
+                # Post reading callbacks.
+                if self.after_executer:
+                    self.after_executer(self)
+        finally:
+            # Clean up after yourself.
+            if self.finalization_executer:
+                self.finalization_executer(self)
 
         return self.data_processor.get_data()
 

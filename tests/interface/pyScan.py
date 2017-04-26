@@ -1,6 +1,8 @@
+import json
 import unittest
 
 from tests.interface.old_scan import Scan as CurrentScan
+from tests.interface.pyScan_test_data import test_output_format_expected_result
 from tests.utils import TestPyScanDal
 
 
@@ -292,6 +294,17 @@ class PyScan(unittest.TestCase):
 
         # TODO: Profile the outputs.
 
+    def test_output_format(self):
+        indict1, indict3 = self.get_ScanLine_indices()
+        indict2, indict4 = self.get_ScanSeries_indices()
+
+        test_dal = TestPyScanDal()
+        pyscan = CurrentScan()
+        result = pyscan.initializeScan([indict1, indict2, indict3, indict4], test_dal)
+
+        self.assertEqual(result["Validation"], test_output_format_expected_result,
+                         "The pre-allocation was not correct. Oh boy..")
+
     def test_Monitors(self):
         pass
 
@@ -299,4 +312,13 @@ class PyScan(unittest.TestCase):
         pass
 
     def test_Actions(self):
+        pass
+
+    def test_abort(self):
+        pass
+
+    def test_pause(self):
+        pass
+
+    def test_progress(self):
         pass

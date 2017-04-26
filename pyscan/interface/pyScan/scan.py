@@ -1,5 +1,6 @@
 import traceback
 from datetime import datetime
+from time import sleep
 
 import numpy as np
 
@@ -96,24 +97,30 @@ class Scan(object):
         return positioner
 
     def get_action_executor(self, entry_name):
-        # TODO: We can pre-open this groups and optimize the thing.
         actions = []
         max_waiting = 0
-        for dim in self.dimensions:
-            for action in dim[entry_name]:
-                actions.append(action)
+        for dim_index, dim in enumerate(self.dimensions):
+            for action_index, action in enumerate(dim[entry_name]):
+                set_pv, read_pv, value, tolerance, timeout = action
+                if set_pv == "match":
+                    raise NotImplementedError("match not yet implemented for PreAction.")
+
+                # Initialize the write group, to speed up in loop stuff.
+                group_name = "%s_%d_%d" % (entry_name, dim_index, action_index)
+                self.epics_dal.add_group(group_name, WriteGroupInterface(set_pv, read_pv, tolerance, timeout))
+                actions.append((group_name, value))
 
             if entry_name + "Waiting" in dim:
                 max_waiting = max(max_waiting, dim[entry_name + "Waiting"])
 
         def execute(scanner):
             for action in actions:
-                chset, chread, val, tol, timeout = action
-                if chset == "match":
-                    raise NotImplementedError("match not yet implemented for PreAction.")
+                name = action[0]
+                value = action[1]
+                # Retireve the epics group and write the value.
+                self.epics_dal.get_group(name).set_and_match(value)
 
-                writer = WriteGroupInterface(chset, chread, tol, timeout)
-                writer.set_and_match(val)
+            sleep(max_waiting)
 
         return execute
 

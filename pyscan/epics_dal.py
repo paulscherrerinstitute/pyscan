@@ -8,7 +8,6 @@ class PyEpicsDal(object):
     """
     Provide a high level abstraction over PyEpics with group support.
     """
-
     def __init__(self):
         self.groups = {}
         self.pvs = {}

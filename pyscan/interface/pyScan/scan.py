@@ -3,6 +3,7 @@ from datetime import datetime
 from time import sleep
 
 import numpy as np
+from copy import deepcopy
 
 from pyscan.epics_dal import PyEpicsDal, ReadGroupInterface, WriteGroupInterface
 from pyscan.interface.pyScan.utils import PyScanDataProcessor
@@ -246,9 +247,9 @@ class Scan(object):
 
             # Prealocating the place for the output
             self.outdict = {"ErrorMessage": None,
-                            "KnobReadback": None,
-                            "Validation": None,
-                            "Observable": None}
+                            "KnobReadback": self.allocateOutput(),
+                            "Validation": self.allocateOutput(),
+                            "Observable": self.allocateOutput()}
 
         except ValueError:
             self.outdict = {"ErrorMessage": traceback.format_exc()}
@@ -261,8 +262,31 @@ class Scan(object):
 
         return self.outdict
 
-    def _setup_epics_dal(self):
+    def allocateOutput(self):
+        root_list = []
+        for dimension in reversed(self.dimensions):
+            n_steps = dimension['Nstep']
 
+            if dimension['Series']:
+                # For Series scan, each step of each knob represents another result.
+                current_dimension_list = []
+                for n_steps_in_knob in n_steps:
+                    current_knob_list = []
+                    for _ in range(n_steps_in_knob):
+                        current_knob_list.append(deepcopy(root_list))
+
+                    current_dimension_list.append(deepcopy(current_knob_list))
+                root_list = current_dimension_list
+            else:
+                # For line scan, each step represents another result.
+                current_dimension_list = []
+                for _ in range(n_steps):
+                    current_dimension_list.append(deepcopy(root_list))
+                root_list = current_dimension_list
+
+        return root_list
+
+    def _setup_epics_dal(self):
         # Collect all PVs that need to be read at each scan step.
         self.all_read_pvs = []
         all_write_pvs = []

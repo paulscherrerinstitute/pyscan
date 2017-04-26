@@ -575,28 +575,29 @@ class Scan(object):
     def CrossReference(self, Object):
         self.ObjectSA = Object
 
-    def allocateOutput(self, l=None):
+    def allocateOutput(self):
+        root_list = []
+        for dimension in reversed(self.inlist):
+            n_steps = dimension['Nstep']
 
-        l = []
-        for i in range(0, len(self.inlist)):
-            ir = len(self.inlist) - i - 1  # Start from the last library
-            Nstep = self.inlist[ir]['Nstep']
-            if not self.inlist[ir]['Series']:
-                ll = []
-                for j in range(0, Nstep):
-                    ll.append(deepcopy(l))
-                l = ll
+            if dimension['Series']:
+                # For Series scan, each step of each knob represents another result.
+                current_dimension_list = []
+                for n_steps_in_knob in n_steps:
+                    current_knob_list = []
+                    for _ in range(n_steps_in_knob):
+                        current_knob_list.append(deepcopy(root_list))
+
+                    current_dimension_list.append(deepcopy(current_knob_list))
+                root_list = current_dimension_list
             else:
-                Nknob = len(self.inlist[ir]['Knob'])
-                lll = []
-                for k in range(0, Nknob):
-                    ll = []
-                    for j in range(0, Nstep[k]):  # Nstep is list for Series scan
-                        ll.append(deepcopy(l))
-                    lll.append(deepcopy(ll))
-                l = lll
+                # For line scan, each step represents another result.
+                current_dimension_list = []
+                for _ in range(n_steps):
+                    current_dimension_list.append(deepcopy(root_list))
+                root_list = current_dimension_list
 
-        return l
+        return root_list
 
     def execute_scan(self):
         self.Scan(self.outdict['KnobReadback'], self.outdict['Validation'], self.outdict['Observable'], 0)

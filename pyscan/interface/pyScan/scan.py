@@ -42,10 +42,10 @@ class Scan(object):
                           writer=EpicsInterface(write_pvs, list_of_readback_pvs=readback_pvs),
                           data_processor=data_processor,
                           reader=EpicsInterface(self.all_pvs, n_measurments=n_measurments),
-                          before_executer=self.get_executor("In-loopPreAction"),
-                          after_executer=self.get_executor("In-loopPostAction"),
-                          initialization_executer=self.get_executor("PreAction"),
-                          finalization_executer=self.get_executor("PostAction"))
+                          before_executer=self.get_action_executor("In-loopPreAction"),
+                          after_executer=self.get_action_executor("In-loopPostAction"),
+                          initialization_executer=self.get_action_executor("PreAction"),
+                          finalization_executer=self.get_action_executor("PostAction"))
 
         scanner.setup_monitors()
         self.outdict.update(scanner.discrete_scan(settling_time))
@@ -83,7 +83,7 @@ class Scan(object):
         positioner = CompoundPositioner(positioners)
         return positioner
 
-    def get_executor(self, entry_name):
+    def get_action_executor(self, entry_name):
         actions = []
         max_waiting = 0
         for dim in self.dimensions:
@@ -102,12 +102,6 @@ class Scan(object):
 
                 writer = EpicsInterface(list_of_pvs=chset, list_of_readback_pvs=chread)
                 writer.set_and_match(val, tol, timeout)
-
-        return execute
-
-    def get_finalization_executor(self):
-        def execute():
-            pass
 
         return execute
 

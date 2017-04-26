@@ -22,25 +22,36 @@ class Scan(object):
                                              n_observable=self.n_observables,
                                              waiting=after_measurement_waiting_time)
 
-        # Wrap the post action executor to update the number of completed scans.
         after_executor = self.get_action_executor("In-loopPostAction")
-        def progress_after_executor(scanner):
-            after_executor(scanner)
 
-        scanner = Scanner(positioner=self.get_positioner(),
-                          writer=self.epics_dal.get_group(WRITE_GROUP),
-                          data_processor=data_processor,
-                          reader=self.epics_dal.get_group(READ_GROUP),
-                          before_executer=self.get_action_executor("In-loopPreAction"),
-                          after_executer=progress_after_executor,
-                          initialization_executer=self.get_action_executor("PreAction"),
-                          finalization_executer=self.get_action_executor("PostAction"))
+        # Wrap the post action executor to update the number of completed scans.
+        def progress_after_executor(scanner_instance):
+            # Execute other post actions.
+            after_executor(scanner_instance)
+
+            # Update progress.
+            scanner_instance.n_done_measurements += 1
+            scanner_instance.ProgDisp.Progress = 100.0 * (scanner_instance.n_done_measurements /
+                                                          scanner_instance.n_total_positions)
+
+            # Check if the abort flag was set and propagate it.
+            if self.ProgDisp.abortScan or self.abortScan:
+                scanner_instance.abort_scan()
+
+        self.scanner = Scanner(positioner=self.get_positioner(),
+                               writer=self.epics_dal.get_group(WRITE_GROUP),
+                               data_processor=data_processor,
+                               reader=self.epics_dal.get_group(READ_GROUP),
+                               before_executer=self.get_action_executor("In-loopPreAction"),
+                               after_executer=progress_after_executor,
+                               initialization_executer=self.get_action_executor("PreAction"),
+                               finalization_executer=self.get_action_executor("PostAction"))
 
         # Monitors defined only in self.dimensions[-1]
-        scanner.setup_monitors()
+        self.scanner.setup_monitors()
 
         after_move_settling_time = self.dimensions[-1]["KnobWaitingExtra"]
-        self.outdict.update(scanner.discrete_scan(after_move_settling_time))
+        self.outdict.update(self.scanner.discrete_scan(after_move_settling_time))
 
     def get_positioner(self):
         """
@@ -60,7 +71,7 @@ class Scan(object):
             # This dimension uses relative positions, read the PVs initial state.
             # We also need initial positions for the series scan.
             if is_additive or is_series:
-                offsets = initial_positions[knob_readback_offset:knob_readback_offset+n_knob_readbacks]
+                offsets = initial_positions[knob_readback_offset:knob_readback_offset + n_knob_readbacks]
             else:
                 offsets = None
 
@@ -96,7 +107,6 @@ class Scan(object):
 
         def execute(scanner):
             for action in actions:
-
                 chset, chread, val, tol, timeout = action
                 if chset == "match":
                     raise NotImplementedError("match not yet implemented for PreAction.")
@@ -106,15 +116,40 @@ class Scan(object):
 
         return execute
 
+    class DummyProgress(object):
+        def __init__(self):
+            self.Progress = 0
+            self.abortScan = 0
+
+    def get_pauseScan(self):
+        return self._pauseScan
+
+    def set_pauseScan(self, value):
+        self._pauseScan = value
+        if self.scanner:
+            if value:
+                self.scanner.pause_scan()
+            else:
+                self.scanner.resume_scan()
+
     def __init__(self):
         self.dimensions = None
         self.epics_dal = None
+        self.scanner = None
 
         self.all_read_pvs = None
         self.n_readbacks = None
         self.n_validations = None
         self.n_observables = None
         self.n_total_positions = None
+
+        # Accessed by some clients.
+        self.ProgDisp = None
+        self._pauseScan = 0
+        # Just to make old GUI work.
+        self.pauseScan = property(self.get_pauseScan, self.set_pauseScan)
+        self.abortScan = 0
+        self.n_done_measurements = 0
 
     def initializeScan(self, inlist, epics_dal=None):
         """
@@ -208,6 +243,12 @@ class Scan(object):
 
         except ValueError as e:
             self.outdict = {"ErrorMessage": str(e)}
+
+        # Backward compatibility.
+        self.ProgDisp = Scan.DummyProgress()
+        self._pauseScan = 0
+        self.abortScan = 0
+        self.n_done_measurements = 0
 
         return self.outdict
 

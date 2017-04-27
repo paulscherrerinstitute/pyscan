@@ -59,7 +59,7 @@ class WriteGroupInterface(object):
         :param timeout: Timeout to reach the destination.
         """
         self.pv_names = convert_to_list(pv_names)
-        self.pvs = [connect_to_pv(pv_name) for pv_name in self.pv_names]
+        self.pvs = [self.connect(pv_name) for pv_name in self.pv_names]
 
         if readback_pv_names:
             self.readback_pv_name = convert_to_list(readback_pv_names)
@@ -130,6 +130,10 @@ class WriteGroupInterface(object):
             raise ValueError("Cannot achieve position for %s in specified time %f and tolerance %f."
                              % (self.pv_names, timeout, tolerance))
 
+    @staticmethod
+    def connect(pv_name):
+        return connect_to_pv(pv_name)
+
     def close(self):
         """
         Close all PV connections.
@@ -151,7 +155,7 @@ class ReadGroupInterface(object):
         :param n_measurements: How many times to measure each time. Default = 1.
         """
         self.pv_names = convert_to_list(pv_names)
-        self.pvs = [connect_to_pv(pv_name) for pv_name in self.pv_names]
+        self.pvs = [self.connect(pv_name) for pv_name in self.pv_names]
 
         if not n_measurements:
             self.n_measurements = self.default_n_measurements
@@ -186,6 +190,10 @@ class ReadGroupInterface(object):
 
             result.append(measurement)
         return result
+
+    @staticmethod
+    def connect(pv_name):
+        return connect_to_pv(pv_name)
 
     def close(self):
         """

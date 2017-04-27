@@ -370,9 +370,8 @@ class Scan(object):
         # TODO: We can optimize this by moving the initialization in the epics_dal init, but pre actions need
         # to be moved after the epics_dal init than
         self.epics_dal.add_reader_group("KnobReadback", dic['KnobReadback'])
-        group = self.epics_dal.get_group("KnobReadback")
-        dic['KnobSaved'] = group.read()
-        group.close()
+        dic['KnobSaved'] = self.epics_dal.get_group("KnobReadback").read()
+        self.epics_dal.close_group("KnobReadback")
 
     def _setup_knob_scan_values(self, index, dic):
         if 'Series' not in dic.keys():

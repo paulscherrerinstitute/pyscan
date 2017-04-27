@@ -51,6 +51,13 @@ class WriteGroupInterface(object):
     default_get_sleep = 0.1
 
     def __init__(self, pv_names, readback_pv_names=None, tolerances=None, timeout=None):
+        """
+        Initialize the write group.
+        :param pv_names: PV names (or name, list or single string) to connect to. 
+        :param readback_pv_names: PV names (or name, list or single string) of readback PVs to connect to. 
+        :param tolerances: Tolerances to be used for set_and_match. You can also specify them on the set_and_match
+        :param timeout: Timeout to reach the destination.
+        """
         self.pv_names = convert_to_list(pv_names)
         self.pvs = [connect_to_pv(pv_name) for pv_name in self.pv_names]
 
@@ -74,6 +81,13 @@ class WriteGroupInterface(object):
             raise ValueError("Timeout must be int or float, but %s was provided." % self.timeout)
 
     def set_and_match(self, values, tolerances=None, timeout=None):
+        """
+        Set the value and wait for the PV to reach it, within tollerance.
+        :param values: Values to set (Must match the number of PVs in this group)
+        :param tolerances: Tolerances for each PV (Must match the number of PVs in this group)
+        :param timeout: Timeout, single value, to wait until the value is reached.
+        :raise ValueError if any position cannot be reached.
+        """
         values = convert_to_list(values)
         if not tolerances:
             tolerances = self.tolerances
@@ -111,11 +125,15 @@ class WriteGroupInterface(object):
 
             time.sleep(self.default_get_sleep)
 
+        # TODO: Print out exactly which PV could not reach the desired position.
         if not all(within_tolerance):
             raise ValueError("Cannot achieve position for %s in specified time %f and tolerance %f."
                              % (self.pv_names, timeout, tolerance))
 
     def close(self):
+        """
+        Close all PV connections.
+        """
         for pv in self.pvs:
             pv.disconnect()
 
@@ -127,6 +145,11 @@ class ReadGroupInterface(object):
     default_n_measurements = 1
 
     def __init__(self, pv_names, n_measurements=None):
+        """
+        Initialize the group.
+        :param pv_names: PV names (or name, list or single string) to connect to. 
+        :param n_measurements: How many times to measure each time. Default = 1.
+        """
         self.pv_names = convert_to_list(pv_names)
         self.pvs = [connect_to_pv(pv_name) for pv_name in self.pv_names]
 
@@ -165,5 +188,8 @@ class ReadGroupInterface(object):
         return result
 
     def close(self):
+        """
+        Close all PV connections.
+        """
         for pv in self.pvs:
             pv.disconnect()

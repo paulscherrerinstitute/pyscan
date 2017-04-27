@@ -36,10 +36,12 @@ class PyEpicsDal(object):
 
         # Close the PV connection.
         self.groups[group_name].close()
+        del self.groups[group_name]
 
     def close_all_groups(self):
         for group in self.groups.values():
             group.close()
+        self.groups.clear()
 
 
 class WriteGroupInterface(object):
@@ -63,7 +65,7 @@ class WriteGroupInterface(object):
 
         if readback_pv_names:
             self.readback_pv_name = convert_to_list(readback_pv_names)
-            self.readback_pvs = [connect_to_pv(pv_name) for pv_name in self.readback_pv_name]
+            self.readback_pvs = [self.connect(pv_name) for pv_name in self.readback_pv_name]
         else:
             self.readback_pv_name = self.pv_names
             self.readback_pvs = self.pvs

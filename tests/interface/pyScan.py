@@ -1,9 +1,12 @@
-import json
 import unittest
+from tests.interface.pyScan_test_data import test_output_format_expected_result
 
 from tests.interface.old_scan import Scan as CurrentScan
-from tests.interface.pyScan_test_data import test_output_format_expected_result
-from tests.utils import TestPyScanDal
+from tests.utils import TestPyScanDal as CurrentMockDal
+
+# # Comment this to test with the old dal.
+# from pyscan.interface.pyScan import Scan as CurrentScan
+# from tests.mock_epics_dal import MockPyEpicsDal as CurrentMockDal
 
 
 class PyScan(unittest.TestCase):
@@ -37,7 +40,7 @@ class PyScan(unittest.TestCase):
 
         indict2 = dict()
         indict2['Knob'] = ["2.1", "2.2"]
-        indict2["ScanValues"] = [[0, 1, 2], [0, 1, 2]]
+        indict2["ScanValues"] = [[0, 1, 2], [0, 1]]
         indict2['Series'] = 1
         indict2['Observable'] = ["READ4", "READ5"]
         indict2['Waiting'] = 0.1
@@ -132,7 +135,7 @@ class PyScan(unittest.TestCase):
         # Only the number of measurements on the last dimension can influence the result.
         indict1["NumberOfMeasurements"] = 3
 
-        test_dal = TestPyScanDal()
+        test_dal = CurrentMockDal()
         pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
@@ -153,7 +156,7 @@ class PyScan(unittest.TestCase):
         # This should not change anything - and we are testing this.
         indict1["NumberOfMeasurements"] = 5
 
-        test_dal = TestPyScanDal()
+        test_dal = CurrentMockDal()
         pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
         result = pyscan.startScan()
@@ -212,27 +215,27 @@ class PyScan(unittest.TestCase):
         # Only the number of measurements on the last dimension can influence the result.
         indict1["NumberOfMeasurements"] = 3
 
-        test_dal = TestPyScanDal()
+        test_dal = CurrentMockDal()
         pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
         # Vary one value in its entire range, per axis. Other values are initial positions.
         expected_positions = [[-3, "1.2", 0, "2.2"], [-3, "1.2", 1, "2.2"], [-3, "1.2", 2, "2.2"],
-                              [-3, "1.2", "2.1", 0], [-3, "1.2", "2.1", 1], [-3, "1.2", "2.1", 2],
+                              [-3, "1.2", "2.1", 0], [-3, "1.2", "2.1", 1],
                               [-2, "1.2", 0, "2.2"], [-2, "1.2", 1, "2.2"], [-2, "1.2", 2, "2.2"],
-                              [-2, "1.2", "2.1", 0], [-2, "1.2", "2.1", 1], [-2, "1.2", "2.1", 2],
+                              [-2, "1.2", "2.1", 0], [-2, "1.2", "2.1", 1],
                               [-1, "1.2", 0, "2.2"], [-1, "1.2", 1, "2.2"], [-1, "1.2", 2, "2.2"],
-                              [-1, "1.2", "2.1", 0], [-1, "1.2", "2.1", 1], [-1, "1.2", "2.1", 2],
+                              [-1, "1.2", "2.1", 0], [-1, "1.2", "2.1", 1],
                               [-0, "1.2", 0, "2.2"], [-0, "1.2", 1, "2.2"], [-0, "1.2", 2, "2.2"],
-                              [-0, "1.2", "2.1", 0], [-0, "1.2", "2.1", 1], [-0, "1.2", "2.1", 2],
+                              [-0, "1.2", "2.1", 0], [-0, "1.2", "2.1", 1],
                               ["1.1", -3, 0, "2.2"], ["1.1", -3, 1, "2.2"], ["1.1", -3, 2, "2.2"],
-                              ["1.1", -3, "2.1", 0], ["1.1", -3, "2.1", 1], ["1.1", -3, "2.1", 2],
+                              ["1.1", -3, "2.1", 0], ["1.1", -3, "2.1", 1],
                               ["1.1", -2, 0, "2.2"], ["1.1", -2, 1, "2.2"], ["1.1", -2, 2, "2.2"],
-                              ["1.1", -2, "2.1", 0], ["1.1", -2, "2.1", 1], ["1.1", -2, "2.1", 2],
+                              ["1.1", -2, "2.1", 0], ["1.1", -2, "2.1", 1],
                               ["1.1", -1, 0, "2.2"], ["1.1", -1, 1, "2.2"], ["1.1", -1, 2, "2.2"],
-                              ["1.1", -1, "2.1", 0], ["1.1", -1, "2.1", 1], ["1.1", -1, "2.1", 2],
+                              ["1.1", -1, "2.1", 0], ["1.1", -1, "2.1", 1],
                               ["1.1", -0, 0, "2.2"], ["1.1", -0, 1, "2.2"], ["1.1", -0, 2, "2.2"],
-                              ["1.1", -0, "2.1", 0], ["1.1", -0, "2.1", 1], ["1.1", -0, "2.1", 2]]
+                              ["1.1", -0, "2.1", 0], ["1.1", -0, "2.1", 1]]
 
         result = pyscan.startScan()
         self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
@@ -246,7 +249,7 @@ class PyScan(unittest.TestCase):
         # Only the number of measurements on the last dimension can influence the result.
         indict1["NumberOfMeasurements"] = 3
 
-        test_dal = TestPyScanDal()
+        test_dal = CurrentMockDal()
         pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
         result = pyscan.startScan()
@@ -260,19 +263,19 @@ class PyScan(unittest.TestCase):
         # Only the number of measurements on the last dimension can influence the result.
         indict1["NumberOfMeasurements"] = 3
 
-        test_dal = TestPyScanDal()
+        test_dal = CurrentMockDal()
         pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
         # First dimension LineScan, second dimension first change one, than another.
         expected_positions = [[-3, -3, 0, "2.2"], [-3, -3, 1, "2.2"], [-3, -3, 2, "2.2"],
-                              [-3, -3, "2.1", 0], [-3, -3, "2.1", 1], [-3, -3, "2.1", 2],
+                              [-3, -3, "2.1", 0], [-3, -3, "2.1", 1],
                               [-2, -2, 0, "2.2"], [-2, -2, 1, "2.2"], [-2, -2, 2, "2.2"],
-                              [-2, -2, "2.1", 0], [-2, -2, "2.1", 1], [-2, -2, "2.1", 2],
+                              [-2, -2, "2.1", 0], [-2, -2, "2.1", 1],
                               [-1, -1, 0, "2.2"], [-1, -1, 1, "2.2"], [-1, -1, 2, "2.2"],
-                              [-1, -1, "2.1", 0], [-1, -1, "2.1", 1], [-1, -1, "2.1", 2],
+                              [-1, -1, "2.1", 0], [-1, -1, "2.1", 1],
                               [-0, -0, 0, "2.2"], [-0, -0, 1, "2.2"], [-0, -0, 2, "2.2"],
-                              [-0, -0, "2.1", 0], [-0, -0, "2.1", 1], [-0, -0, "2.1", 2]]
+                              [-0, -0, "2.1", 0], [-0, -0, "2.1", 1]]
 
         result = pyscan.startScan()
         self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
@@ -288,22 +291,24 @@ class PyScan(unittest.TestCase):
         # Each measurement (KnobReadback, Observable, Validation) is repeated 4 times.
         indict2["NumberOfMeasurements"] = 4
 
-        test_dal = TestPyScanDal()
+        test_dal = CurrentMockDal()
         pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
         # TODO: Profile the outputs.
 
     def test_output_format(self):
+        # Test with the old scan, to verify if this is it.
         indict1, indict3 = self.get_ScanLine_indices()
         indict2, indict4 = self.get_ScanSeries_indices()
 
-        test_dal = TestPyScanDal()
+        test_dal = CurrentMockDal()
         pyscan = CurrentScan()
         result = pyscan.initializeScan([indict1, indict2, indict3, indict4], test_dal)
 
         self.assertEqual(result["Validation"], test_output_format_expected_result,
                          "The pre-allocation was not correct. Oh boy..")
+
 
     def test_Monitors(self):
         pass

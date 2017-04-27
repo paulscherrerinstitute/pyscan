@@ -3,6 +3,8 @@ from copy import copy
 import math
 from itertools import chain, cycle
 
+from pyscan.utils import convert_to_list
+
 
 class LinePositioner(object):
     def __init__(self, start, end, steps, passes=1, offsets=None):
@@ -250,25 +252,40 @@ class ZigZagVectorPositioner(VectorPositioner):
             yield self.positions[next(indexes)]
 
 
-class StepByStepVectorPositioner(VectorPositioner):
+class SerialPositioner(object):
     """
     Scan over all provided points, one by one, returning the previous to the initial state.
+    Each axis is treated as a separate line.
     """
     def __init__(self, positions, initial_positions, passes=1, offsets=None):
-        super(StepByStepVectorPositioner, self).__init__(positions, passes, offsets)
+        self.positions = positions
+        self.passes = passes
+        self.offsets = offsets
+
+        if passes < 1:
+            raise ValueError("Number of passes cannot be less than 1, but %d was provided." % passes)
+
         self.initial_positions = initial_positions
+        self.n_axis = len(self.initial_positions)
+
+        # In case only 1 axis is provided, still wrap it in a list, because it makes the generator code easier.
+        if self.n_axis == 1:
+            self.positions = [positions]
+
+        # Fix the offset if provided.
+        if self.offsets:
+            for axis_positions, offset in zip(self.positions, self.offsets):
+                axis_positions[:] = [original_position + offset for original_position in axis_positions]
 
     def get_generator(self):
-        # Number of steps for each axis.
-        n_steps = len(self.positions)
-        n_axis = len(self.positions[0]) if isinstance(self.positions, list) else 1
-
         for _ in range(self.passes):
             # For each axis.
-            for axis_index in range(n_axis):
+            for axis_index in range(self.n_axis):
                 current_state = copy(self.initial_positions)
-                for step_index in range(n_steps):
-                    current_state[axis_index] = self.positions[step_index][axis_index]
+
+                n_steps_in_axis = len(self.positions[axis_index])
+                for axis_position_index in range(n_steps_in_axis):
+                    current_state[axis_index] = convert_to_list(self.positions[axis_index])[axis_position_index]
                     yield copy(current_state)
 
 

@@ -2,7 +2,7 @@ import unittest
 from itertools import count
 
 from pyscan.positioner import LinePositioner, ZigZagLinePositioner, VectorPositioner, \
-    ZigZagVectorPositioner, AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner, StepByStepVectorPositioner, \
+    ZigZagVectorPositioner, AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner, SerialPositioner, \
     CompoundPositioner
 from pyscan.utils import convert_to_position_list
 from tests.utils import is_close
@@ -276,22 +276,23 @@ class DiscreetPositionersTests(unittest.TestCase):
         self.verify_multi_result(MultiAreaPositioner([[0, 0], [4, 4]], [[2, 2], [6, 6]], [[1., 1.], [1., 1.]],
                                                      passes=3), expected_result * 3)
 
-    def test_StepByStepVectorPositioner(self):
-        expected_result = [[0], [1], [2], [3]]
+    def test_SerialPositioner(self):
+        expected_result = [[0], [1], [2], [3], [4]]
+
         # This should simply scan over all the values.
-        self.verify_result(StepByStepVectorPositioner([[0], [1], [2], [3]], [-1]), expected_result)
+        self.verify_result(SerialPositioner([0, 1, 2, 3, 4], [-1]), expected_result)
 
         expected_result = [[0, -1], [1, -1], [2, -1],
-                           [-1, 0], [-1, 1], [-1, 2]]
+                           [-1, 0], [-1, 1]]
         # One axis at the time, returning each value back to the original when finished.
-        self.verify_result(StepByStepVectorPositioner([[0, 0], [1, 1], [2, 2]], [-1, -1]),
+        self.verify_result(SerialPositioner([[0, 1, 2], [0, 1]], [-1, -1]),
                            expected_result)
 
         expected_result = [[0, -1, -1], [1, -1, -1],
                            [-1, 0, -1], [-1, 1, -1],
                            [-1, -1, 0], [-1, -1, 1]]
         # Same as above, but for 3 axis.
-        self.verify_result(StepByStepVectorPositioner(convert_to_position_list([[0, 1], [0, 1], [0, 1]]), [-1, -1, -1]),
+        self.verify_result(SerialPositioner([[0, 1], [0, 1], [0, 1]], [-1, -1, -1]),
                            expected_result)
 
         # Test for PyScan.
@@ -300,23 +301,21 @@ class DiscreetPositionersTests(unittest.TestCase):
 
         first_initial = [-11, -12]
         first_input = [[-3, -2, -1, 0], [-3, -2, -1, 0]]
-        first_input = convert_to_position_list(first_input)
 
-        self.verify_result(StepByStepVectorPositioner(first_input, first_initial), expected_result)
+        self.verify_result(SerialPositioner(first_input, first_initial), expected_result)
 
         expected_result = [[0, -22], [1, -22], [2, -22],
                            [-21, 0], [-21, 1], [-21, 2]]
 
         second_initial = [-21, -22]
         second_input = [[0, 1, 2], [0, 1, 2]]
-        second_input = convert_to_position_list(second_input)
 
-        self.verify_result(StepByStepVectorPositioner(second_input, second_initial), expected_result)
+        self.verify_result(SerialPositioner(second_input, second_initial), expected_result)
 
     def test_CompoundPositioner(self):
         expected_result = [[0], [1], [2], [3]]
         # The compound positioner should not modify the behaviour if only 1 positioner was supplied.
-        self.verify_result(CompoundPositioner([StepByStepVectorPositioner(expected_result, [-1])]), expected_result)
+        self.verify_result(CompoundPositioner([SerialPositioner([0, 1, 2, 3], [-1])]), expected_result)
 
         expected_result = [[0.0, 0.0], [0.0, 3.0],
                            [3.0, 3.0], [3.0, 0.0]]
@@ -360,11 +359,13 @@ class DiscreetPositionersTests(unittest.TestCase):
                            [-11, -0, -21, 0], [-11, -0, -21, 1], [-11, -0, -21, 2]]
 
         # Initial positions to be used.
+        first_input = [[-3, -2, -1, 0], [-3, -2, -1, 0]]
+        second_input = [[0, 1, 2], [0, 1, 2]]
         first_initial = [-11, -12]
         second_initial = [-21, -22]
 
-        self.verify_result(CompoundPositioner([StepByStepVectorPositioner(first_input, first_initial),
-                                               StepByStepVectorPositioner(second_input, second_initial)]),
+        self.verify_result(CompoundPositioner([SerialPositioner(first_input, first_initial),
+                                               SerialPositioner(second_input, second_initial)]),
                            expected_result)
 
         # First dimension LineScan, second dimension first change one, than another.
@@ -377,6 +378,8 @@ class DiscreetPositionersTests(unittest.TestCase):
                            [-0, -0, 0, -22], [-0, -0, 1, -22], [-0, -0, 2, -22],
                            [-0, -0, -21, 0], [-0, -0, -21, 1], [-0, -0, -21, 2]]
 
+        first_input = convert_to_position_list([[-3, -2, -1, 0], [-3, -2, -1, 0]])
+
         self.verify_result(CompoundPositioner([VectorPositioner(first_input),
-                                               StepByStepVectorPositioner(second_input, second_initial)]),
+                                               SerialPositioner(second_input, second_initial)]),
                            expected_result)

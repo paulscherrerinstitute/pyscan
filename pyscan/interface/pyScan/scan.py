@@ -5,7 +5,7 @@ from time import sleep
 import numpy as np
 from copy import deepcopy
 
-from pyscan.epics_dal import PyEpicsDal, ReadGroupInterface, WriteGroupInterface
+from pyscan.epics_dal import PyEpicsDal
 from pyscan.interface.pyScan.utils import PyScanDataProcessor
 from pyscan.positioner import VectorPositioner, StepByStepVectorPositioner, CompoundPositioner
 from pyscan.scan import Scanner
@@ -369,9 +369,10 @@ class Scan(object):
 
         # TODO: We can optimize this by moving the initialization in the epics_dal init, but pre actions need
         # to be moved after the epics_dal init than
-        read_interface = ReadGroupInterface(dic['KnobReadback'])
-        dic['KnobSaved'] = read_interface.read()
-        read_interface.close()
+        self.epics_dal.add_reader_group("KnobReadback", dic['KnobReadback'])
+        group = self.epics_dal.get_group("KnobReadback")
+        dic['KnobSaved'] = group.read()
+        group.close()
 
     def _setup_knob_scan_values(self, index, dic):
         if 'Series' not in dic.keys():

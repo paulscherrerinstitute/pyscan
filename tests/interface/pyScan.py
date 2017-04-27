@@ -1,12 +1,22 @@
 import unittest
-from tests.interface.pyScan_test_data import test_output_format_expected_result
+
+from pyscan.utils import flatten_list
+from tests.interface.pyScan_test_data import test_output_format_expected_result, test_ScanLine_first_KnobReadback, \
+    test_ScanLine_first_Validation, test_ScanLine_first_Observable, test_ScanLine_second_KnobReadback, \
+    test_ScanLine_second_Validation, test_ScanLine_second_Observable, test_ScanSeries_first_KnobReadback, \
+    test_ScanSeries_first_Validation, test_ScanSeries_first_Observable, test_ScanSeries_second_KnobReadback, \
+    test_ScanSeries_second_Validation, test_ScanSeries_second_Observable, test_ScanMixed_first_KnobReadback, \
+    test_ScanMixed_first_Validation, test_ScanMixed_first_Observable, test_ScanMixed_second_KnobReadback, \
+    test_ScanMixed_second_Validation, test_ScanMixed_second_Observable, test_SimpleScan_first_KnobReadback, \
+    test_SimpleScan_first_Validation, test_SimpleScan_first_Observable, test_SimpleScan_second_KnobReadback, \
+    test_SimpleScan_second_Validation, test_SimpleScan_second_Observable
 
 from tests.interface.old_scan import Scan as CurrentScan
 from tests.utils import TestPyScanDal as CurrentMockDal
 
-# # Comment this to test with the old dal.
-# from pyscan.interface.pyScan import Scan as CurrentScan
-# from tests.mock_epics_dal import MockPyEpicsDal as CurrentMockDal
+# Comment this 2 lines to test with the old dal.
+from pyscan.interface.pyScan import Scan as CurrentScan
+from tests.mock_epics_dal import MockPyEpicsDal as CurrentMockDal
 
 
 class PyScan(unittest.TestCase):
@@ -19,11 +29,9 @@ class PyScan(unittest.TestCase):
         indict1['Waiting'] = 0.1
 
         indict2 = dict()
-        # TODO: Check what happens if only a single Knob is specified.
         indict2['Knob'] = ["2.1", "2.2"]
         indict2['ScanRange'] = [[0, 2], [0, 2]]
         indict2['Nstep'] = 3
-        # TODO: Check what happens if single value observable is given.
         indict2['Observable'] = ["READ4", "READ5"]
         indict2['Waiting'] = 0.1
 
@@ -65,14 +73,17 @@ class PyScan(unittest.TestCase):
         self.assertTrue(result["TimeStampEnd"] > result["TimeStampStart"],
                         "The end timestamp is smaller than the start timestamp.")
 
+        n_measurements = indict2["NumberOfMeasurements"]
+
         # The first element of the result must be the initial PV values.
-        original_values = test_dal.positions[0]
-        self.assertEqual(original_values, indict1["Knob"] + indict2["Knob"] + indict2["Observable"],
+        original_values = test_dal.get_positions()[0]
+        expected_values = indict1["Knob"] + indict2["Knob"] + indict2["Observable"]
+        self.assertEqual(original_values, expected_values,
                          "The first element of the read positions should be the initial condition.")
 
         # Adjust the expected results to match the number of measurements on the last dimension.
         expanded_expected_positions = []
-        n_measurements = indict2["NumberOfMeasurements"]
+
         if n_measurements > 1:
             for position in expected_positions:
                 expanded_expected_positions.extend([position] * n_measurements)
@@ -80,7 +91,8 @@ class PyScan(unittest.TestCase):
             expanded_expected_positions = expected_positions
 
         # First 4 PVs are readbacks, the first array entry is the original values before changing them for measuring.
-        sampled_positions = [single_position[:4] for single_position in test_dal.positions[1:]]
+        sampled_positions = list(flatten_list([element for element in test_dal.get_positions()[1:]]))
+        sampled_positions = [position[:4] for position in sampled_positions]
         self.assertEqual(sampled_positions, expanded_expected_positions,
                          "The expected positions do not match the one read by the mock dal.")
 
@@ -90,12 +102,14 @@ class PyScan(unittest.TestCase):
         knob_readbacks = result["KnobReadback"]
 
         # Flatten the list.
-        knob_readbacks_expanded = [knob for sublist in result["KnobReadback"] for knob in sublist]
+        knob_readbacks_expanded = list(flatten_list(result["KnobReadback"]))
+        knob_readbacks_expanded = [knob[:4] for knob in knob_readbacks_expanded]
 
         # Re-group the expanded expected positions by the number of measurements.
         if n_measurements > 1:
             for index, position in enumerate(expected_positions):
                 expected_positions[index] = [position] * n_measurements
+        expected_positions = list(flatten_list(expected_positions))
 
         # Check if the knob readbacks equal the expected positions (the motors were positioned to the correct values).
         self.assertEqual(knob_readbacks_expanded, expected_positions,
@@ -113,8 +127,6 @@ class PyScan(unittest.TestCase):
         # Only observables from the last dimension are taken into account.
         self.assertEqual(len(observables[0]), indict2['Nstep'],
                          "The number of observables do not match with the second dimension steps.")
-
-        # TODO: Test result["Validation"] -> why is it even empty?
 
         # Check if the number of measurements is correct for the results.
         if n_measurements > 1:
@@ -148,6 +160,14 @@ class PyScan(unittest.TestCase):
         self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
         self.standard_line_tests(result, indict1, indict2, expected_positions)
 
+        # Check if the results match with the data collected with the original pyscan.
+        self.assertEqual(test_ScanLine_first_KnobReadback, result["KnobReadback"],
+                         "KnobReadback format does not match")
+        self.assertEqual(test_ScanLine_first_Validation, result["Validation"],
+                         "Validation format does not match")
+        self.assertEqual(test_ScanLine_first_Observable, result["Observable"],
+                         "Observable format does not match")
+
         # Repeat the same test with multiple measurements.
 
         indict1, indict2 = self.get_ScanLine_indices()
@@ -162,6 +182,14 @@ class PyScan(unittest.TestCase):
         result = pyscan.startScan()
         self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
         self.standard_line_tests(result, indict1, indict2, expected_positions)
+
+        # Check if the results match with the data collected with the original pyscan.
+        self.assertEqual(test_ScanLine_second_KnobReadback, result["KnobReadback"],
+                         "KnobReadback format does not match")
+        self.assertEqual(test_ScanLine_second_Validation, result["Validation"],
+                         "Validation format does not match")
+        self.assertEqual(test_ScanLine_second_Observable, result["Observable"],
+                         "Observable format does not match")
 
     def standard_series_tests(self, result, indict1, indict2, expected_positions):
         n_measurements = indict2["NumberOfMeasurements"]
@@ -195,8 +223,6 @@ class PyScan(unittest.TestCase):
                          "The number of observables do not match with the number of axis.")
         self.assertEqual(len(observables[0][0][0]), indict2["Nstep"][0],
                          "The number of observables do not match with the second dimension steps.")
-
-        # TODO: Test result["Validation"] -> why is it even empty?
 
         # Check if the number of measurements is correct for the results.
         if n_measurements > 1:
@@ -241,6 +267,14 @@ class PyScan(unittest.TestCase):
         self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
         self.standard_series_tests(result, indict1, indict2, expected_positions)
 
+        # Check if the results match with the data collected with the original pyscan.
+        self.assertEqual(test_ScanSeries_first_KnobReadback, result["KnobReadback"],
+                         "KnobReadback format does not match")
+        self.assertEqual(test_ScanSeries_first_Validation, result["Validation"],
+                         "Validation format does not match")
+        self.assertEqual(test_ScanSeries_first_Observable, result["Observable"],
+                         "Observable format does not match")
+
         # Repeat the same test with multiple measurements.
 
         indict1, indict2 = self.get_ScanSeries_indices()
@@ -255,6 +289,15 @@ class PyScan(unittest.TestCase):
         result = pyscan.startScan()
         self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
         self.standard_series_tests(result, indict1, indict2, expected_positions)
+
+        # Check if the results match with the data collected with the original pyscan.
+        self.assertEqual(test_ScanSeries_second_KnobReadback, result["KnobReadback"],
+                         "KnobReadback format does not match")
+        self.assertEqual(test_ScanSeries_second_Validation, result["Validation"],
+                         "Validation format does not match")
+        self.assertEqual(test_ScanSeries_second_Observable, result["Observable"],
+                         "Observable format does not match")
+
 
     def test_ScanMixed(self):
         # First dimension is Range scan, second is Series scan.
@@ -280,7 +323,13 @@ class PyScan(unittest.TestCase):
         result = pyscan.startScan()
         self.standard_scan_tests(result, test_dal, indict1, indict2, expected_positions)
 
-        # TODO: Profile the outputs.
+        # Check if the results match with the data collected with the original pyscan.
+        self.assertEqual(test_ScanMixed_first_KnobReadback, result["KnobReadback"],
+                         "KnobReadback format does not match")
+        self.assertEqual(test_ScanMixed_first_Validation, result["Validation"],
+                         "Validation format does not match")
+        self.assertEqual(test_ScanMixed_first_Observable, result["Observable"],
+                         "Observable format does not match")
 
         # Repeat the same test with multiple measurements.
 
@@ -295,7 +344,13 @@ class PyScan(unittest.TestCase):
         pyscan = CurrentScan()
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
-        # TODO: Profile the outputs.
+        # Check if the results match with the data collected with the original pyscan.
+        self.assertEqual(test_ScanMixed_second_KnobReadback, result["KnobReadback"],
+                         "KnobReadback format does not match")
+        self.assertEqual(test_ScanMixed_second_Validation, result["Validation"],
+                         "Validation format does not match")
+        self.assertEqual(test_ScanMixed_second_Observable, result["Observable"],
+                         "Observable format does not match")
 
     def test_output_format(self):
         # Test with the old scan, to verify if this is it.
@@ -309,6 +364,51 @@ class PyScan(unittest.TestCase):
         self.assertEqual(result["Validation"], test_output_format_expected_result,
                          "The pre-allocation was not correct. Oh boy..")
 
+    def test_simple_scan(self):
+        # Test the simplest possible scan.
+        indict1 = dict()
+        indict1['Knob'] = ["1.1"]
+        indict1["ScanValues"] = [-3, -2, -1, 0]
+        indict1['Observable'] = ["READ1"]
+        indict1['Waiting'] = 0.1
+
+        test_dal = CurrentMockDal()
+        pyscan = CurrentScan()
+        result = pyscan.initializeScan(indict1, test_dal)
+        self.standard_init_tests(result)
+        result = pyscan.startScan()
+
+        # Check if the results match with the data collected with the original pyscan.
+        self.assertEqual(test_SimpleScan_first_KnobReadback, result["KnobReadback"],
+                         "KnobReadback format does not match")
+        self.assertEqual(test_SimpleScan_first_Validation, result["Validation"],
+                         "Validation format does not match")
+        self.assertEqual(test_SimpleScan_first_Observable, result["Observable"],
+                         "Observable format does not match")
+
+
+        # With multiple measurements.
+
+        indict1 = dict()
+        indict1['Knob'] = ["1.1"]
+        indict1["ScanValues"] = [-3, -2, -1, 0]
+        indict1['Observable'] = ["READ1"]
+        indict1['Waiting'] = 0.1
+        indict1["NumberOfMeasurements"] = 3
+
+        test_dal = CurrentMockDal()
+        pyscan = CurrentScan()
+        result = pyscan.initializeScan(indict1, test_dal)
+        self.standard_init_tests(result)
+        result = pyscan.startScan()
+
+        # Check if the results match with the data collected with the original pyscan.
+        self.assertEqual(test_SimpleScan_second_KnobReadback, result["KnobReadback"],
+                         "KnobReadback format does not match")
+        self.assertEqual(test_SimpleScan_second_Validation, result["Validation"],
+                         "Validation format does not match")
+        self.assertEqual(test_SimpleScan_second_Observable, result["Observable"],
+                         "Observable format does not match")
 
     def test_Monitors(self):
         pass

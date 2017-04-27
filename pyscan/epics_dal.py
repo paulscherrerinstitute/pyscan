@@ -21,8 +21,8 @@ class PyEpicsDal(object):
         self.groups[group_name] = group_interface
         return group_name
 
-    def add_reader_group(self, group_name, pv_names, n_measurements=None):
-        self.add_group(group_name, ReadGroupInterface(pv_names, n_measurements))
+    def add_reader_group(self, group_name, pv_names, n_measurements=None, waiting=None):
+        self.add_group(group_name, ReadGroupInterface(pv_names, n_measurements, waiting))
 
     def add_writer_group(self, group_name, pv_names, readback_pv_names=None, tolerances=None, timeout=None):
         self.add_group(group_name, WriteGroupInterface(pv_names, readback_pv_names, tolerances, timeout))
@@ -149,8 +149,9 @@ class ReadGroupInterface(object):
     Manage group of read PVs.
     """
     default_n_measurements = 1
+    default_waiting = 0
 
-    def __init__(self, pv_names, n_measurements=None):
+    def __init__(self, pv_names, n_measurements=None, waiting=None):
         """
         Initialize the group.
         :param pv_names: PV names (or name, list or single string) to connect to. 
@@ -164,11 +165,21 @@ class ReadGroupInterface(object):
         else:
             self.n_measurements = n_measurements
 
+        if waiting is None:
+            self.waiting = self.default_waiting
+        else:
+            self.waiting = waiting
+
         # Check if n_measurements is int or float.
         if not isinstance(self.n_measurements, (int, float)):
             raise ValueError("Number of measurements must be int or float, but %s was provided." % self.n_measurements)
 
-    def read(self, n_measurements=None):
+        # Check if n_measurements is int or float.
+        if not isinstance(self.waiting, (int, float)):
+            raise ValueError(
+                "Waiting time must be int or float, but %s was provided." % self.waiting)
+
+    def read(self, n_measurements=None, waiting=None):
         """
         Read PVs one by one.
         :return: List of results.
@@ -177,21 +188,29 @@ class ReadGroupInterface(object):
         if not n_measurements:
             n_measurements = self.n_measurements
 
+        if waiting is None:
+            waiting = self.waiting
+
         # Check if n_measurements is int or float.
         if not isinstance(n_measurements, (int, float)):
             raise ValueError("Number of measurements must be int or float, but %s was provided." % n_measurements)
 
         result = []
-        for pv in self.pvs:
-            if self.n_measurements == 1:
-                measurement = pv.get()
-            else:
-                measurement = []
-                for i in range(self.n_measurements):
-                    measurement.append(pv.get())
+        for i in range(n_measurements):
+            single_measurement = []
+            for pv in self.pvs:
+                single_measurement.append(pv.get())
 
-            result.append(measurement)
-        return result
+            result.append(single_measurement)
+
+            # Wait between measurements.
+            time.sleep(waiting)
+
+        # Return first element, if we only have 1 measurement.
+        if n_measurements == 1:
+            return result[0]
+        else:
+            return result
 
     @staticmethod
     def connect(pv_name):

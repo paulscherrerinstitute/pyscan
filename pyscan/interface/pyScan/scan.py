@@ -7,7 +7,7 @@ from copy import deepcopy
 
 from pyscan.epics_dal import PyEpicsDal
 from pyscan.interface.pyScan.utils import PyScanDataProcessor
-from pyscan.positioner import VectorPositioner, StepByStepVectorPositioner, CompoundPositioner
+from pyscan.positioner import VectorPositioner, SerialPositioner, CompoundPositioner
 from pyscan.scan import Scanner
 from pyscan.utils import convert_to_list, convert_to_position_list
 
@@ -18,12 +18,11 @@ WRITE_GROUP = "Knobs"
 class Scan(object):
     def execute_scan(self):
 
-        after_measurement_waiting_time = self.dimensions[-1]["Waiting"]
         data_processor = PyScanDataProcessor(self.outdict,
                                              n_readbacks=self.n_readbacks,
                                              n_validations=self.n_validations,
-                                             n_observable=self.n_observables,
-                                             waiting=after_measurement_waiting_time)
+                                             n_observables=self.n_observables,
+                                             n_measurements=self.n_measurements)
 
         after_executor = self.get_action_executor("In-loopPostAction")
 
@@ -74,20 +73,20 @@ class Scan(object):
             # This dimension uses relative positions, read the PVs initial state.
             # We also need initial positions for the series scan.
             if is_additive or is_series:
-                offsets = initial_positions[knob_readback_offset:knob_readback_offset + n_knob_readbacks]
+                offsets = convert_to_list(
+                    initial_positions[knob_readback_offset:knob_readback_offset + n_knob_readbacks])
             else:
                 offsets = None
-
-            # Change the PER KNOB to PER INDEX of positions.
-            positions = convert_to_position_list(convert_to_list(dimension["KnobExpanded"]))
 
             # Series scan in this dimension, use StepByStepVectorPositioner.
             if is_series:
                 # In the StepByStep positioner, the initial values need to be added to the steps.
-                positioners.append(StepByStepVectorPositioner(positions, initial_positions=offsets,
-                                                              offsets=offsets if is_additive else None))
+                positions = convert_to_list(dimension["ScanValues"])
+                positioners.append(SerialPositioner(positions, initial_positions=offsets,
+                                                    offsets=offsets if is_additive else None))
             # Line scan in this dimension, use VectorPositioner.
             else:
+                positions = convert_to_position_list(convert_to_list(dimension["KnobExpanded"]))
                 positioners.append(VectorPositioner(positions, offsets=offsets))
 
             # Increase the knob readback offset.
@@ -152,6 +151,7 @@ class Scan(object):
         self.n_validations = None
         self.n_observables = None
         self.n_total_positions = None
+        self.n_measurements = None
 
         # Accessed by some clients.
         self.ProgDisp = None
@@ -318,10 +318,13 @@ class Scan(object):
         all_tolerances = [item for sublist in all_tolerances for item in sublist]
 
         # The number of measurements is sampled only from the last dimension.
-        n_measurements = self.dimensions[-1]["NumberOfMeasurements"]
+        self.n_measurements = self.dimensions[-1]["NumberOfMeasurements"]
+
+        # How much time should we wait after each measurement
+        after_measurement_waiting_time = self.dimensions[-1]["Waiting"]
 
         # Initialize PV connections and check if all PV names are valid.
-        self.epics_dal.add_reader_group(READ_GROUP, self.all_read_pvs, n_measurements)
+        self.epics_dal.add_reader_group(READ_GROUP, self.all_read_pvs, self.n_measurements, after_measurement_waiting_time)
         self.epics_dal.add_writer_group(WRITE_GROUP, all_write_pvs, all_readback_pvs, all_tolerances, max_knob_waiting)
 
     def _setup_knobs(self, index, dic):

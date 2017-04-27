@@ -53,6 +53,9 @@ class TestPyScanDal(object):
         self.values = initial_values or {}
         self.positions = []
 
+    def get_positions(self):
+        return self.positions
+
     def add_group(self, group_name, pvs):
         print("Creating group %s with PVs %s." % (group_name, pvs))
         self.groups[group_name] = pvs

@@ -108,7 +108,7 @@ class Scan(object):
 
                 # Initialize the write group, to speed up in loop stuff.
                 group_name = "%s_%d_%d" % (entry_name, dim_index, action_index)
-                self.epics_dal.add_group(group_name, WriteGroupInterface(set_pv, read_pv, tolerance, timeout))
+                self.epics_dal.add_writer_group(group_name, set_pv, read_pv, tolerance, timeout)
                 actions.append((group_name, value))
 
             if entry_name + "Waiting" in dim:
@@ -321,11 +321,8 @@ class Scan(object):
         n_measurements = self.dimensions[-1]["NumberOfMeasurements"]
 
         # Initialize PV connections and check if all PV names are valid.
-        self.epics_dal.add_group(READ_GROUP, ReadGroupInterface(self.all_read_pvs, n_measurements))
-        self.epics_dal.add_group(WRITE_GROUP, WriteGroupInterface(all_write_pvs,
-                                                                  all_readback_pvs,
-                                                                  all_tolerances,
-                                                                  max_knob_waiting))
+        self.epics_dal.add_reader_group(READ_GROUP, self.all_read_pvs, n_measurements)
+        self.epics_dal.add_writer_group(WRITE_GROUP, all_write_pvs, all_readback_pvs, all_tolerances, max_knob_waiting)
 
     def _setup_knobs(self, index, dic):
         """

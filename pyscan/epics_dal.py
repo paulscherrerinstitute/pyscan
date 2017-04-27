@@ -21,6 +21,12 @@ class PyEpicsDal(object):
         self.groups[group_name] = group_interface
         return group_name
 
+    def add_reader_group(self, group_name, pv_names, n_measurements=None):
+        self.add_group(group_name, ReadGroupInterface(pv_names, n_measurements))
+
+    def add_writer_group(self, group_name, pv_names, readback_pv_names=None, tolerances=None, timeout=None):
+        self.add_group(group_name, WriteGroupInterface(pv_names, readback_pv_names, tolerances, timeout))
+
     def get_group(self, handle):
         return self.groups[handle]
 

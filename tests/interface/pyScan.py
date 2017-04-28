@@ -1,6 +1,6 @@
 import unittest
 
-from pyscan.utils import flatten_list
+from pyscan.utils import flat_list_generator
 from tests.interface.pyScan_test_data import test_output_format_expected_result, test_ScanLine_first_KnobReadback, \
     test_ScanLine_first_Validation, test_ScanLine_first_Observable, test_ScanLine_second_KnobReadback, \
     test_ScanLine_second_Validation, test_ScanLine_second_Observable, test_ScanSeries_first_KnobReadback, \
@@ -91,7 +91,7 @@ class PyScan(unittest.TestCase):
             expanded_expected_positions = expected_positions
 
         # First 4 PVs are readbacks, the first array entry is the original values before changing them for measuring.
-        sampled_positions = list(flatten_list([element for element in test_dal.get_positions()[1:]]))
+        sampled_positions = list(flat_list_generator([element for element in test_dal.get_positions()[1:]]))
         sampled_positions = [position[:4] for position in sampled_positions]
         self.assertEqual(sampled_positions, expanded_expected_positions,
                          "The expected positions do not match the one read by the mock dal.")
@@ -102,14 +102,14 @@ class PyScan(unittest.TestCase):
         knob_readbacks = result["KnobReadback"]
 
         # Flatten the list.
-        knob_readbacks_expanded = list(flatten_list(result["KnobReadback"]))
+        knob_readbacks_expanded = list(flat_list_generator(result["KnobReadback"]))
         knob_readbacks_expanded = [knob[:4] for knob in knob_readbacks_expanded]
 
         # Re-group the expanded expected positions by the number of measurements.
         if n_measurements > 1:
             for index, position in enumerate(expected_positions):
                 expected_positions[index] = [position] * n_measurements
-        expected_positions = list(flatten_list(expected_positions))
+        expected_positions = list(flat_list_generator(expected_positions))
 
         # Check if the knob readbacks equal the expected positions (the motors were positioned to the correct values).
         self.assertEqual(knob_readbacks_expanded, expected_positions,
@@ -385,7 +385,6 @@ class PyScan(unittest.TestCase):
                          "Validation format does not match")
         self.assertEqual(test_SimpleScan_first_Observable, result["Observable"],
                          "Observable format does not match")
-
 
         # With multiple measurements.
 

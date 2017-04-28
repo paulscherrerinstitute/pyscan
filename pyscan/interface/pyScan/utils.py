@@ -1,5 +1,5 @@
 
-from pyscan.utils import flatten_list
+from pyscan.utils import flat_list_generator
 
 
 class AbortMonitor(object):
@@ -22,9 +22,9 @@ class PyScanDataProcessor(object):
         self.n_observables = n_observables
         self.n_measurements = n_measurements
         self.output = output
-        self.KnobReadback_output_position = flatten_list(self.output["KnobReadback"])
-        self.Validation_output_position = flatten_list(self.output["Validation"])
-        self.Observable_output_position = flatten_list(self.output["Observable"])
+        self.KnobReadback_output_position = flat_list_generator(self.output["KnobReadback"])
+        self.Validation_output_position = flat_list_generator(self.output["Validation"])
+        self.Observable_output_position = flat_list_generator(self.output["Observable"])
 
     def process(self, data):
         # Just we can always iterate over it.

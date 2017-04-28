@@ -54,14 +54,14 @@ def convert_to_position_list(axis_list):
     return [list(positions) for positions in zip(*axis_list)]
 
 
-def flatten_list(list_to_flatten):
+def flat_list_generator(list_to_flatten):
     # Just return the most inner list.
     if (len(list_to_flatten) == 0) or (not isinstance(list_to_flatten[0], list)):
         yield list_to_flatten
     # Otherwise we have to go deeper.
     else:
         for inner_list in list_to_flatten:
-            yield from flatten_list(inner_list)
+            yield from flat_list_generator(inner_list)
 
 
 class SimpleExecutor(object):

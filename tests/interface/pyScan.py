@@ -1,4 +1,6 @@
+import threading
 import unittest
+from time import sleep, time
 
 from pyscan.utils import flat_list_generator
 from tests.interface.pyScan_test_data import test_output_format_expected_result, test_ScanLine_first_KnobReadback, \
@@ -419,10 +421,106 @@ class PyScan(unittest.TestCase):
         pass
 
     def test_abort(self):
-        pass
+        indict1 = dict()
+        indict1['Knob'] = ["1.1"]
+        indict1["ScanValues"] = [-3, -2, -1, 0]
+        indict1['Observable'] = ["READ1"]
+        indict1['Waiting'] = 0.3
+
+        test_dal = CurrentMockDal()
+        pyscan = CurrentScan()
+        result = pyscan.initializeScan(indict1, test_dal)
+        self.standard_init_tests(result)
+
+        def abort_scan():
+            sleep(0.1)
+            # We might want to wait for the initialization to happen, or just wait for the pause to work.
+            n_retry = 0
+            while n_retry < 5:
+                try:
+                    pyscan.abortScan = 1
+                except:
+                    pass
+                n_retry += 1
+                # Initialization should not take more than 1 second.
+                sleep(0.2)
+
+        threading.Thread(target=abort_scan).start()
+        self.assertRaisesRegex(Exception, "aborted", pyscan.startScan)
 
     def test_pause(self):
-        pass
+        indict1 = dict()
+        indict1['Knob'] = ["1.1"]
+        indict1["ScanValues"] = [-3, -2, -1, 0]
+        indict1['Observable'] = ["READ1"]
+        indict1['Waiting'] = 0.3
+        indict1['StepbackOnPause'] = 0
+
+        test_dal = CurrentMockDal()
+        pyscan = CurrentScan()
+        result = pyscan.initializeScan(indict1, test_dal)
+        self.standard_init_tests(result)
+
+        def pause_scan():
+            # We need to let the scan initialize first, otherwise it overwrites the pauseScan flag.
+            sleep(0.1)
+            # We might want to wait for the initialization to happen, or just wait for the pause to work.
+            n_retry = 0
+            while n_retry < 5:
+                try:
+                    pyscan.pauseScan = 1
+                except:
+                    pass
+                n_retry += 1
+                # Initialization should not take more than 1 second.
+                sleep(0.2)
+            sleep(3)
+            pyscan.pauseScan = 0
+
+        begin_timestamp = time()
+        threading.Thread(target=pause_scan).start()
+        pyscan.startScan()
+
+        time_elapsed = time() - begin_timestamp
+        self.assertTrue(time_elapsed > 3, "We paused the scan for 3 seconds, but this did not "
+                                          "reflect in the execution time %f." % time_elapsed)
+
+    def test_abort_paused_scan(self):
+        indict1 = dict()
+        indict1['Knob'] = ["1.1"]
+        indict1["ScanValues"] = [-3, -2, -1, 0]
+        indict1['Observable'] = ["READ1"]
+        indict1['Waiting'] = 0.3
+        indict1['StepbackOnPause'] = 0
+
+        test_dal = CurrentMockDal()
+        pyscan = CurrentScan()
+        result = pyscan.initializeScan(indict1, test_dal)
+        self.standard_init_tests(result)
+
+        def pause_scan():
+            # We need to let the scan initialize first, otherwise it overwrites the pauseScan flag.
+            sleep(0.1)
+            # We might want to wait for the initialization to happen, or just wait for the pause to work.
+            n_retry = 0
+            while n_retry < 5:
+                try:
+                    pyscan.pauseScan = 1
+                except:
+                    pass
+                n_retry += 1
+                # Initialization should not take more than 1 second.
+                sleep(0.2)
+            sleep(3)
+            pyscan.abortScan = 1
+
+        begin_timestamp = time()
+        threading.Thread(target=pause_scan).start()
+
+        self.assertRaisesRegex(Exception, "aborted", pyscan.startScan)
+        time_elapsed = time() - begin_timestamp
+        self.assertTrue(time_elapsed > 3, "We paused the scan for 3 seconds before aborting, "
+                                          "but this did not reflect in the execution time %f." % time_elapsed)
 
     def test_progress(self):
         pass

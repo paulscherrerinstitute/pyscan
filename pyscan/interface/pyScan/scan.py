@@ -36,10 +36,6 @@ class Scan(object):
             self.ProgDisp.Progress = 100.0 * (self.n_done_measurements /
                                               self.n_total_positions)
 
-            # Check if the abort flag was set and propagate it.
-            if self.ProgDisp.abortScan or self.abortScan:
-                scanner_instance.abort_scan()
-
         self.scanner = Scanner(positioner=self.get_positioner(),
                                writer=self.epics_dal.get_group(WRITE_GROUP).set_and_match,
                                data_processor=data_processor,
@@ -129,17 +125,6 @@ class Scan(object):
             self.Progress = 0
             self.abortScan = 0
 
-    def get_pauseScan(self):
-        return self._pauseScan
-
-    def set_pauseScan(self, value):
-        self._pauseScan = value
-        if self.scanner:
-            if value:
-                self.scanner.pause_scan()
-            else:
-                self.scanner.resume_scan()
-
     def __init__(self):
         self.dimensions = None
         self.epics_dal = None
@@ -156,10 +141,34 @@ class Scan(object):
         # Accessed by some clients.
         self.ProgDisp = None
         self._pauseScan = 0
+
         # Just to make old GUI work.
-        self.pauseScan = property(self.get_pauseScan, self.set_pauseScan)
-        self.abortScan = 0
+        self._abortScan = 0
         self.n_done_measurements = 0
+
+    @property
+    def abortScan(self):
+        return self._abort_scan
+
+    @abortScan.setter
+    def abortScan(self, value):
+        self._abortScan = value
+
+        if self._abortScan:
+            self.scanner.abort_scan()
+
+    @property
+    def pauseScan(self):
+        return self._pauseScan
+
+    @pauseScan.setter
+    def pauseScan(self, value):
+        self._pauseScan = value
+
+        if self._pauseScan:
+            self.scanner.pause_scan()
+        else:
+            self.scanner.resume_scan()
 
     def initializeScan(self, inlist, epics_dal=None):
         """

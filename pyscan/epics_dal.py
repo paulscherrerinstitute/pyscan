@@ -28,7 +28,7 @@ class PyEpicsDal(object):
         self.add_group(group_name, WriteGroupInterface(pv_names, readback_pv_names, tolerances, timeout))
 
     def get_group(self, handle):
-        return self.groups[handle]
+        return self.groups.get(handle)
 
     def close_group(self, group_name):
         if group_name not in self.groups:

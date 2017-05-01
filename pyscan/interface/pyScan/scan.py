@@ -13,6 +13,7 @@ from pyscan.utils import convert_to_list, convert_to_position_list
 
 READ_GROUP = "Measurements"
 WRITE_GROUP = "Knobs"
+MONITOR_GROUP = "Monitorsø"
 
 
 class Scan(object):
@@ -36,6 +37,40 @@ class Scan(object):
             self.ProgDisp.Progress = 100.0 * (self.n_done_measurements /
                                               self.n_total_positions)
 
+        def prepare_monitors(reader):
+            # TODO: Make actual EPICS monitors, instead of polling (if this is desired?, ASK FIRST!)
+
+            # If there are no monitors defined we have nothing to validate.
+            if not self.dimensions[-1]["Monitor"]:
+                return None
+
+            def validate_monitors(position, monitor_values):
+                combined_data = zip(self.dimensions[-1]['Monitor'],
+                                    self.dimensions[-1]['MonitorValue'],
+                                    self.dimensions[-1]['MonitorTolerance'],
+                                    self.dimensions[-1]['MonitorAction'],
+                                    self.dimensions[-1]['MonitorTimeout'],
+                                    monitor_values)
+
+                for pv, expected_value, tolerance, action, timeout, value in combined_data:
+                    # Monitor value does not match.
+                    if not self.match_monitor_value(value, expected_value, tolerance):
+
+                        if action == "Abort":
+                            raise ValueError("Monitor %s, expected value %s, tolerance %s, has value %s. Aborting."
+                                             % (pv, expected_value, tolerance, value))
+                        elif action == "WaitAndAbort":
+                            # TODO: The "wait" part in WaitAndAbort.
+                            raise ValueError("Monitor %s, expected value %s, tolerance %s, has value %s. Aborting."
+                                             % (pv, expected_value, tolerance, value))
+                        else:
+                            # TODO: Other actions do not really have a defined behaviour. Do we need any more?
+                            raise ValueError("MonitorAction %s, on PV %s, is not supported." % (pv, action))
+
+                return True
+
+            return validate_monitors
+
         self.scanner = Scanner(positioner=self.get_positioner(),
                                writer=self.epics_dal.get_group(WRITE_GROUP).set_and_match,
                                data_processor=data_processor,
@@ -43,10 +78,8 @@ class Scan(object):
                                before_executor=self.get_action_executor("In-loopPreAction"),
                                after_executor=progress_after_executor,
                                initialization_executor=self.get_action_executor("PreAction"),
-                               finalization_executor=self.get_action_executor("PostAction"))
-
-        # Monitors defined only in self.dimensions[-1]
-        self.scanner.setup_monitors()
+                               finalization_executor=self.get_action_executor("PostAction"),
+                               data_validator=prepare_monitors(self.epics_dal.get_group(MONITOR_GROUP)))
 
         after_move_settling_time = self.dimensions[-1]["KnobWaitingExtra"]
         self.outdict.update(self.scanner.discrete_scan(after_move_settling_time))
@@ -119,6 +152,30 @@ class Scan(object):
             sleep(max_waiting)
 
         return execute
+
+    @staticmethod
+    def match_monitor_value(value, expected_value, tolerance):
+        # We have a NON-ZERO tolerance policy.
+        if not tolerance:
+            tolerance = 0.00001
+
+        # Monitor value is in list, i.e. several cases are okay
+        if isinstance(expected_value, list):
+            if value in expected_value:
+                return True
+        # String values must match exactly.
+        elif isinstance(value, str):
+            if value == expected_value:
+                return True
+        # Numbers have to take into account the tolerance.
+        elif isinstance(value, int) or isinstance(value, float):
+            if abs(value - expected_value) < tolerance:
+                return True
+        else:
+            raise ValueError("Unexpected case.\nvalue = %s\nexpected_value = %s\ntolerance = %s" %
+                             (value, expected_value, tolerance))
+
+        return False
 
     class DummyProgress(object):
         def __init__(self):
@@ -333,7 +390,8 @@ class Scan(object):
         after_measurement_waiting_time = self.dimensions[-1]["Waiting"]
 
         # Initialize PV connections and check if all PV names are valid.
-        self.epics_dal.add_reader_group(READ_GROUP, self.all_read_pvs, self.n_measurements, after_measurement_waiting_time)
+        self.epics_dal.add_reader_group(READ_GROUP, self.all_read_pvs, self.n_measurements,
+                                        after_measurement_waiting_time)
         self.epics_dal.add_writer_group(WRITE_GROUP, all_write_pvs, all_readback_pvs, all_tolerances, max_knob_waiting)
 
     def _setup_knobs(self, index, dic):
@@ -604,10 +662,10 @@ class Scan(object):
                 dic['Monitor'] = [dic['Monitor']]
 
             # Initialize monitor group and check if all monitor PVs are valid.
-            self.epics_dal.add_group("Monitor", dic["Monitor"])
+            self.epics_dal.add_reader_group(MONITOR_GROUP, dic["Monitor"])
 
             if 'MonitorValue' not in dic.keys():
-                dic["MonitorValue"] = self.epics_dal.get_group("Monitor")
+                dic["MonitorValue"] = self.epics_dal.get_group(MONITOR_GROUP).read()
             elif not isinstance(dic['MonitorValue'], list):
                 dic['MonitorValue'] = [dic['MonitorValue']]
             if len(dic['MonitorValue']) != len(dic['Monitor']):
@@ -616,7 +674,7 @@ class Scan(object):
             # Try to construct the monitor tolerance, if not given.
             if 'MonitorTolerance' not in dic.keys():
                 dic['MonitorTolerance'] = []
-                for value in self.epics_dal.get_group("Monitor"):
+                for value in self.epics_dal.get_group(MONITOR_GROUP).read():
                     if isinstance(value, str):
                         # No tolerance for string values.
                         dic['MonitorTolerance'].append(None)

@@ -32,7 +32,7 @@ class Scanner(object):
         self.finalization_executor = finalization_executor
 
         # If no data validator is provided, data is always valid.
-        self.data_validator = data_validator or (lambda x, y: True)
+        self.data_validator = data_validator or (lambda position, data: True)
 
         self._user_abort_scan_flag = False
         self._user_pause_scan_flag = False
@@ -54,9 +54,6 @@ class Scanner(object):
         Resume the scan.
         """
         self._user_pause_scan_flag = False
-
-    def setup_monitors(self):
-        pass
 
     def _verify_scan_status(self):
         """

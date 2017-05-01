@@ -26,7 +26,7 @@ class PyScanDataProcessor(object):
         self.Validation_output_position = flat_list_generator(self.output["Validation"])
         self.Observable_output_position = flat_list_generator(self.output["Observable"])
 
-    def process(self, data):
+    def process(self, position, data):
         # Just we can always iterate over it.
         if self.n_measurements == 1:
             data = [data]

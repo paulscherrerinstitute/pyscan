@@ -8,26 +8,31 @@ class Scanner(object):
 
     # Interval to sleep while in pause.
     pause_sleep_interval = 1
+    # Maximum number of times we wait to retry the acquisition.
+    acquisition_retry_limit = 3
 
-    def __init__(self, positioner, writer, data_processor, reader, before_executer=None, after_executer=None,
-                 initialization_executer=None, finalization_executer=None):
+    def __init__(self, positioner, writer, data_processor, reader, before_executor=None, after_executor=None,
+                 initialization_executor=None, finalization_executor=None, data_validator=None):
         """
         Initialize scanner.
         :param positioner: Positioner should provide a generator to get the positions to move to.
         :param writer: Object that implements the write(position) method and sets the positions.
         :param data_processor: How to store and handle the data.
         :param reader: Object that implements the read() method to return data to the data_processor.
-        :param before_executer: Callbacks executor that executed before measurements.
-        :param after_executer: Callbacks executor that executed after measurements.
+        :param before_executor: Callbacks executor that executed before measurements.
+        :param after_executor: Callbacks executor that executed after measurements.
         """
         self.positioner = positioner
         self.writer = writer
         self.data_processor = data_processor
         self.reader = reader
-        self.before_executer = before_executer
-        self.after_executer = after_executer
-        self.initialization_executer = initialization_executer
-        self.finalization_executer = finalization_executer
+        self.before_executor = before_executor
+        self.after_executor = after_executor
+        self.initialization_executor = initialization_executor
+        self.finalization_executor = finalization_executor
+
+        # If no data validator is provided, data is always valid.
+        self.data_validator = data_validator or (lambda x, y: True)
 
         self._user_abort_scan_flag = False
         self._user_pause_scan_flag = False
@@ -68,6 +73,32 @@ class Scanner(object):
                 raise Exception("User aborted scan in pause.")
             sleep(self.pause_sleep_interval)
 
+    def _read_and_process_data(self, current_position):
+        """
+        Read the data and pass it on only if valid.
+        :param current_position: Current position reached by the scan.
+        :return: Current position scan data.
+        """
+        n_current_acquisition = 0
+        # Collect data until acquired data is valid or retry limit reached.
+        while n_current_acquisition < self.acquisition_retry_limit:
+            data = self.reader()
+
+            # If the data is valid, break out of the loop.
+            if self.data_validator(current_position, data):
+                break
+
+            n_current_acquisition += 1
+        # Could not read the data within the retry limit.
+        else:
+            raise Exception("Number of maximum read attempts (%d) exceeded. Cannot read valid data at position %s." %
+                            (self.acquisition_retry_limit, current_position))
+
+        # Process only valid data.
+        self.data_processor.process(current_position, data)
+
+        return data
+
     def discrete_scan(self, settling_time=0):
         """
         Perform a discrete scan - set a position, read, continue. Return value at the end.
@@ -75,32 +106,32 @@ class Scanner(object):
         """
         try:
             # Set up the experiment.
-            if self.initialization_executer:
-                self.initialization_executer(self)
+            if self.initialization_executor:
+                self.initialization_executor(self)
 
             for next_positions in self.positioner.get_generator():
                 # Position yourself before reading.
-                self.writer.set_and_match(next_positions)
+                self.writer(next_positions)
+                # Settling time, wait after positions has been reached.
                 sleep(settling_time)
 
                 # Pre reading callbacks.
-                if self.before_executer:
-                    self.before_executer(self)
+                if self.before_executor:
+                    self.before_executor(self)
 
-                # Collect and process the data.
-                position_data = self.reader.read()
-                self.data_processor.process(position_data)
+                # Read and process the data in the current position.
+                position_data = self._read_and_process_data(next_positions)
 
                 # Post reading callbacks.
-                if self.after_executer:
-                    self.after_executer(self)
+                if self.after_executor:
+                    self.after_executor(self)
 
                 # Verify is the scan should continue.
                 self._verify_scan_status()
         finally:
             # Clean up after yourself.
-            if self.finalization_executer:
-                self.finalization_executer(self)
+            if self.finalization_executor:
+                self.finalization_executor(self)
 
         return self.data_processor.get_data()
 

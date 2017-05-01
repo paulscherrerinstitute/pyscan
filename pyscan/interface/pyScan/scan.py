@@ -41,13 +41,13 @@ class Scan(object):
                 scanner_instance.abort_scan()
 
         self.scanner = Scanner(positioner=self.get_positioner(),
-                               writer=self.epics_dal.get_group(WRITE_GROUP),
+                               writer=self.epics_dal.get_group(WRITE_GROUP).set_and_match,
                                data_processor=data_processor,
-                               reader=self.epics_dal.get_group(READ_GROUP),
-                               before_executer=self.get_action_executor("In-loopPreAction"),
-                               after_executer=progress_after_executor,
-                               initialization_executer=self.get_action_executor("PreAction"),
-                               finalization_executer=self.get_action_executor("PostAction"))
+                               reader=self.epics_dal.get_group(READ_GROUP).read,
+                               before_executor=self.get_action_executor("In-loopPreAction"),
+                               after_executor=progress_after_executor,
+                               initialization_executor=self.get_action_executor("PreAction"),
+                               finalization_executor=self.get_action_executor("PostAction"))
 
         # Monitors defined only in self.dimensions[-1]
         self.scanner.setup_monitors()
@@ -233,8 +233,6 @@ class Scan(object):
 
                 self._setup_inloop_post_action(index, dic)
 
-                self._setup_monitors(dic, is_last_dimension)
-
             # Total number of measurements
             self.n_total_positions = 1
             for dic in self.dimensions:
@@ -244,6 +242,8 @@ class Scan(object):
                     self.n_total_positions = self.n_total_positions * sum(dic['Nstep'])
 
             self._setup_epics_dal()
+            # Monitors only in the last dimension.
+            self._setup_monitors(self.dimensions[-1])
 
             # Prealocating the place for the output
             self.outdict = {"ErrorMessage": None,
@@ -589,8 +589,8 @@ class Scan(object):
         else:
             dic['In-loopPostAction'] = []
 
-    def _setup_monitors(self, dic, is_last_dimension):
-        if is_last_dimension and ('Monitor' in dic.keys()) and (dic['Monitor']):
+    def _setup_monitors(self, dic):
+        if ('Monitor' in dic.keys()) and (dic['Monitor']):
             if isinstance(dic['Monitor'], str):
                 dic['Monitor'] = [dic['Monitor']]
 
@@ -644,7 +644,7 @@ class Scan(object):
                 except:
                     raise ValueError('MonitorTimeout should be a list of float(or int).')
 
-        elif is_last_dimension:
+        else:
             dic['Monitor'] = []
             dic['MonitorValue'] = []
             dic['MonitorTolerance'] = []

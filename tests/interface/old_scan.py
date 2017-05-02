@@ -455,7 +455,7 @@ class Scan(object):
         self._add_group(dic, str(index), dic['Knob'], 'KnobSaved')
 
     def startMonitor(self, dic):
-        raise NotImplementedError("Monitors not yet supported.")
+        self.epics_dal.add_group("Monitor", dic["Monitor"])
 
     #     def cbMonitor(h):
     #         def matchValue(h):

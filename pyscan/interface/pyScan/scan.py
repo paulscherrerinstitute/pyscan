@@ -45,7 +45,7 @@ class Scan(object):
                 return None
 
             def validate_monitors(position, data):
-                monitor_values = reader()
+                monitor_values = reader.read()
                 combined_data = zip(self.dimensions[-1]['Monitor'],
                                     self.dimensions[-1]['MonitorValue'],
                                     self.dimensions[-1]['MonitorTolerance'],
@@ -80,7 +80,7 @@ class Scan(object):
                                after_executor=progress_after_executor,
                                initialization_executor=self.get_action_executor("PreAction"),
                                finalization_executor=self.get_action_executor("PostAction"),
-                               data_validator=prepare_monitors(self.epics_dal.get_group(MONITOR_GROUP).read))
+                               data_validator=prepare_monitors(self.epics_dal.get_group(MONITOR_GROUP)))
 
         after_move_settling_time = self.dimensions[-1]["KnobWaitingExtra"]
         self.outdict.update(self.scanner.discrete_scan(after_move_settling_time))
@@ -180,7 +180,8 @@ class Scan(object):
 
     class DummyProgress(object):
         def __init__(self):
-            self.Progress = 0
+            # For Thomas?
+            self.Progress = 1
             self.abortScan = 0
 
     def __init__(self):
@@ -197,7 +198,7 @@ class Scan(object):
         self.n_measurements = None
 
         # Accessed by some clients.
-        self.ProgDisp = None
+        self.ProgDisp = Scan.DummyProgress()
         self._pauseScan = 0
 
         # Just to make old GUI work.
@@ -322,7 +323,9 @@ class Scan(object):
             self.outdict = {"ErrorMessage": traceback.format_exc()}
 
         # Backward compatibility.
-        self.ProgDisp = Scan.DummyProgress()
+        self.ProgDisp.Progress = 0
+        self.ProgDisp.abortScan = 0
+
         self._pauseScan = 0
         self.abortScan = 0
         self.n_done_measurements = 0

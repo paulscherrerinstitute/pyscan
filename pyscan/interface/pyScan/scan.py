@@ -38,8 +38,6 @@ class Scan(object):
                                               self.n_total_positions)
 
         def prepare_monitors(reader):
-            # TODO: Make actual EPICS monitors, instead of polling (if this is desired?, ASK FIRST!)
-
             # If there are no monitors defined we have nothing to validate.
             if not self.dimensions[-1]["Monitor"]:
                 return None
@@ -61,9 +59,8 @@ class Scan(object):
                             raise ValueError("Monitor %s, expected value %s, tolerance %s, has value %s. Aborting."
                                              % (pv, expected_value, tolerance, value))
                         elif action == "WaitAndAbort":
-                            # TODO: The "wait" part in WaitAndAbort.
-                            raise ValueError("Monitor %s, expected value %s, tolerance %s, has value %s. Aborting."
-                                             % (pv, expected_value, tolerance, value))
+                            # TODO: The "wait" part is taken care by the scan library itself, for now?
+                            return False
                         else:
                             # TODO: Other actions do not really have a defined behaviour. Do we need any more?
                             raise ValueError("MonitorAction %s, on PV %s, is not supported." % (pv, action))

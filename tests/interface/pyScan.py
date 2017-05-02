@@ -300,7 +300,6 @@ class PyScan(unittest.TestCase):
         self.assertEqual(test_ScanSeries_second_Observable, result["Observable"],
                          "Observable format does not match")
 
-
     def test_ScanMixed(self):
         # First dimension is Range scan, second is Series scan.
         indict1, _ = self.get_ScanLine_indices()
@@ -412,7 +411,40 @@ class PyScan(unittest.TestCase):
                          "Observable format does not match")
 
     def test_Monitors(self):
-        pass
+        indict1, indict2 = self.get_ScanLine_indices()
+        # Only the number of measurements on the last dimension can influence the result.
+        indict2['Monitor'] = ["PYSCAN:TEST:MONITOR1"]
+        indict2['MonitorValue'] = [1]
+        indict2['MonitorTolerance'] = [0.01]
+        indict2['MonitorAction'] = ["WaitAndAbort"]
+        indict2['MonitorTimeout'] = [3]
+
+        # This will pass, because every 2 read attempts the monitor will have a valid value.
+        test_dal = CurrentMockDal(pv_fixed_values={"PYSCAN:TEST:MONITOR1": [0, 1]})
+        pyscan = CurrentScan()
+        self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
+        result = pyscan.startScan()
+
+        # Correct "ErrorMessage" when successfully completed.
+        self.assertEqual(result["ErrorMessage"], "Measurement finalized (finished/aborted) normally. "
+                                                 "Need initialisation before next measurement.", "Scan failed.")
+
+        # This will never pass, but we should wait for the retry attempts in this case.
+        test_dal = CurrentMockDal(pv_fixed_values={"PYSCAN:TEST:MONITOR1": [0]})
+        pyscan = CurrentScan()
+        self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
+
+        # Correct "ErrorMessage" when successfully completed.
+        self.assertRaisesRegex(Exception, "Number of maximum read attempts", pyscan.startScan)
+
+        # This will never pass, but the scan has to abort immediately without doing 3 attempts.
+        indict2['MonitorAction'] = ["Abort"]
+        test_dal = CurrentMockDal(pv_fixed_values={"PYSCAN:TEST:MONITOR1": [0]})
+        pyscan = CurrentScan()
+        self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
+
+        # Correct "ErrorMessage" when successfully completed.
+        self.assertRaisesRegex(Exception, "expected value", pyscan.startScan)
 
     def test_Additive(self):
         pass
@@ -523,4 +555,48 @@ class PyScan(unittest.TestCase):
                                           "but this did not reflect in the execution time %f." % time_elapsed)
 
     def test_progress(self):
-        pass
+        indict = {}
+        indict['Knob'] = "PYSCAN:TEST:MOTOR1:SET"
+        indict['Waiting'] = 0.5
+
+        indict['Observable'] = "PYSCAN:TEST:OBS1"
+        # One percentage step for each scan value.
+        indict['ScanValues'] = [0, 1, 2, 3]
+        # This should not change the percentages.
+        indict['NumberOfMeasurements'] = 2
+
+        test_dal = CurrentMockDal()
+        pyscan = CurrentScan()
+
+        # Check if the progress bar works.
+        def monitor_scan():
+            # make sure the initialization is done:
+            while pyscan.ProgDisp.Progress:
+                sleep(1)
+
+            current_value = 0
+            while current_value < 100:
+                last_value = pyscan.ProgDisp.Progress
+                if last_value > current_value:
+                    progress_values.append(pyscan.ProgDisp.Progress)
+                    current_value = last_value
+            else:
+                nonlocal progress_completed
+                progress_completed = True
+
+        progress_values = []
+        progress_completed = False
+        threading.Thread(target=monitor_scan).start()
+
+        pyscan.initializeScan(indict, dal=test_dal)
+        outdict = pyscan.startScan()
+
+        # Correct "ErrorMessage" when successfully completed.
+        self.assertEqual(outdict["ErrorMessage"], "Measurement finalized (finished/aborted) normally. "
+                                                  "Need initialisation before next measurement.", "Scan failed.")
+
+        # Wait for the progress thread to terminate.
+        sleep(0.2)
+
+        self.assertTrue(progress_completed, "Progress bar did not complete.")
+        self.assertListEqual(progress_values, [25, 50, 75, 100], "The completed percentage is wrong.")

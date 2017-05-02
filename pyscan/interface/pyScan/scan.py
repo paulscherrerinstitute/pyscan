@@ -13,7 +13,7 @@ from pyscan.utils import convert_to_list, convert_to_position_list
 
 READ_GROUP = "Measurements"
 WRITE_GROUP = "Knobs"
-MONITOR_GROUP = "Monitorsø"
+MONITOR_GROUP = "Monitors"
 
 
 class Scan(object):
@@ -44,7 +44,8 @@ class Scan(object):
             if not self.dimensions[-1]["Monitor"]:
                 return None
 
-            def validate_monitors(position, monitor_values):
+            def validate_monitors(position, data):
+                monitor_values = reader()
                 combined_data = zip(self.dimensions[-1]['Monitor'],
                                     self.dimensions[-1]['MonitorValue'],
                                     self.dimensions[-1]['MonitorTolerance'],
@@ -79,7 +80,7 @@ class Scan(object):
                                after_executor=progress_after_executor,
                                initialization_executor=self.get_action_executor("PreAction"),
                                finalization_executor=self.get_action_executor("PostAction"),
-                               data_validator=prepare_monitors(self.epics_dal.get_group(MONITOR_GROUP)))
+                               data_validator=prepare_monitors(self.epics_dal.get_group(MONITOR_GROUP).read))
 
         after_move_settling_time = self.dimensions[-1]["KnobWaitingExtra"]
         self.outdict.update(self.scanner.discrete_scan(after_move_settling_time))
@@ -146,7 +147,7 @@ class Scan(object):
             for action in actions:
                 name = action[0]
                 value = action[1]
-                # Retireve the epics group and write the value.
+                # Retrieve the epics group and write the value.
                 self.epics_dal.get_group(name).set_and_match(value)
 
             sleep(max_waiting)
@@ -227,18 +228,18 @@ class Scan(object):
         else:
             self.scanner.resume_scan()
 
-    def initializeScan(self, inlist, epics_dal=None):
+    def initializeScan(self, inlist, dal=None):
         """
         Initialize and verify the provided scan values.
         :param inlist: List of dictionaries for each dimension.
-        :param epics_dal: Which reader should be used to access the PVs. Default: PyEpicsDal.
+        :param dal: Which reader should be used to access the PVs. Default: PyEpicsDal.
         :return: Dictionary with results.
         """
         if not inlist:
             raise ValueError("Provided inlist is empty.")
 
-        if epics_dal is not None:
-            self.epics_dal = epics_dal
+        if dal is not None:
+            self.epics_dal = dal
         else:
             self.epics_dal = PyEpicsDal()
 

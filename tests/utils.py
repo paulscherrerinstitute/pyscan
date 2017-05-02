@@ -1,3 +1,6 @@
+from itertools import cycle
+
+
 class TestWriter(object):
     def __init__(self, buffer=None):
         """
@@ -48,10 +51,14 @@ def is_close(list1, list2, epsilon=0.00001):
 
 
 class TestPyScanDal(object):
-    def __init__(self, initial_values=None):
+    def __init__(self, initial_values=None, pv_fixed_values=None):
         self.groups = {}
         self.values = initial_values or {}
         self.positions = []
+
+        self.fixed_values = {}
+        if pv_fixed_values:
+            self.fixed_values.update((pv_name, cycle(pv_values)) for pv_name, pv_values in pv_fixed_values.items())
 
     def get_positions(self):
         return self.positions
@@ -74,7 +81,10 @@ class TestPyScanDal(object):
     def get_group(self, group_name):
         result = []
         for pv in self.groups[group_name]:
-            result.append(self.values[pv])
+            if pv in self.fixed_values:
+                result.append(next(self.fixed_values[pv]))
+            else:
+                result.append(self.values[pv])
 
         if group_name == "All":
             self.positions.append(result)

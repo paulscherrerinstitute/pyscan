@@ -10,6 +10,8 @@ class Scanner(object):
     pause_sleep_interval = 1
     # Maximum number of times we wait to retry the acquisition.
     acquisition_retry_limit = 3
+    # Delay between acquisition retries.
+    acquisition_retry_delay = 1
 
     def __init__(self, positioner, writer, data_processor, reader, before_executor=None, after_executor=None,
                  initialization_executor=None, finalization_executor=None, data_validator=None):
@@ -86,6 +88,7 @@ class Scanner(object):
                 break
 
             n_current_acquisition += 1
+            sleep(self.acquisition_retry_delay)
         # Could not read the data within the retry limit.
         else:
             raise Exception("Number of maximum read attempts (%d) exceeded. Cannot read valid data at position %s." %

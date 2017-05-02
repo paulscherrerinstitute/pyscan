@@ -1,18 +1,4 @@
-
 from pyscan.utils import flat_list_generator
-
-
-class AbortMonitor(object):
-    def __init__(self, reader_function, expected_value):
-        self.reader_function = reader_function
-        self.expected_value = expected_value
-
-    def is_close(self):
-        return True
-
-    def execute(self, context):
-        if not self.is_close(self.reader_function(), self.expcted_value):
-            raise ValueError("it is not close:(")
 
 
 class PyScanDataProcessor(object):

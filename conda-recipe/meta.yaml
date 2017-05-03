@@ -15,6 +15,7 @@ requirements:
         - python
         - numpy
         - pyepics
+        - bsread
 
     test:
          - pcaspy

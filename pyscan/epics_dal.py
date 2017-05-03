@@ -142,10 +142,18 @@ class WriteGroupInterface(object):
 
             time.sleep(self.default_get_sleep)
 
-        # TODO: Print out exactly which PV could not reach the desired position.
         if not all(within_tolerance):
-            raise ValueError("Cannot achieve position for %s in specified time %f and tolerance %f."
-                             % (self.pv_names, timeout, tolerance))
+            error_message = ""
+            # Get the indexes that did not reach the supposed values.
+            for index in [index for index, reached_value in enumerate(within_tolerance) if not reached_value]:
+                expected_value = values[index]
+                pv_name = self.pv_names[index]
+                tolerance = tolerances[index]
+
+                error_message += "Cannot achieve value %s, on PV %s, with tolerance %s.\n" % \
+                         (expected_value, pv_name, tolerance)
+
+            raise ValueError(error_message)
 
     @staticmethod
     def connect(pv_name):

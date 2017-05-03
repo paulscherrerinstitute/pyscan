@@ -17,27 +17,29 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0):
     # Minimum tolerance allowed.
     tolerance = max(tolerance, minimum_tolerance)
 
-    # If we set a string, we expect the result to match exactly.
-    if isinstance(expected_value, str):
-        if current_value == expected_value:
-            return True
+    def compare_value(value):
+        # If we set a string, we expect the result to match exactly.
+        if isinstance(expected_value, str):
+            if value == expected_value:
+                return True
 
-    # For numbers we compare them within tolerance.
-    elif isinstance(expected_value, (float, int)):
-        if abs(current_value - expected_value) <= tolerance:
-            return True
+        # For numbers we compare them within tolerance.
+        elif isinstance(expected_value, (float, int)):
+            if abs(current_value - expected_value) <= tolerance:
+                return True
 
-    # We allow multiple values for this PV.
-    elif isinstance(expected_value, list):
-        # TODO: Do a proper check.
-        return True
+        # We cannot set and match other than strings and numbers.
+        else:
+            raise ValueError("Do not know how to compare %s with the expected value %s"
+                             % (current_value, expected_value))
 
-    # We cannot set and match other than strings and numbers.
+        return False
+
+    if isinstance(expected_value, list):
+        # In case of a list, any of the provided values will do.
+        return any((compare_value(value) for value in expected_value))
     else:
-        raise ValueError("Do not know how to compare %s with the expected value %s"
-                         % (current_value, expected_value))
-
-    return False
+        return compare_value(current_value)
 
 
 def connect_to_pv(pv_name, n_connection_attempts=3):

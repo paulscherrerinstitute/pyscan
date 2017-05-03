@@ -7,12 +7,12 @@ from pyscan.utils import convert_to_list, validate_lists_length, connect_to_pv
 minimum_tolerance = 0.00001
 
 
-def compare_channel_value(current_value, expected_value, tolerance):
+def compare_channel_value(current_value, expected_value, tolerance=0.0):
     """
     Check if the pv value is the same as the expected value, within tolerance for int and float.
     :param current_value: Current value to compare it to.
     :param expected_value: Expected value of the PV.
-    :param tolerance: Tolerance for number comparison.
+    :param tolerance: Tolerance for number comparison. Cannot be less than the minimum tolerance.
     :return: True if the value matches.
     """
     # Minimum tolerance allowed.

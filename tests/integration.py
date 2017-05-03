@@ -4,6 +4,7 @@ from time import sleep
 
 import numpy as np
 
+from pyscan.epics_dal import compare_channel_value
 from tests.interface.scan_old import Scan as CurrentScan
 from tests.utils import TestPyScanDal as CurrentMockDal
 
@@ -96,18 +97,22 @@ class IntegrationTests(unittest.TestCase):
         errx[errx == 0] = 1e-99
         erry[erry == 0] = 1e-99
 
-        self.assertTrue(all(abs(i1 - i2) < 0.0001 for i1, i2 in zip(sigx, [1] * 4)), "Unexpected result.")
-        self.assertTrue(all(abs(i1 - i2) < 0.0001 for i1, i2 in zip(sigy, [-1] * 4)), "Unexpected result.")
+        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(sigx, [1] * 4)), "Unexpected result.")
+        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(sigy, [-1] * 4)), "Unexpected result.")
 
-        self.assertTrue(all(abs(i1 - i2) < 0.0001 for i1, i2 in zip(errx, [0.1414] * 4)),
+        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(errx, [0.1414] * 4)),
                         "Standard error does not match the expected one.")
-        self.assertTrue(all(abs(i1 - i2) < 0.0001 for i1, i2 in zip(erry, [0.1414] * 4)),
+        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(erry, [0.1414] * 4)),
                         "Standard error does not match the expected one.")
 
-        self.assertTrue(all(abs(i1 - i2) < 0.0001 for i1, i2 in zip(jitx, [0, 0, 0, 0])), "Unexpected result.")
-        self.assertTrue(all(abs(i1 - i2) < 0.0001 for i1, i2 in zip(jity, [0, 0, 0, 0])), "Unexpected result.")
-        self.assertTrue(all(abs(i1 - i2) < 0.0001 for i1, i2 in zip(rel_jitx, [0, 0, 0, 0])), "Unexpected result.")
-        self.assertTrue(all(abs(i1 - i2) < 0.0001 for i1, i2 in zip(rel_jity, [0, 0, 0, 0])), "Unexpected result.")
+        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(jitx, [0, 0, 0, 0])),
+                        "Unexpected result.")
+        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(jity, [0, 0, 0, 0])),
+                        "Unexpected result.")
+        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(rel_jitx, [0, 0, 0, 0])),
+                        "Unexpected result.")
+        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(rel_jity, [0, 0, 0, 0])),
+                        "Unexpected result.")
 
     def test_PyScanTool(self):
 
@@ -185,5 +190,5 @@ class IntegrationTests(unittest.TestCase):
         self.assertListEqual(scanResultInstStd, scanResultStd, "Standard deviation results are not the same.")
 
         if numberOfReps == 3:
-            self.assertTrue(all(abs(i1 - i2) < 0.0001 for i1, i2 in zip(scanResultInstStd, [0.081649] * 4)),
+            self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(scanResultInstStd, [0.081649] * 4)),
                             "Unexpected result for standard deviation.")

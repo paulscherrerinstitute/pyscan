@@ -1,5 +1,7 @@
 from itertools import cycle
 
+from pyscan.epics_dal import compare_channel_value
+
 
 class TestWriter(object):
     def __init__(self, buffer=None):
@@ -38,7 +40,7 @@ class TestReader(object):
         return next(self.iter)
 
 
-def is_close(list1, list2, epsilon=0.00001):
+def is_close(list1, list2, epsilon=0):
     """
     Comparator 2 lists of floats.
     Since we are dealing with floats, an exact match cannot be enforced.
@@ -47,7 +49,7 @@ def is_close(list1, list2, epsilon=0.00001):
     :param epsilon: Maximum difference we allow at each step. Default 10e-5
     :return: True if all elements are in the specified error range.
     """
-    return all((value1 - value2) < epsilon for value1, value2 in zip(list1, list2))
+    return all(compare_channel_value(value1, value2, epsilon) for value1, value2 in zip(list1, list2))
 
 
 class TestPyScanDal(object):

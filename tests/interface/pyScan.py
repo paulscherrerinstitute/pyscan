@@ -3,7 +3,7 @@ import unittest
 from time import sleep, time
 
 from pyscan.utils import flat_list_generator
-from tests.interface.pyScan_test_data import test_output_format_expected_result, test_ScanLine_first_KnobReadback, \
+from tests.interface.pyScan_data import test_output_format_expected_result, test_ScanLine_first_KnobReadback, \
     test_ScanLine_first_Validation, test_ScanLine_first_Observable, test_ScanLine_second_KnobReadback, \
     test_ScanLine_second_Validation, test_ScanLine_second_Observable, test_ScanSeries_first_KnobReadback, \
     test_ScanSeries_first_Validation, test_ScanSeries_first_Observable, test_ScanSeries_second_KnobReadback, \
@@ -13,7 +13,7 @@ from tests.interface.pyScan_test_data import test_output_format_expected_result,
     test_SimpleScan_first_Validation, test_SimpleScan_first_Observable, test_SimpleScan_second_KnobReadback, \
     test_SimpleScan_second_Validation, test_SimpleScan_second_Observable
 
-from tests.interface.old_scan import Scan as CurrentScan
+from tests.interface.scan_old import Scan as CurrentScan
 from tests.utils import TestPyScanDal as CurrentMockDal
 
 # Comment this 2 lines to test with the old dal.

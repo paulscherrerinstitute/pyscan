@@ -4,7 +4,7 @@ from time import sleep
 
 import numpy as np
 
-from tests.interface.old_scan import Scan as CurrentScan
+from tests.interface.scan_old import Scan as CurrentScan
 from tests.utils import TestPyScanDal as CurrentMockDal
 
 # Comment this 2 lines to test with the old dal.

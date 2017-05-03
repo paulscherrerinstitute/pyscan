@@ -120,9 +120,15 @@ class WriteGroupInterface(object):
                                          in zip(count(), self.readback_pvs, tolerances, within_tolerance)
                                          if not values_reached):
 
+                # We do not allow tolerances lower than our default.
+                if tolerance < self.default_tolerance:
+                    tolerance = self.default_tolerance
+
                 current_pv_value = pv.get()
                 abs_difference = abs(current_pv_value - values[index])
-                if abs_difference < tolerance:
+
+                # Allow same tolerance as well.
+                if abs_difference <= tolerance:
                     within_tolerance[index] = True
 
             time.sleep(self.default_get_sleep)

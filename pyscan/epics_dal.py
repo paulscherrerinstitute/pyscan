@@ -1,44 +1,7 @@
+import time
 from itertools import count
 
-import time
-from pyscan.utils import convert_to_list, validate_lists_length, connect_to_pv
-
-# Minimum tolerance for comparing numbers.
-minimum_tolerance = 0.00001
-
-
-def compare_channel_value(current_value, expected_value, tolerance=0.0):
-    """
-    Check if the pv value is the same as the expected value, within tolerance for int and float.
-    :param current_value: Current value to compare it to.
-    :param expected_value: Expected value of the PV.
-    :param tolerance: Tolerance for number comparison. Cannot be less than the minimum tolerance.
-    :return: True if the value matches.
-    """
-    # Minimum tolerance allowed.
-    tolerance = max(tolerance, minimum_tolerance)
-
-    # If we set a string, we expect the result to match exactly.
-    if isinstance(expected_value, str):
-        if current_value == expected_value:
-            return True
-
-    # For numbers we compare them within tolerance.
-    elif isinstance(expected_value, (float, int)):
-        if abs(current_value - expected_value) <= tolerance:
-            return True
-
-    # We allow multiple values for this PV.
-    elif isinstance(expected_value, list):
-        # TODO: Do a proper check.
-        return True
-
-    # We cannot set and match other than strings and numbers.
-    else:
-        raise ValueError("Do not know how to compare %s with the expected value %s"
-                         % (current_value, expected_value))
-
-    return False
+from pyscan.utils import convert_to_list, validate_lists_length, connect_to_pv, minimum_tolerance, compare_channel_value
 
 
 class PyEpicsDal(object):

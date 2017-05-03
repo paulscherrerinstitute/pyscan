@@ -5,11 +5,11 @@ from time import sleep
 import numpy as np
 from copy import deepcopy
 
-from pyscan.epics_dal import PyEpicsDal, compare_channel_value
+from pyscan.epics_dal import PyEpicsDal
 from pyscan.interface.pyScan.utils import PyScanDataProcessor
 from pyscan.positioner import VectorPositioner, SerialPositioner, CompoundPositioner
 from pyscan.scan import Scanner
-from pyscan.utils import convert_to_list, convert_to_position_list
+from pyscan.utils import convert_to_list, convert_to_position_list, compare_channel_value
 
 READ_GROUP = "Measurements"
 WRITE_GROUP = "Knobs"

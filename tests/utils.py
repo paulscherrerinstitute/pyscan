@@ -1,6 +1,6 @@
 from itertools import cycle
 
-from pyscan.epics_dal import compare_channel_value
+from pyscan.utils import compare_channel_value
 
 
 class TestWriter(object):

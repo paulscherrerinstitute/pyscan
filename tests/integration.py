@@ -4,7 +4,7 @@ from time import sleep
 
 import numpy as np
 
-from pyscan.epics_dal import compare_channel_value
+from pyscan.utils import compare_channel_value
 from tests.interface.scan_old import Scan as CurrentScan
 from tests.utils import TestPyScanDal as CurrentMockDal
 

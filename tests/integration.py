@@ -100,9 +100,9 @@ class IntegrationTests(unittest.TestCase):
         self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(sigx, [1] * 4)), "Unexpected result.")
         self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(sigy, [-1] * 4)), "Unexpected result.")
 
-        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(errx, [0.1414] * 4)),
+        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(errx, [0.14142] * 4)),
                         "Standard error does not match the expected one.")
-        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(erry, [0.1414] * 4)),
+        self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(erry, [0.14142] * 4)),
                         "Standard error does not match the expected one.")
 
         self.assertTrue(all(compare_channel_value(i1, i2) for i1, i2 in zip(jitx, [0, 0, 0, 0])),

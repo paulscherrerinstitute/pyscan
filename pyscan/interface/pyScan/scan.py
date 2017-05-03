@@ -5,8 +5,8 @@ from time import sleep
 import numpy as np
 from copy import deepcopy
 
-from pyscan.epics_dal import PyEpicsDal
-from pyscan.interface.pyScan.utils import PyScanDataProcessor, match_monitor_value
+from pyscan.epics_dal import PyEpicsDal, compare_channel_value
+from pyscan.interface.pyScan.utils import PyScanDataProcessor
 from pyscan.positioner import VectorPositioner, SerialPositioner, CompoundPositioner
 from pyscan.scan import Scanner
 from pyscan.utils import convert_to_list, convert_to_position_list
@@ -53,8 +53,7 @@ class Scan(object):
 
                 for pv, expected_value, tolerance, action, timeout, value in combined_data:
                     # Monitor value does not match.
-                    if not match_monitor_value(value, expected_value, tolerance):
-
+                    if not compare_channel_value(value, expected_value, tolerance):
                         if action == "Abort":
                             raise ValueError("Monitor %s, expected value %s, tolerance %s, has value %s. Aborting."
                                              % (pv, expected_value, tolerance, value))

@@ -3,6 +3,43 @@ from itertools import count
 import time
 from pyscan.utils import convert_to_list, validate_lists_length, connect_to_pv
 
+# Minimum tolerance for comparing numbers.
+minimum_tolerance = 0.00001
+
+
+def compare_channel_value(current_value, expected_value, tolerance):
+    """
+    Check if the pv value is the same as the expected value, within tolerance for int and float.
+    :param current_value: Current value to compare it to.
+    :param expected_value: Expected value of the PV.
+    :param tolerance: Tolerance for number comparison.
+    :return: True if the value matches.
+    """
+    # Minimum tolerance allowed.
+    tolerance = max(tolerance, minimum_tolerance)
+
+    # If we set a string, we expect the result to match exactly.
+    if isinstance(expected_value, str):
+        if current_value == expected_value:
+            return True
+
+    # For numbers we compare them within tolerance.
+    elif isinstance(expected_value, (float, int)):
+        if abs(current_value - expected_value) <= tolerance:
+            return True
+
+    # We allow multiple values for this PV.
+    elif isinstance(expected_value, list):
+        # TODO: Do a proper check.
+        return True
+
+    # We cannot set and match other than strings and numbers.
+    else:
+        raise ValueError("Do not know how to compare %s with the expected value %s"
+                         % (current_value, expected_value))
+
+    return False
+
 
 class PyEpicsDal(object):
     """
@@ -49,7 +86,6 @@ class WriteGroupInterface(object):
     """
     Manage a group of Write PVs.
     """
-    minimum_tolerance = 0.00001
     default_timeout = 5
     default_get_sleep = 0.1
 
@@ -90,9 +126,9 @@ class WriteGroupInterface(object):
         :return: Tolerances adjusted to the minimum value, if needed.
         """
         # If the provided tolerances are empty, substitute them with a list of default tolerances.
-        tolerances = convert_to_list(tolerances) or [self.minimum_tolerance] * len(self.pvs)
+        tolerances = convert_to_list(tolerances) or [minimum_tolerance] * len(self.pvs)
         # Each tolerance needs to be at least the size of the minimum tolerance.
-        tolerances = [max(self.minimum_tolerance, tolerance) for tolerance in tolerances]
+        tolerances = [max(minimum_tolerance, tolerance) for tolerance in tolerances]
 
         return tolerances
 
@@ -131,26 +167,15 @@ class WriteGroupInterface(object):
         # Read values until all PVs have reached the desired value or time has run out.
         while (not all(within_tolerance)) and (time.time() - initial_timestamp < timeout):
             # Get only the PVs that have not yet reached the final position.
-            for index, pv, tolerance, value in ((index, pv, tolerance, value)
-                                                for index, pv, tolerance, values_reached, value
-                                                in zip(count(), self.readback_pvs, tolerances, within_tolerance, values)
-                                                if not values_reached):
+            for index, pv, tolerance in ((index, pv, tolerance) for index, pv, tolerance, values_reached
+                                         in zip(count(), self.readback_pvs, tolerances, within_tolerance)
+                                         if not values_reached):
 
-                current_pv_value = pv.get()
+                current_value = pv.get()
+                expected_value = values[index]
 
-                # If we set a string, we expect the result to match exactly.
-                if isinstance(value, str):
-                    if current_pv_value == value:
-                        within_tolerance[index] = True
-
-                # For numbers we compare them within tolerance.
-                elif isinstance(value, (float, int)):
-                    if abs(current_pv_value - value) <= tolerance:
-                        within_tolerance[index] = True
-                # We cannot set and match other than strings and numbers.
-                else:
-                    raise ValueError("Don't know how to check if position is reached for pv %s and value %s." %
-                                     (pv.pvname, value))
+                if compare_channel_value(current_value, expected_value, tolerance):
+                    within_tolerance[index] = True
 
             time.sleep(self.default_get_sleep)
 

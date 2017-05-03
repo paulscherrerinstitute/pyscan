@@ -6,7 +6,7 @@ import numpy as np
 from copy import deepcopy
 
 from pyscan.epics_dal import PyEpicsDal
-from pyscan.interface.pyScan.utils import PyScanDataProcessor
+from pyscan.interface.pyScan.utils import PyScanDataProcessor, match_monitor_value
 from pyscan.positioner import VectorPositioner, SerialPositioner, CompoundPositioner
 from pyscan.scan import Scanner
 from pyscan.utils import convert_to_list, convert_to_position_list
@@ -53,7 +53,7 @@ class Scan(object):
 
                 for pv, expected_value, tolerance, action, timeout, value in combined_data:
                     # Monitor value does not match.
-                    if not self.match_monitor_value(value, expected_value, tolerance):
+                    if not match_monitor_value(value, expected_value, tolerance):
 
                         if action == "Abort":
                             raise ValueError("Monitor %s, expected value %s, tolerance %s, has value %s. Aborting."
@@ -150,30 +150,6 @@ class Scan(object):
             sleep(max_waiting)
 
         return execute
-
-    @staticmethod
-    def match_monitor_value(value, expected_value, tolerance):
-        # We have a NON-ZERO tolerance policy.
-        if not tolerance:
-            tolerance = 0.00001
-
-        # Monitor value is in list, i.e. several cases are okay
-        if isinstance(expected_value, list):
-            if value in expected_value:
-                return True
-        # String values must match exactly.
-        elif isinstance(value, str):
-            if value == expected_value:
-                return True
-        # Numbers have to take into account the tolerance.
-        elif isinstance(value, int) or isinstance(value, float):
-            if abs(value - expected_value) < tolerance:
-                return True
-        else:
-            raise ValueError("Unexpected case.\nvalue = %s\nexpected_value = %s\ntolerance = %s" %
-                             (value, expected_value, tolerance))
-
-        return False
 
     class DummyProgress(object):
         def __init__(self):

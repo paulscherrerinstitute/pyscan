@@ -1,6 +1,29 @@
 from pyscan.utils import flat_list_generator
 
 
+def match_monitor_value(value, expected_value, tolerance):
+    # We have a NON-ZERO tolerance policy.
+    if not tolerance:
+        tolerance = 0.00001
+
+    # Monitor value is in list, i.e. several cases are okay
+    if isinstance(expected_value, list):
+        if value in expected_value:
+            return True
+    # String values must match exactly.
+    elif isinstance(value, str):
+        if value == expected_value:
+            return True
+    # Numbers have to take into account the tolerance.
+    elif isinstance(value, int) or isinstance(value, float):
+        if abs(value - expected_value) < tolerance:
+            return True
+    else:
+        raise ValueError("Unexpected case.\nvalue = %s\nexpected_value = %s\ntolerance = %s" %
+                         (value, expected_value, tolerance))
+
+    return False
+
 class PyScanDataProcessor(object):
     def __init__(self, output, n_readbacks, n_validations, n_observables, n_measurements):
         self.n_readbacks = n_readbacks

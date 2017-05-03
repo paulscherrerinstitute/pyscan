@@ -72,6 +72,10 @@ class WriteGroupInterface(object):
 
         # We never allow tolerance to be zero.
         self.tolerances = convert_to_list(tolerances) or [self.default_tolerance] * len(self.pvs)
+        for index, tolerance in enumerate(self.tolerances):
+            if tolerance < self.default_tolerance:
+                self.tolerances[index] = self.default_tolerance
+
         # We also do not allow timeout to be zero.
         self.timeout = timeout or self.default_timeout
 
@@ -94,7 +98,11 @@ class WriteGroupInterface(object):
         if not tolerances:
             tolerances = self.tolerances
         else:
+            # We do not allow tolerances to be less than the default tolerance.
             tolerances = convert_to_list(tolerances)
+            for index, tolerance in enumerate(tolerances):
+                if tolerance < self.default_tolerance:
+                    tolerances[index] = self.default_tolerance
         if not timeout:
             timeout = self.timeout
 
@@ -119,10 +127,6 @@ class WriteGroupInterface(object):
             for index, pv, tolerance in ((index, pv, tolerance) for index, pv, tolerance, values_reached
                                          in zip(count(), self.readback_pvs, tolerances, within_tolerance)
                                          if not values_reached):
-
-                # We do not allow tolerances lower than our default.
-                if tolerance < self.default_tolerance:
-                    tolerance = self.default_tolerance
 
                 current_pv_value = pv.get()
                 abs_difference = abs(current_pv_value - values[index])

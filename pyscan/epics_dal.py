@@ -8,6 +8,7 @@ class PyEpicsDal(object):
     """
     Provide a high level abstraction over PyEpics with group support.
     """
+
     def __init__(self):
         self.groups = {}
         self.pvs = {}
@@ -48,7 +49,7 @@ class WriteGroupInterface(object):
     """
     Manage a group of Write PVs.
     """
-    default_tolerance = 0.00001
+    minimum_tolerance = 0.00001
     default_timeout = 5
     default_get_sleep = 0.1
 
@@ -70,11 +71,7 @@ class WriteGroupInterface(object):
             self.readback_pv_name = self.pv_names
             self.readback_pvs = self.pvs
 
-        # We never allow tolerance to be zero.
-        self.tolerances = convert_to_list(tolerances) or [self.default_tolerance] * len(self.pvs)
-        for index, tolerance in enumerate(self.tolerances):
-            if tolerance < self.default_tolerance:
-                self.tolerances[index] = self.default_tolerance
+        self.tolerances = self._setup_tolerances(tolerances)
 
         # We also do not allow timeout to be zero.
         self.timeout = timeout or self.default_timeout
@@ -85,6 +82,19 @@ class WriteGroupInterface(object):
         # Check if timeout is int or float.
         if not isinstance(self.timeout, (int, float)):
             raise ValueError("Timeout must be int or float, but %s was provided." % self.timeout)
+
+    def _setup_tolerances(self, tolerances):
+        """
+        Construct the list of tolerances. No tolerance can be less then the minimal tolerance.
+        :param tolerances: Input tolerances.
+        :return: Tolerances adjusted to the minimum value, if needed.
+        """
+        # If the provided tolerances are empty, substitute them with a list of default tolerances.
+        tolerances = convert_to_list(tolerances) or [self.minimum_tolerance] * len(self.pvs)
+        # Each tolerance needs to be at least the size of the minimum tolerance.
+        tolerances = [max(self.minimum_tolerance, tolerance) for tolerance in tolerances]
+
+        return tolerances
 
     def set_and_match(self, values, tolerances=None, timeout=None):
         """
@@ -99,10 +109,7 @@ class WriteGroupInterface(object):
             tolerances = self.tolerances
         else:
             # We do not allow tolerances to be less than the default tolerance.
-            tolerances = convert_to_list(tolerances)
-            for index, tolerance in enumerate(tolerances):
-                if tolerance < self.default_tolerance:
-                    tolerances[index] = self.default_tolerance
+            tolerances = self._setup_tolerances(tolerances)
         if not timeout:
             timeout = self.timeout
 
@@ -124,16 +131,26 @@ class WriteGroupInterface(object):
         # Read values until all PVs have reached the desired value or time has run out.
         while (not all(within_tolerance)) and (time.time() - initial_timestamp < timeout):
             # Get only the PVs that have not yet reached the final position.
-            for index, pv, tolerance in ((index, pv, tolerance) for index, pv, tolerance, values_reached
-                                         in zip(count(), self.readback_pvs, tolerances, within_tolerance)
-                                         if not values_reached):
+            for index, pv, tolerance, value in ((index, pv, tolerance, value)
+                                                for index, pv, tolerance, values_reached, value
+                                                in zip(count(), self.readback_pvs, tolerances, within_tolerance, values)
+                                                if not values_reached):
 
                 current_pv_value = pv.get()
-                abs_difference = abs(current_pv_value - values[index])
 
-                # Allow same tolerance as well.
-                if abs_difference <= tolerance:
-                    within_tolerance[index] = True
+                # If we set a string, we expect the result to match exactly.
+                if isinstance(value, str):
+                    if current_pv_value == value:
+                        within_tolerance[index] = True
+
+                # For numbers we compare them within tolerance.
+                elif isinstance(value, (float, int)):
+                    if abs(current_pv_value - value) <= tolerance:
+                        within_tolerance[index] = True
+                # We cannot set and match other than strings and numbers.
+                else:
+                    raise ValueError("Don't know how to check if position is reached for pv %s and value %s." %
+                                     (pv.pvname, value))
 
             time.sleep(self.default_get_sleep)
 

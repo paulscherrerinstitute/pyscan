@@ -62,10 +62,8 @@ class Scan(object):
                             raise ValueError("Monitor %s, expected value %s, tolerance %s, has value %s. Aborting."
                                              % (pv, expected_value, tolerance, value))
                         elif action == "WaitAndAbort":
-                            # TODO: The "wait" part is taken care by the scan library itself, for now?
                             return False
                         else:
-                            # TODO: Other actions do not really have a defined behaviour. Do we need any more?
                             raise ValueError("MonitorAction %s, on PV %s, is not supported." % (pv, action))
 
                 return True

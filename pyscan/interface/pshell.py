@@ -20,7 +20,6 @@ def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
     :param after_read: List of callback functions on each step after readback.
     :return: Data from the scan.
     """
-    # TODO: On all interfaces: Check if readablers and writables are already objects with methods to call.
 
     # Allow the user to specify a single item or a list of items, but always convert to a list of items.
     writables = convert_to_list(writables)

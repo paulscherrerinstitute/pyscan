@@ -360,8 +360,6 @@ class Scan(object):
                                          'Input dictionary ' + str(index) + '.')
                     # StepSize is only valid for SKS
                     r = dic['ScanRange'][0]
-
-                    # TODO: THIS IS RECONSTRUCTED AND MIGHT BE WRONG, CHECK!
                     s = dic['StepSize'][0]
 
                     f = np.arange(r[0], r[1], s)

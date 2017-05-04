@@ -1,9 +1,13 @@
+from collections import namedtuple
 from time import time
 
 import math
 from bsread import Source
 
-from pyscan.utils import convert_to_list
+from pyscan.utils import convert_to_list, minimum_tolerance
+
+BS_PROPERTY = namedtuple("BS_PROPERTY", ["camera", "property"])
+BS_MONITOR = namedtuple("BS_MONITOR", ["camera", "property", "value", "tolerance"])
 
 
 class ReadGroupInterface(object):
@@ -17,14 +21,14 @@ class ReadGroupInterface(object):
     default_read_timeout = 5
     default_receive_timeout = 1
 
-    def __init__(self, read_pv_names, monitor_pv_names=None, n_measurements=None, waiting=None, host=None, port=None):
+    def __init__(self, properties, monitor_properties=None, n_measurements=None, waiting=None, host=None, port=None):
         """
         Create the bsread group read interface.
-        :param read_pv_names: List of PVs to read for processing.
-        :param monitor_pv_names: List of PVs to read as monitors.
+        :param properties: List of PVs to read for processing.
+        :param monitor_properties: List of PVs to read as monitors.
         """
-        self.read_pv_names = convert_to_list(read_pv_names)
-        self.monitor_pv_names = convert_to_list(monitor_pv_names)
+        self.properties = convert_to_list(properties)
+        self.monitor_properties = convert_to_list(monitor_properties)
         self.n_measurements = n_measurements or self.default_n_measurements
         self.waiting = waiting or self.default_waiting
 
@@ -36,7 +40,7 @@ class ReadGroupInterface(object):
     def _connect_bsread(self, host, port):
         self.stream = Source(host=host,
                              port=port,
-                             channels=self.read_pv_names+self.monitor_pv_names,
+                             channels=self.properties + self.monitor_properties,
                              queue_size=self.default_queue_size,
                              receive_timeout=self.default_receive_timeout)
         self.stream.connect()
@@ -88,12 +92,12 @@ class ReadGroupInterface(object):
         :return: List of values for read pvs. Note: Monitor PVs are excluded.
         """
         read_timestamp = time()
-        while time()-read_timestamp < self.default_queue_size:
+        while time()-read_timestamp < self.default_read_timeout:
             message = self.stream.receive()
             if self.is_message_after_timestamp(message, read_timestamp):
                 self._message_cache = message
                 self._message_cache_timestamp = read_timestamp
-                return self._read_pvs_from_cache(self.read_pv_names)
+                return self._read_pvs_from_cache(self.properties)
         else:
             raise Exception("Read timeout exceeded for BS read stream. Could not find the desired package in time.")
 
@@ -102,7 +106,7 @@ class ReadGroupInterface(object):
         Returns the monitors associated with the last read command.
         :return: List of monitor values.
         """
-        return self._read_pvs_from_cache(self.monitor_pv_names)
+        return self._read_pvs_from_cache(self.monitor_properties)
 
     def close(self):
         """
@@ -113,3 +117,43 @@ class ReadGroupInterface(object):
 
         self._message_cache = None
         self._message_cache_timestamp = None
+
+
+def bs_property(name):
+    """
+    Construct a tuple for bs read property representation.
+    :param name: Complete property name.
+    """
+    if not name:
+        raise ValueError("name not specified.")
+
+    if not name.count(":") == 2:
+        raise ValueError("Property name needs to be in format 'camera_name:property_name', but %s was provided" % name)
+
+    camera_name, property_name = name.split(":")
+    return BS_PROPERTY(camera_name, property_name)
+
+
+def bs_monitor(name, value, tolerance=None):
+    """
+    Construct a tuple for bs monitor property representation.
+    :param name: Complete property name.
+    :param value: Expected value.
+    :param tolerance: Tolerance within which the monitor needs to be.
+    :return:  Tuple of ("camera", "property", "value", "action", "tolerance")
+    """
+    if not name:
+        raise ValueError("name not specified.")
+
+    if not name.count(":") == 2:
+        raise ValueError("Property name needs to be in format 'camera_name:property_name', but %s was provided" % name)
+
+    if not value:
+        raise ValueError("value not specified.")
+
+    if not tolerance or tolerance < minimum_tolerance:
+        tolerance = minimum_tolerance
+
+    camera_name, property_name = name.split(":")
+
+    return BS_MONITOR(camera_name, property_name, value, tolerance)

@@ -1,7 +1,14 @@
 import time
+from collections import namedtuple
 from itertools import count
 
 from pyscan.utils import convert_to_list, validate_lists_length, connect_to_pv, minimum_tolerance, compare_channel_value
+
+EPICS_PV = namedtuple("EPICS_PV", ["pv_name", "readback_pv_name", "tolerance"])
+SET_EPICS_PV = namedtuple("SET_EPICS_PV", ["pv_name", "value", "readback_pv_name", "tolerance", "timeout"])
+EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["pv_name", "value", "action", "tolerance", "timeout"])
+
+default_read_write_timeout = 3
 
 
 class PyEpicsDal(object):
@@ -245,3 +252,75 @@ class ReadGroupInterface(object):
         """
         for pv in self.pvs:
             pv.disconnect()
+
+
+def epics_pv(pv_name, readback_pv_name=None, tolerance=None):
+    """
+    Construct a tuple for PV representation
+    :param pv_name: Name of the PV.
+    :param readback_pv_name: Name of the readback PV.
+    :param tolerance: Tolerance if the PV is writable.
+    :return: Tuple of (pv_name, pv_readback, tolerance)
+    """
+
+    if not pv_name:
+        raise ValueError("pv_name not specified.")
+
+    if not readback_pv_name:
+        readback_pv_name = pv_name
+
+    if not tolerance or tolerance < minimum_tolerance:
+        tolerance = minimum_tolerance
+
+    return EPICS_PV(pv_name, readback_pv_name, tolerance)
+
+
+def set_epics_pv(pv_name, value, readback_pv_name=None, tolerance=None, timeout=None):
+    """
+    Construct a tuple for set PV representation.
+    :param pv_name: Name of the PV.
+    :param value: Value to set the PV to.
+    :param readback_pv_name: Name of the readback PV.
+    :param tolerance: Tolerance if the PV is writable.
+    :param timeout: Timeout for setting the pv value.
+    :return: Tuple of (pv_name, pv_readback, tolerance)
+    """
+    pv_name, readback_pv_name, tolerance = epics_pv(pv_name, readback_pv_name, tolerance)
+
+    if not value:
+        raise ValueError("pv value not specified.")
+
+    if not timeout or timeout<0:
+        timeout = default_read_write_timeout
+
+    return SET_EPICS_PV(pv_name, value, readback_pv_name, tolerance, timeout)
+
+
+def epics_monitor(pv_name, value, action=None, tolerance=None, timeout=None):
+    """
+    Construct a tuple for an epics monitor representation.
+    :param pv_name: Name of the PV to monitor.
+    :param value: Value we expect the PV to be in.
+    :param action: What to do when the monitor fails ('Abort' and 'WaitAndAbort' supporteds)
+    :param tolerance: Tolerance within which the monitor needs to be.
+    :param timeout: Timeout before the WaitAndAbort monitor aborts the scan.
+    :return: Tuple of ("pv_name", "value", "action", "tolerance", "timeout")
+    """
+
+    if not pv_name:
+        raise ValueError("pv_name not specified.")
+
+    if not value:
+        raise ValueError("pv value not specified.")
+
+    # the default action is Abort.
+    if not action:
+        action = "Abort"
+
+    if not tolerance or tolerance < minimum_tolerance:
+        tolerance = minimum_tolerance
+
+    if not timeout or timeout < 0:
+        timeout = default_read_write_timeout
+
+    return EPICS_MONITOR(pv_name, value, action, tolerance, timeout)

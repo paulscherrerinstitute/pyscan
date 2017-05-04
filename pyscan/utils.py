@@ -1,6 +1,7 @@
 from time import sleep
 
 from epics.pv import PV
+
 from pyscan.config import min_tolerance
 
 

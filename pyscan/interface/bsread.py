@@ -1,6 +1,6 @@
 from pyscan.dal import epics_dal, bsread_dal
-from pyscan.scan_parameters import EPICS_PV, EPICS_MONITOR, BS_PROPERTY, BS_MONITOR
 from pyscan.scan import Scanner
+from pyscan.scan_parameters import EPICS_PV, EPICS_MONITOR, BS_PROPERTY, BS_MONITOR
 from pyscan.utils import convert_to_list, SimpleDataProcessor
 
 

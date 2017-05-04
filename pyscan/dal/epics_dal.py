@@ -1,7 +1,8 @@
 import time
 from itertools import count
-from pyscan.utils import convert_to_list, validate_lists_length, connect_to_pv, compare_channel_value
+
 from pyscan.config import min_tolerance
+from pyscan.utils import convert_to_list, validate_lists_length, connect_to_pv, compare_channel_value
 
 
 class PyEpicsDal(object):

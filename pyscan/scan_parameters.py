@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from pyscan.config import epics_default_read_write_timeout, min_tolerance
+from pyscan.config import epics_default_read_write_timeout, min_tolerance, epics_default_monitor_timeout
 
 EPICS_PV = namedtuple("EPICS_PV", ["pv_name", "readback_pv_name", "tolerance"])
 EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["pv_name", "value", "action", "tolerance", "timeout"])

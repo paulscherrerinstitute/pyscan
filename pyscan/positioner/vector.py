@@ -2,6 +2,9 @@ from itertools import cycle, chain
 
 
 class VectorPositioner(object):
+    """
+    Moves over the provided positions.
+    """
     def __init__(self, positions, passes=1, offsets=None):
         self.positions = positions
         self.passes = passes

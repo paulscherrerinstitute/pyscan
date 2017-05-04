@@ -1,6 +1,8 @@
-from pyscan.positioner import ZigZagLinePositioner, LinePositioner, AreaPositioner, ZigZagAreaPositioner
+from pyscan.dal.epics_dal import WriteGroupInterface, ReadGroupInterface
+from pyscan.positioner.area import AreaPositioner, ZigZagAreaPositioner
+from pyscan.positioner.line import ZigZagLinePositioner, LinePositioner
 from pyscan.scan import Scanner
-from pyscan.utils import convert_to_list, EpicsInterface, SimpleExecutor
+from pyscan.utils import convert_to_list, SimpleExecutor
 
 
 def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
@@ -28,8 +30,8 @@ def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
     end = convert_to_list(end)
     steps = convert_to_list(steps)
 
-    writer = EpicsInterface(writables)
-    reader = EpicsInterface(readables)
+    writer = WriteGroupInterface(writables)
+    reader = ReadGroupInterface(readables)
 
     offsets = reader.read() if relative else None
 
@@ -70,8 +72,8 @@ def ascan(writables, readables, start, end, steps, latency=0.0, relative=False,
     end = convert_to_list(end)
     steps = convert_to_list(steps)
 
-    writer = EpicsInterface(writables)
-    reader = EpicsInterface(readables)
+    writer = WriteGroupInterface(writables)
+    reader = ReadGroupInterface(readables)
 
     offsets = reader.read() if relative else None
 

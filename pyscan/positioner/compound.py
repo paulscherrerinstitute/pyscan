@@ -2,6 +2,9 @@ from copy import copy
 
 
 class CompoundPositioner(object):
+    """
+    Given a list of positioners, it compounds them in given order, getting values from each of them at every step.
+    """
     def __init__(self, positioners):
         self.positioners = positioners
         self.n_positioners = len(positioners)

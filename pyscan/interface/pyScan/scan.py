@@ -7,7 +7,9 @@ import numpy as np
 
 from pyscan.dal.epics_dal import PyEpicsDal
 from pyscan.interface.pyScan.utils import PyScanDataProcessor
-from pyscan.positioner import VectorPositioner, SerialPositioner, CompoundPositioner
+from pyscan.positioner.compound import CompoundPositioner
+from pyscan.positioner.serial import SerialPositioner
+from pyscan.positioner.vector import VectorPositioner
 from pyscan.scan import Scanner
 from pyscan.utils import convert_to_list, convert_to_position_list, compare_channel_value
 

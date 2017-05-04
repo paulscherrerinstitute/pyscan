@@ -1,6 +1,6 @@
+import math
 from time import time
 
-import math
 from bsread import Source
 
 from pyscan.config import bs_default_n_measurements, bs_default_waiting, bs_default_queue_size, \

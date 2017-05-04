@@ -1,11 +1,11 @@
 import traceback
+from copy import deepcopy
 from datetime import datetime
 from time import sleep
 
 import numpy as np
-from copy import deepcopy
 
-from pyscan.epics_dal import PyEpicsDal
+from pyscan.dal.epics_dal import PyEpicsDal
 from pyscan.interface.pyScan.utils import PyScanDataProcessor
 from pyscan.positioner import VectorPositioner, SerialPositioner, CompoundPositioner
 from pyscan.scan import Scanner

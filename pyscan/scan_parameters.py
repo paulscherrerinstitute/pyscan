@@ -1,7 +1,6 @@
 from collections import namedtuple
 
-from pyscan.epics_dal import default_read_write_timeout
-from pyscan.utils import minimum_tolerance
+from pyscan.config import epics_default_read_write_timeout, min_tolerance
 
 EPICS_PV = namedtuple("EPICS_PV", ["pv_name", "readback_pv_name", "tolerance"])
 EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["pv_name", "value", "action", "tolerance", "timeout"])
@@ -28,8 +27,8 @@ def epics_pv(pv_name, readback_pv_name=None, tolerance=None):
     if not readback_pv_name:
         readback_pv_name = pv_name
 
-    if not tolerance or tolerance < minimum_tolerance:
-        tolerance = minimum_tolerance
+    if not tolerance or tolerance < min_tolerance:
+        tolerance = min_tolerance
 
     return EPICS_PV(pv_name, readback_pv_name, tolerance)
 
@@ -55,11 +54,11 @@ def epics_monitor(pv_name, value, action=None, tolerance=None, timeout=None):
     if not action:
         action = "Abort"
 
-    if not tolerance or tolerance < minimum_tolerance:
-        tolerance = minimum_tolerance
+    if not tolerance or tolerance < min_tolerance:
+        tolerance = min_tolerance
 
     if not timeout or timeout < 0:
-        timeout = default_read_write_timeout
+        timeout = epics_default_monitor_timeout
 
     return EPICS_MONITOR(pv_name, value, action, tolerance, timeout)
 
@@ -96,8 +95,8 @@ def bs_monitor(name, value, tolerance=None):
     if not value:
         raise ValueError("value not specified.")
 
-    if not tolerance or tolerance < minimum_tolerance:
-        tolerance = minimum_tolerance
+    if not tolerance or tolerance < min_tolerance:
+        tolerance = min_tolerance
 
     camera_name, property_name = name.split(":")
 
@@ -120,7 +119,7 @@ def action_set_epics_pv(pv_name, value, readback_pv_name=None, tolerance=None, t
         raise ValueError("pv value not specified.")
 
     if not timeout or timeout < 0:
-        timeout = default_read_write_timeout
+        timeout = epics_default_read_write_timeout
 
     return SET_EPICS_PV(pv_name, value, readback_pv_name, tolerance, timeout)
 
@@ -141,7 +140,7 @@ def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=
         n_measurements = 1
 
     if not write_timeout or write_timeout < 0:
-        write_timeout = default_read_write_timeout
+        write_timeout = epics_default_read_write_timeout
 
     if not settling_time or settling_time < 0:
         settling_time = 0

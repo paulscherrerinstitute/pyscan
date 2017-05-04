@@ -2,7 +2,6 @@
 
 from pyscan.interface.pyScan import Scan
 
-
 pyscan=Scan()
 indict1 = {}
 

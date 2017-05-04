@@ -1,6 +1,6 @@
 from itertools import cycle
 
-from pyscan.epics_dal import PyEpicsDal, ReadGroupInterface, WriteGroupInterface
+from pyscan.dal.epics_dal import PyEpicsDal, ReadGroupInterface, WriteGroupInterface
 from pyscan.interface.pyScan import READ_GROUP, convert_to_list
 
 pv_cache = {}

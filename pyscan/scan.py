@@ -6,13 +6,6 @@ class Scanner(object):
     Perform discrete and continues scans.
     """
 
-    # Interval to sleep while in pause.
-    pause_sleep_interval = 1
-    # Maximum number of times we wait to retry the acquisition.
-    acquisition_retry_limit = 3
-    # Delay between acquisition retries.
-    acquisition_retry_delay = 1
-
     def __init__(self, positioner, writer, data_processor, reader, before_executor=None, after_executor=None,
                  initialization_executor=None, finalization_executor=None, data_validator=None):
         """
@@ -70,7 +63,7 @@ class Scanner(object):
         while self._user_pause_scan_flag:
             if self._user_abort_scan_flag:
                 raise Exception("User aborted scan in pause.")
-            sleep(self.pause_sleep_interval)
+            sleep(pause_sleep_interval)
 
     def _read_and_process_data(self, current_position):
         """
@@ -80,7 +73,7 @@ class Scanner(object):
         """
         n_current_acquisition = 0
         # Collect data until acquired data is valid or retry limit reached.
-        while n_current_acquisition < self.acquisition_retry_limit:
+        while n_current_acquisition < acquisition_retry_limit:
             data = self.reader()
 
             # If the data is valid, break out of the loop.
@@ -88,11 +81,11 @@ class Scanner(object):
                 break
 
             n_current_acquisition += 1
-            sleep(self.acquisition_retry_delay)
+            sleep(acquisition_retry_delay)
         # Could not read the data within the retry limit.
         else:
             raise Exception("Number of maximum read attempts (%d) exceeded. Cannot read valid data at position %s." %
-                            (self.acquisition_retry_limit, current_position))
+                            (acquisition_retry_limit, current_position))
 
         # Process only valid data.
         self.data_processor.process(current_position, data)

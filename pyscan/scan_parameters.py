@@ -3,9 +3,9 @@ from collections import namedtuple
 from pyscan.config import epics_default_read_write_timeout, min_tolerance, epics_default_monitor_timeout
 
 EPICS_PV = namedtuple("EPICS_PV", ["pv_name", "readback_pv_name", "tolerance"])
-EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["pv_name", "value", "action", "tolerance", "timeout"])
+EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "action", "tolerance", "timeout"])
 BS_PROPERTY = namedtuple("BS_PROPERTY", ["camera", "property"])
-BS_MONITOR = namedtuple("BS_MONITOR", ["camera", "property", "value", "tolerance"])
+BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "camera", "property", "value", "action", "tolerance"])
 SET_EPICS_PV = namedtuple("SET_EPICS_PV", ["pv_name", "value", "readback_pv_name", "tolerance", "timeout"])
 RESTORE_WRITABLE_PVS = namedtuple("RESTORE_WRITABLE_PVS")
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
@@ -43,6 +43,7 @@ def epics_monitor(pv_name, value, action=None, tolerance=None, timeout=None):
     :param timeout: Timeout before the WaitAndAbort monitor aborts the scan.
     :return: Tuple of ("pv_name", "value", "action", "tolerance", "timeout")
     """
+    identifier = pv_name
 
     if not pv_name:
         raise ValueError("pv_name not specified.")
@@ -60,7 +61,7 @@ def epics_monitor(pv_name, value, action=None, tolerance=None, timeout=None):
     if not timeout or timeout < 0:
         timeout = epics_default_monitor_timeout
 
-    return EPICS_MONITOR(pv_name, value, action, tolerance, timeout)
+    return EPICS_MONITOR(identifier, pv_name, value, action, tolerance, timeout)
 
 
 def bs_property(name):
@@ -86,6 +87,8 @@ def bs_monitor(name, value, tolerance=None):
     :param tolerance: Tolerance within which the monitor needs to be.
     :return:  Tuple of ("camera", "property", "value", "action", "tolerance")
     """
+    identifier = name
+
     if not name:
         raise ValueError("name not specified.")
 
@@ -98,9 +101,12 @@ def bs_monitor(name, value, tolerance=None):
     if not tolerance or tolerance < min_tolerance:
         tolerance = min_tolerance
 
+    # We do not support other actions for BS monitors.
+    action = "Abort"
+
     camera_name, property_name = name.split(":")
 
-    return BS_MONITOR(camera_name, property_name, value, tolerance)
+    return BS_MONITOR(identifier, camera_name, property_name, value, action, tolerance)
 
 
 def action_set_epics_pv(pv_name, value, readback_pv_name=None, tolerance=None, timeout=None):

@@ -1,7 +1,7 @@
 from pyscan.dal import epics_dal, bsread_dal
 from pyscan.scanner import Scanner
 from pyscan.scan_parameters import EPICS_PV, EPICS_MONITOR, BS_PROPERTY, BS_MONITOR
-from pyscan.utils import convert_to_list, SimpleDataProcessor, SimpleExecutor
+from pyscan.utils import convert_to_list, SimpleDataProcessor, SimpleExecutor, compare_channel_value
 
 
 def scan(positioner, writables, readables, monitors=None, initializations=None, finalizations=None, settings=None):
@@ -17,17 +17,36 @@ def scan(positioner, writables, readables, monitors=None, initializations=None, 
                                                                                 readables,
                                                                                 monitors,
                                                                                 settings)
-    # Read and validate functions need to merge both BS and PV data.
-    def read_data():
-        bs_values = bs_reader.read() if bs_reader else []
-        epics_values = epics_pv_reader.read() if epics_pv_reader else []
-        # TODO: Interleave the values as they should be.
-        return bs_values + epics_values
 
+    # Order of value sources, needed to reconstruct the correct order of the result.
+    readables_order = [type(readable) for readable in readables]
+
+    # Read function needs to merge both BS and PV data.
+    def read_data():
+        bs_values = iter(bs_reader.read() if bs_reader else [])
+        epics_values = iter(epics_pv_reader.read() if epics_pv_reader else [])
+
+        # Interleave the values correctly.
+        result = [next(bs_values) if source == BS_PROPERTY else next(epics_values) for source in readables_order]
+        return result
+
+    # Order of value sources, needed to reconstruct the correct order of the result.
+    monitor_order = [type(monitor) for monitor in monitors]
+
+    # Validate function needs to validate both BS and PV data.
     def validate_data(current_position, data):
-        bs_values = bs_reader.read_cached_monitors() if bs_reader else []
-        epics_values = epics_monitor_reader.read() if epics_monitor_reader else []
-        # TODO: Actually validate something with compare_channel_value.
+        bs_values = iter(bs_reader.read_cached_monitors() if bs_reader else [])
+        epics_values = iter(epics_monitor_reader.read() if epics_monitor_reader else [])
+
+        for index, value_source in enumerate(monitor_order):
+            value = next(bs_values) if value_source == BS_MONITOR else next(epics_values)
+            expected_value = monitors[index].value
+            tolerance = monitors[index].tolerance
+
+            if not compare_channel_value(value, expected_value, tolerance):
+                # TODO: The "wait" part of WaitAndAbort does not work.. do we need it?
+                raise ValueError("Monitor %s, expected value %s, actual value %s, tolerance %s." %
+                                 (monitors[index].identifier, value, expected_value, tolerance))
         return True
 
     initialization_executor = None

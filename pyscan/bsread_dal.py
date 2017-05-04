@@ -1,13 +1,9 @@
-from collections import namedtuple
 from time import time
 
 import math
 from bsread import Source
 
-from pyscan.utils import convert_to_list, minimum_tolerance
-
-BS_PROPERTY = namedtuple("BS_PROPERTY", ["camera", "property"])
-BS_MONITOR = namedtuple("BS_MONITOR", ["camera", "property", "value", "tolerance"])
+from pyscan.utils import convert_to_list
 
 
 class ReadGroupInterface(object):
@@ -117,43 +113,3 @@ class ReadGroupInterface(object):
 
         self._message_cache = None
         self._message_cache_timestamp = None
-
-
-def bs_property(name):
-    """
-    Construct a tuple for bs read property representation.
-    :param name: Complete property name.
-    """
-    if not name:
-        raise ValueError("name not specified.")
-
-    if not name.count(":") == 2:
-        raise ValueError("Property name needs to be in format 'camera_name:property_name', but %s was provided" % name)
-
-    camera_name, property_name = name.split(":")
-    return BS_PROPERTY(camera_name, property_name)
-
-
-def bs_monitor(name, value, tolerance=None):
-    """
-    Construct a tuple for bs monitor property representation.
-    :param name: Complete property name.
-    :param value: Expected value.
-    :param tolerance: Tolerance within which the monitor needs to be.
-    :return:  Tuple of ("camera", "property", "value", "action", "tolerance")
-    """
-    if not name:
-        raise ValueError("name not specified.")
-
-    if not name.count(":") == 2:
-        raise ValueError("Property name needs to be in format 'camera_name:property_name', but %s was provided" % name)
-
-    if not value:
-        raise ValueError("value not specified.")
-
-    if not tolerance or tolerance < minimum_tolerance:
-        tolerance = minimum_tolerance
-
-    camera_name, property_name = name.split(":")
-
-    return BS_MONITOR(camera_name, property_name, value, tolerance)

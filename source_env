@@ -1,6 +1,0 @@
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/epics/base/lib/SL6-x86_64/
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/intel-14.0.2/lib/intel64/
-
-source /opt/gfa/python 3.5
-
-export PYTHONPATH=/opt/gfa/cafe/python/python-3.5/latest/lib/:$PYTHONPATH

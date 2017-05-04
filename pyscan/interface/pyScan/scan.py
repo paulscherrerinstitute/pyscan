@@ -10,7 +10,7 @@ from pyscan.interface.pyScan.utils import PyScanDataProcessor
 from pyscan.positioner.compound import CompoundPositioner
 from pyscan.positioner.serial import SerialPositioner
 from pyscan.positioner.vector import VectorPositioner
-from pyscan.scan import Scanner
+from pyscan.scanner import Scanner
 from pyscan.utils import convert_to_list, convert_to_position_list, compare_channel_value
 
 READ_GROUP = "Measurements"

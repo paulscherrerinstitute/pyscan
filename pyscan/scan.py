@@ -1,135 +1,64 @@
-from time import sleep
+from pyscan.dal import epics_dal, bsread_dal
+from pyscan.scanner import Scanner
+from pyscan.scan_parameters import EPICS_PV, EPICS_MONITOR, BS_PROPERTY, BS_MONITOR
+from pyscan.utils import convert_to_list, SimpleDataProcessor
 
-from pyscan.config import acquisition_retry_limit, pause_sleep_interval
 
+def scan(positioner, writables, readables, monitors=None, initializations=None, finalizations=None, settings=None):
+    # Allow a list or a single value to be passed.
+    writables = convert_to_list(writables) or []
+    readables = convert_to_list(readables) or []
+    monitors = convert_to_list(monitors) or []
+    initializations = convert_to_list(initializations) or []
+    finalizations = convert_to_list(finalizations) or []
 
-class Scanner(object):
-    """
-    Perform discrete and continues scans.
-    """
+    # Collect the different types of readable in separate lists.
+    bs_readables = filter(lambda x: isinstance(x, BS_PROPERTY), readables)
+    epics_readables = filter(lambda x: isinstance(x, EPICS_PV), readables)
 
-    def __init__(self, positioner, writer, data_processor, reader, before_executor=None, after_executor=None,
-                 initialization_executor=None, finalization_executor=None, data_validator=None):
-        """
-        Initialize scanner.
-        :param positioner: Positioner should provide a generator to get the positions to move to.
-        :param writer: Object that implements the write(position) method and sets the positions.
-        :param data_processor: How to store and handle the data.
-        :param reader: Object that implements the read() method to return data to the data_processor.
-        :param before_executor: Callbacks executor that executed before measurements.
-        :param after_executor: Callbacks executor that executed after measurements.
-        """
-        self.positioner = positioner
-        self.writer = writer
-        self.data_processor = data_processor
-        self.reader = reader
-        self.before_executor = before_executor
-        self.after_executor = after_executor
-        self.initialization_executor = initialization_executor
-        self.finalization_executor = finalization_executor
+    # We support only epics_pv writables.
+    if not all((isinstance(x, EPICS_PV) for x in writables)):
+        raise ValueError("Only EPICS_PV can be used as writables.")
 
-        # If no data validator is provided, data is always valid.
-        self.data_validator = data_validator or (lambda position, data: True)
+    bs_monitors = filter(lambda x: isinstance(x, BS_MONITOR), monitors)
+    epics_monitors = filter(lambda x: isinstance(x, EPICS_MONITOR), monitors)
 
-        self._user_abort_scan_flag = False
-        self._user_pause_scan_flag = False
+    # Instantiate the PVs to move the motors.
+    epics_writer = epics_dal.WriteGroupInterface(pv_names=[pv.pv_name for pv in writables],
+                                                 readback_pv_names=[pv.readback_pv_name for pv in writables],
+                                                 tolerances=[pv.tolerance for pv in writables],
+                                                 timeout=settings.write_timeout)
+    # Reading bs properties.
+    bs_reader = bsread_dal.ReadGroupInterface(properties=bs_readables,
+                                              monitor_properties=bs_monitors)
 
-    def abort_scan(self):
-        """
-        Abort the scan after the next measurement.
-        """
-        self._user_abort_scan_flag = True
+    # Reading epics PV values.
+    epics_pv_reader = epics_dal.ReadGroupInterface(pv_names=[pv.pv_name for pv in epics_readables],
+                                                   n_measurements=settings.n_measurements,
+                                                   waiting=settings.measurement_interval)
 
-    def pause_scan(self):
-        """
-        Pause the scan after the next measurement.
-        """
-        self._user_pause_scan_flag = True
+    # Reading epics monitor values.
+    epics_monitor_reader = epics_dal.ReadGroupInterface(pv_names=[pv.pv_name for pv in epics_monitors],
+                                                        n_measurements=1,
+                                                        waiting=0)
 
-    def resume_scan(self):
-        """
-        Resume the scan.
-        """
-        self._user_pause_scan_flag = False
+    def read_data():
+        bs_values = bs_reader.read() if bs_reader else []
+        epics_values = epics_pv_reader.read() if epics_pv_reader else []
+        # TODO: Interleave the values as they should be.
+        return bs_values + epics_values
 
-    def _verify_scan_status(self):
-        """
-        Check if the conditions to pause or abort the scan are met.
-        :raise Exception in case the conditions are met.
-        """
-        # Check if the abort flag is set.
-        if self._user_abort_scan_flag:
-            raise Exception("User aborted scan.")
+    def validate_data(current_position, data):
+        bs_values = bs_reader.read_cached_monitors() if bs_reader else []
+        epics_values = epics_monitor_reader.read() if epics_monitor_reader else []
+        # TODO: Actually validate something.
+        return True
 
-        # If the scan is in pause, wait until it is resumed or the user aborts the scan.
-        while self._user_pause_scan_flag:
-            if self._user_abort_scan_flag:
-                raise Exception("User aborted scan in pause.")
-            sleep(pause_sleep_interval)
+    scanner = Scanner(positioner=positioner,
+                      writer=epics_writer.set_and_match,
+                      data_processor=SimpleDataProcessor(),
+                      reader=read_data,
+                      data_validator=validate_data)
 
-    def _read_and_process_data(self, current_position):
-        """
-        Read the data and pass it on only if valid.
-        :param current_position: Current position reached by the scan.
-        :return: Current position scan data.
-        """
-        n_current_acquisition = 0
-        # Collect data until acquired data is valid or retry limit reached.
-        while n_current_acquisition < acquisition_retry_limit:
-            data = self.reader()
+    return scanner.discrete_scan(settings.settling_time)
 
-            # If the data is valid, break out of the loop.
-            if self.data_validator(current_position, data):
-                break
-
-            n_current_acquisition += 1
-            sleep(acquisition_retry_delay)
-        # Could not read the data within the retry limit.
-        else:
-            raise Exception("Number of maximum read attempts (%d) exceeded. Cannot read valid data at position %s." %
-                            (acquisition_retry_limit, current_position))
-
-        # Process only valid data.
-        self.data_processor.process(current_position, data)
-
-        return data
-
-    def discrete_scan(self, settling_time=0):
-        """
-        Perform a discrete scan - set a position, read, continue. Return value at the end.
-        :param settling_time: Interval between the writing of the position and the reading of data. Default = 0.
-        """
-        try:
-            # Set up the experiment.
-            if self.initialization_executor:
-                self.initialization_executor(self)
-
-            for next_positions in self.positioner.get_generator():
-                # Position yourself before reading.
-                self.writer(next_positions)
-                # Settling time, wait after positions has been reached.
-                sleep(settling_time)
-
-                # Pre reading callbacks.
-                if self.before_executor:
-                    self.before_executor(self)
-
-                # Read and process the data in the current position.
-                position_data = self._read_and_process_data(next_positions)
-
-                # Post reading callbacks.
-                if self.after_executor:
-                    self.after_executor(self)
-
-                # Verify is the scan should continue.
-                self._verify_scan_status()
-        finally:
-            # Clean up after yourself.
-            if self.finalization_executor:
-                self.finalization_executor(self)
-
-        return self.data_processor.get_data()
-
-    def continuous_scan(self):
-        # TODO: Needs implementation.
-        pass

@@ -1,7 +1,7 @@
 from pyscan.dal.epics_dal import WriteGroupInterface, ReadGroupInterface
 from pyscan.positioner.area import AreaPositioner, ZigZagAreaPositioner
 from pyscan.positioner.line import ZigZagLinePositioner, LinePositioner
-from pyscan.scan import Scanner
+from pyscan.scanner import Scanner
 from pyscan.utils import convert_to_list, SimpleExecutor
 
 

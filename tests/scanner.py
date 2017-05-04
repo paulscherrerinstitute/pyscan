@@ -1,7 +1,7 @@
 import unittest
 
-from pyscan.positioner import VectorPositioner
-from pyscan.scan import Scanner
+from pyscan.positioner.vector import VectorPositioner
+from pyscan.scanner import Scanner
 from pyscan.utils import SimpleDataProcessor
 from tests.utils import TestWriter, TestReader
 

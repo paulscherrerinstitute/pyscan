@@ -1,9 +1,11 @@
 import unittest
 from itertools import count
 
-from pyscan.positioner import LinePositioner, ZigZagLinePositioner, VectorPositioner, \
-    ZigZagVectorPositioner, AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner, SerialPositioner, \
-    CompoundPositioner
+from pyscan.positioner.area import AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner
+from pyscan.positioner.compound import CompoundPositioner
+from pyscan.positioner.line import LinePositioner, ZigZagLinePositioner
+from pyscan.positioner.serial import SerialPositioner
+from pyscan.positioner.vector import VectorPositioner, ZigZagVectorPositioner
 from pyscan.utils import convert_to_position_list
 from tests.utils import is_close
 

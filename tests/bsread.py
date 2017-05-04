@@ -1,5 +1,5 @@
-from pyscan.interface.bsread import scan
 from pyscan.positioner.vector import VectorPositioner
+from pyscan.scan import scan
 from pyscan.scan_parameters import epics_pv, bs_property, epics_monitor, bs_monitor, action_set_epics_pv, \
     action_restore, scan_settings
 

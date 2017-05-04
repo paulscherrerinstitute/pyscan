@@ -3,6 +3,8 @@ from time import time
 import math
 from bsread import Source
 
+from pyscan.config import bs_default_n_measurements, bs_default_waiting, bs_default_queue_size, \
+    bs_default_receive_timeout
 from pyscan.utils import convert_to_list
 
 
@@ -10,12 +12,6 @@ class ReadGroupInterface(object):
     """
     Provide a beam synchronous acquisition for PV data.
     """
-
-    default_n_measurements = 1
-    default_waiting = 0
-    default_queue_size = 20
-    default_read_timeout = 5
-    default_receive_timeout = 1
 
     def __init__(self, properties, monitor_properties=None, n_measurements=None, waiting=None, host=None, port=None):
         """
@@ -25,8 +21,8 @@ class ReadGroupInterface(object):
         """
         self.properties = convert_to_list(properties)
         self.monitor_properties = convert_to_list(monitor_properties)
-        self.n_measurements = n_measurements or self.default_n_measurements
-        self.waiting = waiting or self.default_waiting
+        self.n_measurements = n_measurements or bs_default_n_measurements
+        self.waiting = waiting or bs_default_waiting
 
         self._message_cache = None
         self._message_cache_timestamp = None
@@ -37,8 +33,8 @@ class ReadGroupInterface(object):
         self.stream = Source(host=host,
                              port=port,
                              channels=self.properties + self.monitor_properties,
-                             queue_size=self.default_queue_size,
-                             receive_timeout=self.default_receive_timeout)
+                             queue_size=bs_default_queue_size,
+                             receive_timeout=bs_default_receive_timeout)
         self.stream.connect()
 
     @staticmethod

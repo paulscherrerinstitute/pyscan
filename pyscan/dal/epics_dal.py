@@ -1,8 +1,7 @@
 import time
 from itertools import count
-from pyscan.utils import convert_to_list, validate_lists_length, connect_to_pv, minimum_tolerance, compare_channel_value
-
-default_read_write_timeout = 3
+from pyscan.utils import convert_to_list, validate_lists_length, connect_to_pv, compare_channel_value
+from pyscan.config import min_tolerance
 
 
 class PyEpicsDal(object):
@@ -90,9 +89,9 @@ class WriteGroupInterface(object):
         :return: Tolerances adjusted to the minimum value, if needed.
         """
         # If the provided tolerances are empty, substitute them with a list of default tolerances.
-        tolerances = convert_to_list(tolerances) or [minimum_tolerance] * len(self.pvs)
+        tolerances = convert_to_list(tolerances) or [min_tolerance] * len(self.pvs)
         # Each tolerance needs to be at least the size of the minimum tolerance.
-        tolerances = [max(minimum_tolerance, tolerance) for tolerance in tolerances]
+        tolerances = [max(min_tolerance, tolerance) for tolerance in tolerances]
 
         return tolerances
 

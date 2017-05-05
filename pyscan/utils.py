@@ -18,12 +18,12 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0):
 
     def compare_value(value):
         # If we set a string, we expect the result to match exactly.
-        if isinstance(expected_value, str):
+        if isinstance(current_value, str):
             if value == expected_value:
                 return True
 
         # For numbers we compare them within tolerance.
-        elif isinstance(expected_value, (float, int)):
+        elif isinstance(current_value, (float, int)):
             if abs(current_value - expected_value) <= tolerance:
                 return True
 
@@ -34,7 +34,7 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0):
 
         return False
 
-    if isinstance(expected_value, list):
+    if isinstance(current_value, list):
         # In case of a list, any of the provided values will do.
         return any((compare_value(value) for value in expected_value))
     else:
@@ -113,7 +113,8 @@ class SimpleExecutor(object):
 
     def execute(self, context):
         for callback in self.callbacks:
-            callback(context["position"], context["value"])
+            # TODO: Implement callback logic based on callback action.
+            print("Callback execution")
 
 
 class SimpleDataProcessor(object):

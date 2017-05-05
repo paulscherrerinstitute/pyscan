@@ -4,13 +4,12 @@ from time import sleep
 
 import numpy as np
 
-from pyscan.utils import compare_channel_value
-from tests.interface.scan_old import Scan as CurrentScan
-from tests.utils import TestPyScanDal as CurrentMockDal
-
 # Comment this 2 lines to test with the old dal.
 from pyscan.interface.pyScan import Scan as CurrentScan, np
-from tests.mock_epics_dal import MockPyEpicsDal as CurrentMockDal
+from pyscan.utils import compare_channel_value
+from tests.helpers.mock_epics_dal import MockPyEpicsDal as CurrentMockDal
+from tests.helpers.scan_old import Scan as CurrentScan
+from tests.helpers.utils import TestPyScanDal as CurrentMockDal
 
 
 class IntegrationTests(unittest.TestCase):

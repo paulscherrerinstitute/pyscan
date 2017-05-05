@@ -4,7 +4,7 @@ from time import sleep
 
 import numpy as np
 
-from tests.utils import TestPyScanDal
+from tests.helpers.utils import TestPyScanDal
 
 
 # This is just a dummy GUI class.

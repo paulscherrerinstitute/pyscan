@@ -3,7 +3,7 @@ import unittest
 from pyscan.positioner.vector import VectorPositioner
 from pyscan.scanner import Scanner
 from pyscan.utils import SimpleDataProcessor
-from tests.utils import TestWriter, TestReader
+from tests.helpers.utils import TestWriter, TestReader
 
 test_positions = [0, 1, 2, 3, 4, 5]
 

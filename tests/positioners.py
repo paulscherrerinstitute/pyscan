@@ -7,7 +7,7 @@ from pyscan.positioner.line import LinePositioner, ZigZagLinePositioner
 from pyscan.positioner.serial import SerialPositioner
 from pyscan.positioner.vector import VectorPositioner, ZigZagVectorPositioner
 from pyscan.utils import convert_to_position_list
-from tests.utils import is_close
+from tests.helpers.utils import is_close
 
 
 class DiscreetPositionersTests(unittest.TestCase):

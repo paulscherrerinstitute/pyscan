@@ -1,6 +1,6 @@
 from time import sleep
 
-from pyscan.config import acquisition_retry_limit, pause_sleep_interval
+from pyscan.config import acquisition_retry_limit, pause_sleep_interval, acquisition_retry_delay
 
 
 class Scanner(object):

@@ -4,7 +4,7 @@ from time import time
 from bsread import Source
 
 from pyscan.config import bs_default_n_measurements, bs_default_waiting, bs_default_queue_size, \
-    bs_default_receive_timeout
+    bs_default_receive_timeout, bs_default_port, bs_default_host
 from pyscan.utils import convert_to_list
 
 
@@ -27,7 +27,7 @@ class ReadGroupInterface(object):
         self._message_cache = None
         self._message_cache_timestamp = None
 
-        self._connect_bsread(host, port)
+        self._connect_bsread(bs_default_host, bs_default_port)
 
     def _connect_bsread(self, host, port):
         if host and port:

@@ -10,11 +10,15 @@ min_tolerance = 0.00001
 ############################
 
 bs_default_n_measurements = 1
-# Number of second
+# Number of second between measurements.
 bs_default_waiting = 0
 bs_default_queue_size = 20
 bs_default_read_timeout = 5
 bs_default_receive_timeout = 1
+
+# Default connection settings.
+bs_default_host = "127.0.0.1"
+bs_default_port = 9999
 
 ###########################
 # EPICS DAL configuration #

@@ -78,7 +78,11 @@ class ReadGroupInterface(object):
 
         pv_values = []
         for pv_name in pvs_to_read:
-            pv_values.append(self._message_cache.data.data[pv_name])
+            value = self._message_cache.data.data[pv_name].value
+
+            # TODO: Check if the python conversion works in every case?
+            # BS read always return numpy, and we always convert it to Python.
+            pv_values.append(value.item())
 
         return pv_values
 

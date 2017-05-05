@@ -29,7 +29,7 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0):
 
         # We cannot set and match other than strings and numbers.
         else:
-            raise ValueError("Do not know how to compare %s with the expected value %s"
+            raise ValueError("Do not know how to compare %s with the expected value %s."
                              % (current_value, expected_value))
 
         return False
@@ -135,4 +135,4 @@ class SimpleDataProcessor(object):
         self.data.append(data)
 
     def get_data(self):
-        return [(position, data) for position, data in zip(self.positions, self.data)]
+        return self.data

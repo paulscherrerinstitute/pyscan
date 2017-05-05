@@ -3,9 +3,11 @@ from pyscan.scanner import Scanner
 from pyscan.scan_parameters import EPICS_PV, EPICS_MONITOR, BS_PROPERTY, BS_MONITOR
 from pyscan.utils import convert_to_list, SimpleDataProcessor, ActionExecutor, compare_channel_value
 
+# Instances to use.
 EPICS_WRITER = epics_dal.WriteGroupInterface
 EPICS_READER = epics_dal.ReadGroupInterface
 BS_READER = bsread_dal.ReadGroupInterface
+DATA_PROCESSOR = SimpleDataProcessor
 
 
 def scan(positioner, writables, readables, monitors=None, initializations=None, finalization=None, settings=None):
@@ -63,7 +65,7 @@ def scan(positioner, writables, readables, monitors=None, initializations=None, 
 
     scanner = Scanner(positioner=positioner,
                       writer=epics_writer.set_and_match,
-                      data_processor=SimpleDataProcessor(),
+                      data_processor=DATA_PROCESSOR(),
                       reader=read_data,
                       data_validator=validate_data,
                       initialization_executor=initialization_executor,

@@ -2,10 +2,10 @@ import threading
 import unittest
 from time import sleep, time
 
-# Comment this 2 lines to test with the old dal.
-from pyscan.interface.pyScan import Scan as CurrentScan
+
+
 from pyscan.utils import flat_list_generator
-from tests.helpers.mock_epics_dal import MockPyEpicsDal as CurrentMockDal
+
 from tests.helpers.pyScan_data import test_output_format_expected_result, test_ScanLine_first_KnobReadback, \
     test_ScanLine_first_Validation, test_ScanLine_first_Observable, test_ScanLine_second_KnobReadback, \
     test_ScanLine_second_Validation, test_ScanLine_second_Observable, test_ScanSeries_first_KnobReadback, \
@@ -15,8 +15,13 @@ from tests.helpers.pyScan_data import test_output_format_expected_result, test_S
     test_ScanMixed_second_Validation, test_ScanMixed_second_Observable, test_SimpleScan_first_KnobReadback, \
     test_SimpleScan_first_Validation, test_SimpleScan_first_Observable, test_SimpleScan_second_KnobReadback, \
     test_SimpleScan_second_Validation, test_SimpleScan_second_Observable
+
+# Comment this 2 lines to test with the old dal.
 from tests.helpers.scan_old import Scan as CurrentScan
 from tests.helpers.utils import TestPyScanDal as CurrentMockDal
+
+from pyscan.interface.pyScan import Scan as CurrentScan
+from tests.helpers.mock_epics_dal import MockPyEpicsDal as CurrentMockDal
 
 
 class PyScan(unittest.TestCase):
@@ -433,6 +438,7 @@ class PyScan(unittest.TestCase):
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
         # Correct "ErrorMessage" when successfully completed.
+        pyscan.startScan()
         self.assertRaisesRegex(Exception, "Number of maximum read attempts", pyscan.startScan)
 
         # This will never pass, but the scan has to abort immediately without doing 3 attempts.

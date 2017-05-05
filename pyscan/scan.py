@@ -33,7 +33,16 @@ def scan(positioner, writables, readables, monitors=None, initializations=None, 
         epics_values = iter(epics_pv_reader.read() if epics_pv_reader else [])
 
         # Interleave the values correctly.
-        result = [next(bs_values) if source == BS_PROPERTY else next(epics_values) for source in readables_order]
+        result = []
+        for source in readables_order:
+            next_result = next(bs_values) if source == BS_PROPERTY else next(epics_values)
+
+            # We flatten the result, whenever possible.
+            if isinstance(next_result, list):
+                result.extend(next_result)
+            else:
+                result.append(next_result)
+
         return result
 
     # Order of value sources, needed to reconstruct the correct order of the result.

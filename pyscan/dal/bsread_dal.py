@@ -4,7 +4,7 @@ from time import time
 from bsread import Source
 
 from pyscan.config import bs_default_n_measurements, bs_default_waiting, bs_default_queue_size, \
-    bs_default_receive_timeout, bs_default_port, bs_default_host
+    bs_default_receive_timeout, bs_default_port, bs_default_host, bs_default_read_timeout
 from pyscan.utils import convert_to_list
 
 
@@ -54,18 +54,18 @@ class ReadGroupInterface(object):
             return False
 
         # This is how BSread encodes the timestamp.
-        current_epoch = int(timestamp)
+        current_sec = int(timestamp)
         current_ns = int(math.modf(timestamp)[0] * 1e9)
 
-        message_epoch = message.data.global_timestamp["sec"]
-        message_ns = message.data.global_timestamp["ns"]
+        message_sec = message.data.global_timestamp
+        message_ns = message.data.global_timestamp_offset
 
         # If the seconds are the same, the nanoseconds must be equal or larger.
-        if message_epoch == current_epoch:
+        if message_sec == current_sec:
             return message_ns >= current_ns
         # If the seconds are not the same, the message seconds need to be larger than the current seconds.
         else:
-            return message_epoch > current_epoch
+            return message_sec > current_sec
 
     def _read_pvs_from_cache(self, pvs_to_read):
         """
@@ -88,7 +88,7 @@ class ReadGroupInterface(object):
         :return: List of values for read pvs. Note: Monitor PVs are excluded.
         """
         read_timestamp = time()
-        while time()-read_timestamp < self.default_read_timeout:
+        while time()-read_timestamp < bs_default_read_timeout:
             message = self.stream.receive()
             if self.is_message_after_timestamp(message, read_timestamp):
                 self._message_cache = message

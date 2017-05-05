@@ -3,7 +3,7 @@ from collections import namedtuple
 from pyscan.config import epics_default_read_write_timeout, min_tolerance, epics_default_monitor_timeout
 
 EPICS_PV = namedtuple("EPICS_PV", ["pv_name", "readback_pv_name", "tolerance"])
-EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["pv_name", "value", "action", "tolerance", "timeout"])
+EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "action", "tolerance", "timeout"])
 BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "camera", "property"])
 BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "camera", "property", "value", "action", "tolerance"])
 SET_EPICS_PV = namedtuple("SET_EPICS_PV", ["pv_name", "value", "readback_pv_name", "tolerance", "timeout"])
@@ -43,6 +43,8 @@ def epics_monitor(pv_name, value, action=None, tolerance=None, timeout=None):
     :param timeout: Timeout before the WaitAndAbort monitor aborts the scan.
     :return: Tuple of ("pv_name", "value", "action", "tolerance", "timeout")
     """
+    identifier = pv_name
+
     if not pv_name:
         raise ValueError("pv_name not specified.")
 
@@ -59,7 +61,7 @@ def epics_monitor(pv_name, value, action=None, tolerance=None, timeout=None):
     if not timeout or timeout < 0:
         timeout = epics_default_monitor_timeout
 
-    return EPICS_MONITOR(pv_name, value, action, tolerance, timeout)
+    return EPICS_MONITOR(identifier, pv_name, value, action, tolerance, timeout)
 
 
 def bs_property(name):

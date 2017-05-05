@@ -4,13 +4,13 @@ from pyscan.scan_parameters import EPICS_PV, EPICS_MONITOR, BS_PROPERTY, BS_MONI
 from pyscan.utils import convert_to_list, SimpleDataProcessor, SimpleExecutor, compare_channel_value
 
 
-def scan(positioner, writables, readables, monitors=None, initializations=None, finalizations=None, settings=None):
+def scan(positioner, writables, readables, monitors=None, initializations=None, finalization=None, settings=None):
     # Allow a list or a single value to be passed.
     writables = convert_to_list(writables) or []
     readables = convert_to_list(readables) or []
     monitors = convert_to_list(monitors) or []
     initializations = convert_to_list(initializations) or []
-    finalizations = convert_to_list(finalizations) or []
+    finalization = convert_to_list(finalization) or []
 
     bs_reader = _initialize_bs_dal(readables, monitors)
     epics_writer, epics_pv_reader, epics_monitor_reader = _initialize_epics_dal(writables,
@@ -54,8 +54,8 @@ def scan(positioner, writables, readables, monitors=None, initializations=None, 
         initialization_executor = SimpleExecutor(initializations)
 
     finalization_executor = None
-    if finalizations:
-        finalization_executor = SimpleExecutor(finalizations)
+    if finalization:
+        finalization_executor = SimpleExecutor(finalization)
 
     scanner = Scanner(positioner=positioner,
                       writer=epics_writer.set_and_match,
@@ -73,8 +73,8 @@ def _initialize_epics_dal(writables, readables, monitors, settings):
     if not all((isinstance(x, EPICS_PV) for x in writables)):
         raise ValueError("Only EPICS_PV can be used as writables.")
 
-    epics_readables = filter(lambda x: isinstance(x, EPICS_PV), readables)
-    epics_monitors = filter(lambda x: isinstance(x, EPICS_MONITOR), monitors)
+    epics_readables_pv_names = [x.pv_name for x in filter(lambda x: isinstance(x, EPICS_PV), readables)]
+    epics_monitors_pv_names = [x.pv_name for x in filter(lambda x: isinstance(x, EPICS_MONITOR), monitors)]
 
     # Instantiate the PVs to move the motors.
     epics_writer = epics_dal.WriteGroupInterface(pv_names=[pv.pv_name for pv in writables],
@@ -84,15 +84,15 @@ def _initialize_epics_dal(writables, readables, monitors, settings):
 
     # Reading epics PV values.
     epics_pv_reader = None
-    if epics_readables:
-        epics_pv_reader = epics_dal.ReadGroupInterface(pv_names=[pv.pv_name for pv in epics_readables],
+    if epics_readables_pv_names:
+        epics_pv_reader = epics_dal.ReadGroupInterface(pv_names=epics_readables_pv_names,
                                                        n_measurements=settings.n_measurements,
                                                        waiting=settings.measurement_interval)
 
     # Reading epics monitor values.
     epics_monitor_reader = None
-    if epics_monitors:
-        epics_monitor_reader = epics_dal.ReadGroupInterface(pv_names=[pv.pv_name for pv in epics_monitors],
+    if epics_monitors_pv_names:
+        epics_monitor_reader = epics_dal.ReadGroupInterface(pv_names=epics_monitors_pv_names,
                                                             n_measurements=1,
                                                             waiting=0)
 
@@ -100,8 +100,8 @@ def _initialize_epics_dal(writables, readables, monitors, settings):
 
 
 def _initialize_bs_dal(readables, monitors):
-    bs_readables = filter(lambda x: isinstance(x, BS_PROPERTY), readables)
-    bs_monitors = filter(lambda x: isinstance(x, BS_MONITOR), monitors)
+    bs_readables = [x.identifier for x in filter(lambda x: isinstance(x, BS_PROPERTY), readables)]
+    bs_monitors = [x.identifier for x in filter(lambda x: isinstance(x, BS_MONITOR), monitors)]
 
     bs_reader = None
     if bs_readables or bs_monitors:

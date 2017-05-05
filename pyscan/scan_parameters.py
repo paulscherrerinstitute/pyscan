@@ -3,11 +3,11 @@ from collections import namedtuple
 from pyscan.config import epics_default_read_write_timeout, min_tolerance, epics_default_monitor_timeout
 
 EPICS_PV = namedtuple("EPICS_PV", ["pv_name", "readback_pv_name", "tolerance"])
-EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "action", "tolerance", "timeout"])
-BS_PROPERTY = namedtuple("BS_PROPERTY", ["camera", "property"])
+EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["pv_name", "value", "action", "tolerance", "timeout"])
+BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "camera", "property"])
 BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "camera", "property", "value", "action", "tolerance"])
 SET_EPICS_PV = namedtuple("SET_EPICS_PV", ["pv_name", "value", "readback_pv_name", "tolerance", "timeout"])
-RESTORE_WRITABLE_PVS = namedtuple("RESTORE_WRITABLE_PVS")
+RESTORE_WRITABLE_PVS = namedtuple("RESTORE_WRITABLE_PVS", [])
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
                                              "write_timeout", "settling_time"])
 
@@ -43,12 +43,10 @@ def epics_monitor(pv_name, value, action=None, tolerance=None, timeout=None):
     :param timeout: Timeout before the WaitAndAbort monitor aborts the scan.
     :return: Tuple of ("pv_name", "value", "action", "tolerance", "timeout")
     """
-    identifier = pv_name
-
     if not pv_name:
         raise ValueError("pv_name not specified.")
 
-    if not value:
+    if value is None:
         raise ValueError("pv value not specified.")
 
     # the default action is Abort.
@@ -61,7 +59,7 @@ def epics_monitor(pv_name, value, action=None, tolerance=None, timeout=None):
     if not timeout or timeout < 0:
         timeout = epics_default_monitor_timeout
 
-    return EPICS_MONITOR(identifier, pv_name, value, action, tolerance, timeout)
+    return EPICS_MONITOR(pv_name, value, action, tolerance, timeout)
 
 
 def bs_property(name):
@@ -69,14 +67,16 @@ def bs_property(name):
     Construct a tuple for bs read property representation.
     :param name: Complete property name.
     """
+    identifier = name
+
     if not name:
         raise ValueError("name not specified.")
 
-    if not name.count(":") == 2:
+    if not name.count(":") == 1:
         raise ValueError("Property name needs to be in format 'camera_name:property_name', but %s was provided" % name)
 
     camera_name, property_name = name.split(":")
-    return BS_PROPERTY(camera_name, property_name)
+    return BS_PROPERTY(identifier, camera_name, property_name)
 
 
 def bs_monitor(name, value, tolerance=None):
@@ -92,10 +92,10 @@ def bs_monitor(name, value, tolerance=None):
     if not name:
         raise ValueError("name not specified.")
 
-    if not name.count(":") == 2:
+    if not name.count(":") == 1:
         raise ValueError("Property name needs to be in format 'camera_name:property_name', but %s was provided" % name)
 
-    if not value:
+    if value is None:
         raise ValueError("value not specified.")
 
     if not tolerance or tolerance < min_tolerance:
@@ -121,7 +121,7 @@ def action_set_epics_pv(pv_name, value, readback_pv_name=None, tolerance=None, t
     """
     pv_name, readback_pv_name, tolerance = epics_pv(pv_name, readback_pv_name, tolerance)
 
-    if not value:
+    if value is None:
         raise ValueError("pv value not specified.")
 
     if not timeout or timeout < 0:

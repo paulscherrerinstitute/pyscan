@@ -447,9 +447,7 @@ class PyScan(unittest.TestCase):
         self.assertRaisesRegex(Exception, "expected value", pyscan.startScan)
 
     def test_Additive(self):
-        pass
-
-    def test_Actions(self):
+        # TODO: Test if the additive mode works well.
         pass
 
     def test_abort(self):

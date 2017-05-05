@@ -102,19 +102,23 @@ def flat_list_generator(list_to_flatten):
             yield from flat_list_generator(inner_list)
 
 
-class SimpleExecutor(object):
+class ActionExecutor(object):
     """
     Execute all callbacks in the same thread.
     Each callback method should accept 2 parameters: position, sampled values.
     """
 
-    def __init__(self, callbacks):
-        self.callbacks = callbacks
+    def __init__(self, actions):
+        """
+        Initialize the action executor.
+        :param actions: Actions to execute. Single action or list of.
+        """
+        self.actions = convert_to_list(actions)
 
     def execute(self, context):
-        for callback in self.callbacks:
+        for action in self.actions:
             # TODO: Implement callback logic based on callback action.
-            print("Callback execution")
+            print("Action execution")
 
 
 class SimpleDataProcessor(object):

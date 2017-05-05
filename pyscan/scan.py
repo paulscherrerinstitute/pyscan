@@ -1,7 +1,7 @@
 from pyscan.dal import epics_dal, bsread_dal
 from pyscan.scanner import Scanner
 from pyscan.scan_parameters import EPICS_PV, EPICS_MONITOR, BS_PROPERTY, BS_MONITOR
-from pyscan.utils import convert_to_list, SimpleDataProcessor, SimpleExecutor, compare_channel_value
+from pyscan.utils import convert_to_list, SimpleDataProcessor, ActionExecutor, compare_channel_value
 
 EPICS_WRITER = epics_dal.WriteGroupInterface
 EPICS_READER = epics_dal.ReadGroupInterface
@@ -55,11 +55,11 @@ def scan(positioner, writables, readables, monitors=None, initializations=None, 
 
     initialization_executor = None
     if initializations:
-        initialization_executor = SimpleExecutor(initializations)
+        initialization_executor = ActionExecutor(initializations).execute
 
     finalization_executor = None
     if finalization:
-        finalization_executor = SimpleExecutor(finalization)
+        finalization_executor = ActionExecutor(finalization).execute
 
     scanner = Scanner(positioner=positioner,
                       writer=epics_writer.set_and_match,

@@ -1,45 +1,58 @@
-import unittest
-
 import time
+import unittest
 from threading import Thread
 
 from bsread.sender import Sender
 
+import pyscan.scan
 from pyscan.positioner.vector import VectorPositioner
 from pyscan.scan import scan
 from pyscan.scan_parameters import epics_pv, bs_property, epics_monitor, bs_monitor, action_set_epics_pv, \
     action_restore, scan_settings
+from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface
 
-import pyscan.scan
-from tests.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface
 # Mock the Epics DAL.
 pyscan.scan.EPICS_READER = MockReadGroupInterface
 pyscan.scan.EPICS_WRITER = MockWriteGroupInterface
+
 # Setup mock values
-from tests.mock_epics_dal import cached_initial_values
+from tests.helpers.mock_epics_dal import cached_initial_values
 cached_initial_values["PYSCAN:TEST:VALID1"] = 10
 cached_initial_values["PYSCAN:TEST:OBS1"] = 1
+
+bs_sending = True
 
 
 def start_sender():
     # Start a mock sender stream.
-    generator = Sender()
+    generator = Sender(block=False)
     generator.add_channel('CAMERA1:X', lambda x: x, metadata={'type': 'int32'})
     generator.add_channel('CAMERA1:Y', lambda x: x, metadata={'type': 'int32'})
     generator.add_channel('CAMERA1:VALID', lambda x: 10, metadata={'type': 'int32'})
 
     generator.open()
-    while True:
+    while bs_sending:
         generator.send()
-        time.sleep(0.01)
+        time.sleep(0.05)
+
+    generator.close()
 
 
 class ScanTests(unittest.TestCase):
 
     def setUp(self):
-        sender_thread = Thread(target=start_sender)
-        sender_thread.daemon = True
-        sender_thread.start()
+        global bs_sending
+        bs_sending = True
+
+        self.sender_thread = Thread(target=start_sender)
+        self.sender_thread.daemon = True
+        self.sender_thread.start()
+
+    def tearDown(self):
+        global bs_sending
+        bs_sending = False
+
+        self.sender_thread.join()
 
     def test_monitors(self):
         # TODO: Test if the monitors belong to the same output as the values.

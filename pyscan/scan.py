@@ -50,7 +50,7 @@ def scan(positioner, writables, readables, monitors=None, initializations=None, 
             if not compare_channel_value(value, expected_value, tolerance):
                 # TODO: The "wait" part of WaitAndAbort does not work.. do we need it?
                 raise ValueError("Monitor %s, expected value %s, actual value %s, tolerance %s." %
-                                 (monitors[index].identifier, value, expected_value, tolerance))
+                                 (monitors[index].identifier, expected_value, value, tolerance))
         return True
 
     initialization_executor = None

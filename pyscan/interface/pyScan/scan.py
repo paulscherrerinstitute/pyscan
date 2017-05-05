@@ -10,6 +10,7 @@ from pyscan.interface.pyScan.utils import PyScanDataProcessor
 from pyscan.positioner.compound import CompoundPositioner
 from pyscan.positioner.serial import SerialPositioner
 from pyscan.positioner.vector import VectorPositioner
+from pyscan.scan_parameters import scan_settings
 from pyscan.scanner import Scanner
 from pyscan.utils import convert_to_list, convert_to_position_list, compare_channel_value
 
@@ -72,6 +73,11 @@ class Scan(object):
 
             return validate_monitors
 
+        # Setup scan settings.
+        settings = scan_settings(settling_time=self.dimensions[-1]["KnobWaitingExtra"],
+                                 n_measurements=self.dimensions[-1]["NumberOfMeasurements"],
+                                 measurement_interval=self.dimensions[-1]["Waiting"])
+
         self.scanner = Scanner(positioner=self.get_positioner(),
                                writer=self.epics_dal.get_group(WRITE_GROUP).set_and_match,
                                data_processor=data_processor,
@@ -80,10 +86,10 @@ class Scan(object):
                                after_executor=progress_after_executor,
                                initialization_executor=self.get_action_executor("PreAction"),
                                finalization_executor=self.get_action_executor("PostAction"),
-                               data_validator=prepare_monitors(self.epics_dal.get_group(MONITOR_GROUP)))
+                               data_validator=prepare_monitors(self.epics_dal.get_group(MONITOR_GROUP)),
+                               settings=settings)
 
-        after_move_settling_time = self.dimensions[-1]["KnobWaitingExtra"]
-        self.outdict.update(self.scanner.discrete_scan(after_move_settling_time))
+        self.outdict.update(self.scanner.discrete_scan())
 
     def get_positioner(self):
         """
@@ -91,7 +97,7 @@ class Scan(object):
         :return: Positioner object.
         """
         # Read all the initial positions - in case we need to do an additive scan.
-        initial_positions = self.epics_dal.get_group(READ_GROUP).read(n_measurements=1)
+        initial_positions = self.epics_dal.get_group(READ_GROUP).read()
 
         positioners = []
         knob_readback_offset = 0
@@ -363,15 +369,8 @@ class Scan(object):
         all_readback_pvs = [item for sublist in all_readback_pvs for item in sublist]
         all_tolerances = [item for sublist in all_tolerances for item in sublist]
 
-        # The number of measurements is sampled only from the last dimension.
-        self.n_measurements = self.dimensions[-1]["NumberOfMeasurements"]
-
-        # How much time should we wait after each measurement
-        after_measurement_waiting_time = self.dimensions[-1]["Waiting"]
-
         # Initialize PV connections and check if all PV names are valid.
-        self.epics_dal.add_reader_group(READ_GROUP, self.all_read_pvs, self.n_measurements,
-                                        after_measurement_waiting_time)
+        self.epics_dal.add_reader_group(READ_GROUP, self.all_read_pvs)
         self.epics_dal.add_writer_group(WRITE_GROUP, all_write_pvs, all_readback_pvs, all_tolerances, max_knob_waiting)
 
     def _setup_knobs(self, index, dic):

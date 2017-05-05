@@ -75,7 +75,7 @@ class ScanTests(unittest.TestCase):
                       initializations=initialization,
                       finalization=finalization,
                       settings=scan_settings(measurement_interval=0.25,
-                                             n_measurements=3))
+                                             n_measurements=1))
 
         self.assertEqual(len(result), len(positions), "Not the expected number of results.")
 

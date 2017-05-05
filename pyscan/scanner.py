@@ -1,6 +1,7 @@
 from time import sleep
 
 from pyscan.config import acquisition_retry_limit, pause_sleep_interval, acquisition_retry_delay
+from pyscan.scan_parameters import scan_settings
 
 
 class Scanner(object):
@@ -9,7 +10,7 @@ class Scanner(object):
     """
 
     def __init__(self, positioner, writer, data_processor, reader, before_executor=None, after_executor=None,
-                 initialization_executor=None, finalization_executor=None, data_validator=None):
+                 initialization_executor=None, finalization_executor=None, data_validator=None, settings=None):
         """
         Initialize scanner.
         :param positioner: Positioner should provide a generator to get the positions to move to.
@@ -27,6 +28,7 @@ class Scanner(object):
         self.after_executor = after_executor
         self.initialization_executor = initialization_executor
         self.finalization_executor = finalization_executor
+        self.settings = settings or scan_settings()
 
         # If no data validator is provided, data is always valid.
         self.data_validator = data_validator or (lambda position, data: True)
@@ -67,37 +69,53 @@ class Scanner(object):
                 raise Exception("User aborted scan in pause.")
             sleep(pause_sleep_interval)
 
+    def _perform_single_read(self, current_position):
+        """
+        Read a single result from the channel.
+        :param current_position: Current position, passed to the validator.
+        :return: Single result (all channels).
+        """
+        n_current_acquisition = 0
+        # Collect data until acquired data is valid or retry limit reached.
+        while n_current_acquisition < acquisition_retry_limit:
+            single_measurement = self.reader()
+
+            # If the data is valid, break out of the loop.
+            if self.data_validator(current_position, single_measurement):
+                return single_measurement
+
+            n_current_acquisition += 1
+            sleep(acquisition_retry_delay)
+        # Could not read the data within the retry limit.
+        else:
+            raise Exception("Number of maximum read attempts (%d) exceeded. Cannot read valid data at position %s."
+                            % (acquisition_retry_limit, current_position))
+
     def _read_and_process_data(self, current_position):
         """
         Read the data and pass it on only if valid.
         :param current_position: Current position reached by the scan.
         :return: Current position scan data.
         """
-        n_current_acquisition = 0
-        # Collect data until acquired data is valid or retry limit reached.
-        while n_current_acquisition < acquisition_retry_limit:
-            data = self.reader()
+        # We do a single acquisition per position.
+        if self.settings.n_measurements == 1:
+            result = self._perform_single_read(current_position)
 
-            # If the data is valid, break out of the loop.
-            if self.data_validator(current_position, data):
-                break
-
-            n_current_acquisition += 1
-            sleep(acquisition_retry_delay)
-        # Could not read the data within the retry limit.
+        # Multiple acquisitions.
         else:
-            raise Exception("Number of maximum read attempts (%d) exceeded. Cannot read valid data at position %s." %
-                            (acquisition_retry_limit, current_position))
+            result = []
+            for n_measurement in range(self.settings.n_measurements):
+                result.append(self._perform_single_read(current_position))
+                sleep(self.settings.measurement_interval)
 
         # Process only valid data.
-        self.data_processor.process(current_position, data)
+        self.data_processor.process(current_position, result)
 
-        return data
+        return result
 
-    def discrete_scan(self, settling_time=0):
+    def discrete_scan(self):
         """
         Perform a discrete scan - set a position, read, continue. Return value at the end.
-        :param settling_time: Interval between the writing of the position and the reading of data. Default = 0.
         """
         try:
             # Set up the experiment.
@@ -108,7 +126,7 @@ class Scanner(object):
                 # Position yourself before reading.
                 self.writer(next_positions)
                 # Settling time, wait after positions has been reached.
-                sleep(settling_time)
+                sleep(self.settings.settling_time)
 
                 # Pre reading callbacks.
                 if self.before_executor:

@@ -26,8 +26,8 @@ class MockPyEpicsDal(PyEpicsDal):
     def get_positions():
         return read_values
 
-    def add_reader_group(self, group_name, pv_names, n_measurements=None, waiting=None):
-        self.add_group(group_name, MockReadGroupInterface(pv_names, n_measurements, waiting))
+    def add_reader_group(self, group_name, pv_names):
+        self.add_group(group_name, MockReadGroupInterface(pv_names))
         if group_name == READ_GROUP:
             self.get_group(group_name).save_values = True
 
@@ -54,8 +54,8 @@ class MockReadGroupInterface(ReadGroupInterface):
     def connect(pv_name):
         return MockPV(pv_name)
 
-    def read(self, n_measurements=None, waiting=None):
-        result = super(MockReadGroupInterface, self).read(n_measurements, waiting)
+    def read(self):
+        result = super(MockReadGroupInterface, self).read()
         if self.save_values:
             read_values.append(result)
         return result

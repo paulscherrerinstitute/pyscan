@@ -1,6 +1,6 @@
 from pyscan.dal import epics_dal, bsread_dal
 from pyscan.scanner import Scanner
-from pyscan.scan_parameters import EPICS_PV, EPICS_MONITOR, BS_PROPERTY, BS_MONITOR
+from pyscan.scan_parameters import EPICS_PV, EPICS_MONITOR, BS_PROPERTY, BS_MONITOR, scan_settings
 from pyscan.utils import convert_to_list, SimpleDataProcessor, ActionExecutor, compare_channel_value
 
 # Instances to use.
@@ -17,6 +17,7 @@ def scan(positioner, writables, readables, monitors=None, initializations=None, 
     monitors = convert_to_list(monitors) or []
     initializations = convert_to_list(initializations) or []
     finalization = convert_to_list(finalization) or []
+    settings = settings or scan_settings()
 
     bs_reader = _initialize_bs_dal(readables, monitors)
     epics_writer, epics_pv_reader, epics_monitor_reader = _initialize_epics_dal(writables,
@@ -59,9 +60,9 @@ def scan(positioner, writables, readables, monitors=None, initializations=None, 
             tolerance = monitors[index].tolerance
 
             if not compare_channel_value(value, expected_value, tolerance):
-                # TODO: The "wait" part of WaitAndAbort does not work.. do we need it?
                 raise ValueError("Monitor %s, expected value %s, actual value %s, tolerance %s." %
                                  (monitors[index].identifier, expected_value, value, tolerance))
+
         return True
 
     initialization_executor = None
@@ -78,9 +79,10 @@ def scan(positioner, writables, readables, monitors=None, initializations=None, 
                       reader=read_data,
                       data_validator=validate_data,
                       initialization_executor=initialization_executor,
-                      finalization_executor=finalization_executor)
+                      finalization_executor=finalization_executor,
+                      settings=settings)
 
-    return scanner.discrete_scan(settings.settling_time)
+    return scanner.discrete_scan()
 
 
 def _initialize_epics_dal(writables, readables, monitors, settings):
@@ -100,16 +102,12 @@ def _initialize_epics_dal(writables, readables, monitors, settings):
     # Reading epics PV values.
     epics_pv_reader = None
     if epics_readables_pv_names:
-        epics_pv_reader = EPICS_READER(pv_names=epics_readables_pv_names,
-                                       n_measurements=settings.n_measurements,
-                                       waiting=settings.measurement_interval)
+        epics_pv_reader = EPICS_READER(pv_names=epics_readables_pv_names)
 
     # Reading epics monitor values.
     epics_monitor_reader = None
     if epics_monitors_pv_names:
-        epics_monitor_reader = EPICS_READER(pv_names=epics_monitors_pv_names,
-                                            n_measurements=1,
-                                            waiting=0)
+        epics_monitor_reader = EPICS_READER(pv_names=epics_monitors_pv_names)
 
     return epics_writer, epics_pv_reader, epics_monitor_reader
 

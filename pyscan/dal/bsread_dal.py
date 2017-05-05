@@ -30,11 +30,15 @@ class ReadGroupInterface(object):
         self._connect_bsread(host, port)
 
     def _connect_bsread(self, host, port):
-        self.stream = Source(host=host,
-                             port=port,
-                             channels=self.properties + self.monitor_properties,
-                             queue_size=bs_default_queue_size,
-                             receive_timeout=bs_default_receive_timeout)
+        if host and port:
+            self.stream = Source(host=host,
+                                 port=port,
+                                 queue_size=bs_default_queue_size,
+                                 receive_timeout=bs_default_receive_timeout)
+        else:
+            self.stream = Source(channels=self.properties + self.monitor_properties,
+                                 queue_size=bs_default_queue_size,
+                                 receive_timeout=bs_default_receive_timeout)
         self.stream.connect()
 
     @staticmethod

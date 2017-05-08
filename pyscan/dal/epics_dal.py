@@ -181,7 +181,7 @@ class ReadGroupInterface(object):
         self.pv_names = convert_to_list(pv_names)
         self.pvs = [self.connect(pv_name) for pv_name in self.pv_names]
 
-    def read(self, waiting=None):
+    def read(self):
         """
         Read PVs one by one.
         :return: Result

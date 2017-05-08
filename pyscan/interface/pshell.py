@@ -1,6 +1,7 @@
 from pyscan.dal.epics_dal import WriteGroupInterface, ReadGroupInterface
 from pyscan.positioner.area import AreaPositioner, ZigZagAreaPositioner
 from pyscan.positioner.line import ZigZagLinePositioner, LinePositioner
+from pyscan.scan_parameters import scan_settings
 from pyscan.scanner import Scanner
 from pyscan.utils import convert_to_list, ActionExecutor
 
@@ -20,6 +21,7 @@ def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
     :param zigzag: If True and passes > 1, invert moving direction on each pass.
     :param before_read: List of callback functions on each step before readback.
     :param after_read: List of callback functions on each step after readback.
+    :param title: Not used in this implementation - legacy.
     :return: Data from the scan.
     """
 
@@ -43,8 +45,10 @@ def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
     before_executer = ActionExecutor(before_read)
     after_executer = ActionExecutor(after_read)
 
-    scanner = Scanner(positioner, writer, reader, before_executer, after_executer)
-    scanner.discrete_scan(latency)
+    settings = scan_settings(settling_time=latency)
+
+    scanner = Scanner(positioner, writer, reader, before_executer, after_executer, settings=settings)
+    return scanner.discrete_scan()
 
 
 def ascan(writables, readables, start, end, steps, latency=0.0, relative=False,
@@ -62,6 +66,7 @@ def ascan(writables, readables, start, end, steps, latency=0.0, relative=False,
     :param zigzag: If True and passes > 1, invert moving direction on each pass.
     :param before_read: List of callback functions on each step before readback.
     :param after_read: List of callback functions on each step after readback.
+    :param title: Not used in this implementation - legacy.
     :return: Data from the scan.
     """
 
@@ -85,5 +90,7 @@ def ascan(writables, readables, start, end, steps, latency=0.0, relative=False,
     before_executer = ActionExecutor(before_read)
     after_executer = ActionExecutor(after_read)
 
-    scanner = Scanner(positioner, writer, reader, before_executer, after_executer)
-    scanner.discrete_scan(latency)
+    settings = scan_settings(settling_time=latency)
+
+    scanner = Scanner(positioner, writer, reader, before_executer, after_executer, settings=settings)
+    return scanner.discrete_scan()

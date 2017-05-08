@@ -3,7 +3,6 @@ import unittest
 from time import sleep, time
 
 
-
 from pyscan.utils import flat_list_generator
 
 from tests.helpers.pyScan_data import test_output_format_expected_result, test_ScanLine_first_KnobReadback, \

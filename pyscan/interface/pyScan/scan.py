@@ -22,12 +22,6 @@ MONITOR_GROUP = "Monitors"
 class Scan(object):
     def execute_scan(self):
 
-        data_processor = PyScanDataProcessor(self.outdict,
-                                             n_readbacks=self.n_readbacks,
-                                             n_validations=self.n_validations,
-                                             n_observables=self.n_observables,
-                                             n_measurements=self.n_measurements)
-
         after_executor = self.get_action_executor("In-loopPostAction")
 
         # Wrap the post action executor to update the number of completed scans.
@@ -77,6 +71,12 @@ class Scan(object):
         settings = scan_settings(settling_time=self.dimensions[-1]["KnobWaitingExtra"],
                                  n_measurements=self.dimensions[-1]["NumberOfMeasurements"],
                                  measurement_interval=self.dimensions[-1]["Waiting"])
+
+        data_processor = PyScanDataProcessor(self.outdict,
+                                             n_readbacks=self.n_readbacks,
+                                             n_validations=self.n_validations,
+                                             n_observables=self.n_observables,
+                                             n_measurements=settings.n_measurements)
 
         self.scanner = Scanner(positioner=self.get_positioner(),
                                writer=self.epics_dal.get_group(WRITE_GROUP).set_and_match,

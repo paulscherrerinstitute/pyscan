@@ -416,8 +416,8 @@ class Scan(object):
 
         # Originally dic["Knob"] values were saved. I'm supposing this was a bug - readback values needed to be saved.
 
-        # TODO: We can optimize this by moving the initialization in the epics_dal init, but pre actions need
-        # to be moved after the epics_dal init than
+        # TODO: We can optimize this by moving the initialization in the epics_dal init
+        # but pre actions need to be moved after the epics_dal init than
         self.epics_dal.add_reader_group("KnobReadback", dic['KnobReadback'])
         dic['KnobSaved'] = self.epics_dal.get_group("KnobReadback").read()
         self.epics_dal.close_group("KnobReadback")

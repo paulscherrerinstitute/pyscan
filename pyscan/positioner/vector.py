@@ -9,11 +9,12 @@ class VectorPositioner(object):
         self.positions = positions
         self.passes = passes
         self.offsets = offsets
-
-        # TODO: Verify that all the axis have the same number of positions - also offsets.
         self.n_positions = len(self.positions)
 
-        # TODO: Verify that passes is positive.
+        if self.passes < 1:
+            raise ValueError("Passes cannot be negative or zero, but %s was provided." % self.passes)
+
+        # TODO: Check if the offsets and the number of axis on each position match.
 
         # Fix the offset if provided.
         if self.offsets:

@@ -459,6 +459,7 @@ class PyScan(unittest.TestCase):
         indict1["ScanValues"] = [-3, -2, -1, 0]
         indict1['Observable'] = ["READ1"]
         indict1['Waiting'] = 0.3
+        indict1["KnobWaitingExtra"] = 0.3
 
         test_dal = CurrentMockDal()
         pyscan = CurrentScan()
@@ -487,6 +488,7 @@ class PyScan(unittest.TestCase):
         indict1["ScanValues"] = [-3, -2, -1, 0]
         indict1['Observable'] = ["READ1"]
         indict1['Waiting'] = 0.3
+        indict1["KnobWaitingExtra"] = 0.3
         indict1['StepbackOnPause'] = 0
 
         test_dal = CurrentMockDal()
@@ -524,6 +526,7 @@ class PyScan(unittest.TestCase):
         indict1["ScanValues"] = [-3, -2, -1, 0]
         indict1['Observable'] = ["READ1"]
         indict1['Waiting'] = 0.3
+        indict1["KnobWaitingExtra"] = 0.3
         indict1['StepbackOnPause'] = 0
 
         test_dal = CurrentMockDal()
@@ -559,6 +562,7 @@ class PyScan(unittest.TestCase):
         indict = {}
         indict['Knob'] = "PYSCAN:TEST:MOTOR1:SET"
         indict['Waiting'] = 0.5
+        indict["KnobWaitingExtra"] = 0.5
 
         indict['Observable'] = "PYSCAN:TEST:OBS1"
         # One percentage step for each scan value.

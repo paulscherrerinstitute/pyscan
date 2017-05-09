@@ -51,11 +51,11 @@ conda config --add channels paulscherrerinstitute
 
 # Usage
 
-A sample scan can be done by running:
+A sample scan, that uses the most common pyscan features, can be done by running:
 
 ```Python
 from pyscan.positioner.vector import VectorPositioner
-from pyscan.scan_parameters import epics_pv
+from pyscan.scan_parameters import epics_pv, epics_monitor, scan_settings
 from pyscan.dal.epics_utils import action_set_epics_pv, action_restore
 from pyscan.scan import scan
 
@@ -69,28 +69,36 @@ writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET")]
 # Read "PYSCAN:TEST:OBS1" value at each position.
 readables = [epics_pv("PYSCAN:TEST:OBS1")]
 
+# At each read of "PYSCAN:TEST:OBS1", check if "PYSCAN:TEST:VALID1" == 10
+monitors = [epics_monitor("PYSCAN:TEST:VALID1", 10)]
+
 # Before the scan starts, set "PYSCAN:TEST:PRE1:SET" to 1.
 initialization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 1, "PYSCAN:TEST:PRE1:GET")]
 
 # After the scan completes, restore the original value of "PYSCAN:TEST:MOTOR1:SET".
 finalization = [action_restore(writables)]
 
+# At each position, do 4 readings of the readables with 4Hz (0.25 seconds between readings).
+settings = scan_settings(measurement_interval=0.25, n_measurements=4)
+
 result = scan(positioner=positioner, 
               writables=writables, 
               readables=readables,
+              monitors=monitors,
               initialization=initialization,
-              finalization=finalization)
+              finalization=finalization,
+              settings=settings)
 ```
 
 In the following chapters each component will be explained in more details:
 
-- **Settings**: Settings of the scan and acquisition of data.
 - **Positioner**: Generates positions, according to the input values, on which to place the writables.
 - **Writables**: PVs (motors, in most cases) to move according to the positioner values.
 - **Readables**: PVs or BS read properties to read at each position.
 - **Monitors**: PVs or BS read properties used to validate the readables at each position.
 - **Initialization**: Actions to execute before the scan.
 - **Finalization**: Actions to execute after the scan is completed or when the scan is aborted.
+- **Settings**: Settings of the scan and acquisition of data.
 
 For common use cases, see the chapter at the end of this document.
 

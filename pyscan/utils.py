@@ -117,8 +117,7 @@ class ActionExecutor(object):
 
     def execute(self, context):
         for action in self.actions:
-            # TODO: Implement callback logic based on callback action.
-            print("Action execution")
+            action()
 
 
 class SimpleDataProcessor(object):

@@ -437,7 +437,6 @@ class PyScan(unittest.TestCase):
         self.standard_init_tests(pyscan.initializeScan([indict1, indict2], test_dal))
 
         # Correct "ErrorMessage" when successfully completed.
-        pyscan.startScan()
         self.assertRaisesRegex(Exception, "Number of maximum read attempts", pyscan.startScan)
 
         # This will never pass, but the scan has to abort immediately without doing 3 attempts.

@@ -6,8 +6,6 @@ EPICS_PV = namedtuple("EPICS_PV", ["pv_name", "readback_pv_name", "tolerance"])
 EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "action", "tolerance", "timeout"])
 BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "camera", "property"])
 BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "camera", "property", "value", "action", "tolerance"])
-SET_EPICS_PV = namedtuple("SET_EPICS_PV", ["pv_name", "value", "readback_pv_name", "tolerance", "timeout"])
-RESTORE_WRITABLE_PVS = namedtuple("RESTORE_WRITABLE_PVS", [])
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
                                              "write_timeout", "settling_time"])
 
@@ -109,35 +107,6 @@ def bs_monitor(name, value, tolerance=None):
     camera_name, property_name = name.split(":")
 
     return BS_MONITOR(identifier, camera_name, property_name, value, action, tolerance)
-
-
-def action_set_epics_pv(pv_name, value, readback_pv_name=None, tolerance=None, timeout=None):
-    """
-    Construct a tuple for set PV representation.
-    :param pv_name: Name of the PV.
-    :param value: Value to set the PV to.
-    :param readback_pv_name: Name of the readback PV.
-    :param tolerance: Tolerance if the PV is writable.
-    :param timeout: Timeout for setting the pv value.
-    :return: Tuple of (pv_name, pv_readback, tolerance)
-    """
-    pv_name, readback_pv_name, tolerance = epics_pv(pv_name, readback_pv_name, tolerance)
-
-    if value is None:
-        raise ValueError("pv value not specified.")
-
-    if not timeout or timeout < 0:
-        timeout = epics_default_read_write_timeout
-
-    return SET_EPICS_PV(pv_name, value, readback_pv_name, tolerance, timeout)
-
-
-def action_restore():
-    """
-    Restore the initial state of the writable PVs.
-    :return: Empty tuple, to be replaced with the initial values.
-    """
-    return RESTORE_WRITABLE_PVS()
 
 
 def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=None, settling_time=None):

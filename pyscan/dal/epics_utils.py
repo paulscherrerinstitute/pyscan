@@ -1,6 +1,7 @@
 from collections import namedtuple
 
-from pyscan.config import epics_default_read_write_timeout, EPICS_WRITER, EPICS_READER
+from pyscan.config import epics_default_read_write_timeout
+from pyscan.scan import EPICS_WRITER, EPICS_READER
 from pyscan.scan_parameters import epics_pv
 from pyscan.utils import convert_to_list
 
@@ -34,16 +35,16 @@ def action_set_epics_pv(pv_name, value, readback_pv_name=None, tolerance=None, t
     return execute
 
 
-def action_restore(pv_names):
+def action_restore(writables):
     """
     Restore the initial state of the writable PVs.
     :return: Empty tuple, to be replaced with the initial values.
     """
-    pv_names = convert_to_list(pv_names)
+    pv_names = [pv.pv_name for pv in convert_to_list(writables)]
 
-    reader = EPICS_READER(pv_names)
-    current_values = reader.read()
-    reader.close()
+    # reader = EPICS_READER(pv_names)
+    # current_values = reader.read()
+    # reader.close()
 
     def execute():
         print("restore %s" % pv_names)

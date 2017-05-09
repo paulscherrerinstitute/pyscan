@@ -7,8 +7,8 @@ from bsread.sender import Sender
 import pyscan.scan
 from pyscan.positioner.vector import VectorPositioner
 from pyscan.scan import scan
-from pyscan.scan_parameters import epics_pv, bs_property, epics_monitor, bs_monitor, action_set_epics_pv, \
-    action_restore, scan_settings
+from pyscan.scan_parameters import epics_pv, bs_property, epics_monitor, bs_monitor, scan_settings
+from pyscan.dal.epics_utils import action_set_epics_pv, action_restore
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface
 
 # Mock the Epics DAL.
@@ -76,17 +76,17 @@ class ScanTests(unittest.TestCase):
         monitors = [epics_monitor("PYSCAN:TEST:VALID1", 10),
                     bs_monitor("CAMERA1:VALID", 10)]
 
-        initialization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 1, "PYSCAN:TEST:PRE1:GET")]
-
-        finalization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 0, "PYSCAN:TEST:PRE1:GET"),
-                        action_restore()]
+        # initialization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 1, "PYSCAN:TEST:PRE1:GET")]
+        #
+        # finalization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 0, "PYSCAN:TEST:PRE1:GET"),
+        #                 action_restore(writables)]
 
         result = scan(positioner=positioner,
                       writables=writables,
                       readables=readables,
                       monitors=monitors,
-                      initializations=initialization,
-                      finalization=finalization,
+                      # initialization=initialization,
+                      # finalization=finalization,
                       settings=scan_settings(measurement_interval=0.25,
                                              n_measurements=1))
 

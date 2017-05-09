@@ -2,26 +2,38 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/9oq871y9281iw19y?svg=true)](https://ci.appveyor.com/project/simongregorebner/pyscan)
 
 # Overview
-pyScan is a python class that performs a scan for single or multiple given knobs. The user may specify single or multiple observables. The knobs and observables have to be available as Epics channels.
+_pyscan_ is a Python scanning library for Channel Access and beam synchronous (SwissFEL) data. It supports scanning arbitrary number of dimensions.
 
 # Usage
-
-Before using the pyscan right now following environment variables need to be set in the right order before:
-
-```
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/epics/base/lib/SL6-x86_64/
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/intel-14.0.2/lib/intel64/
-
-source /opt/gfa/python 3.5
-
-export PYTHONPATH=/opt/gfa/cafe/python/python-3.5/latest/lib/:$PYTHONPATH
-```
-
 The simplest scan would be varying single knob. This is referred to as ‘single-knob scan’ (SKS) in this manual. When several knobs are varied at the same time, it is ‘multi-knob scan’ (MKS). The input parameters for SKS and MKS are given in the form of python dictionary as described below. The observable can be single or multiple for any type of scan.
 
 More complicated scan can be built by combining SKSs and MKSs. This is achieved by defining multiple input dictionaries. For example, ‘N-dimensional scan’ can be defined by a combination of N SKSs. The observable is specified only in the last dictionary that is nested most inside of the measurement loop.
 
 The input of the scan is given in the form of Python dictionary. The presently implemented fields are shown below.
+
+After the input dictionary is prepared, the scan is launched as follows:
+
+```Python
+from pyScan import *
+
+# Define your input dictionary here
+
+pscan = pyScan()
+outdict = pscan.initializeScan(indict) outdict = pscan.startScan()
+
+# Needed after every scan.
+pscan.finalizeScan()
+```
+
+For a nested scan, the initialization is done by `pscan.initializeScan([indict0, indict1, indict2, ..., indictN])` where indictN is defining the scan nested most inside of the measurement loop. Therefore the observable is defined only in indictN. The other input dictionaries are the input for the outer measurement loop.
+
+Schematically, the measurement loop looks like
+```Python
+for indict0
+    for indict1
+        for indict2...
+```
+
 
 ## Input Dictionary
 __indict['Knob']__: The name of knob (Epics channel) given as a string for SKS while as a list of strings for MKS.
@@ -78,27 +90,3 @@ __outdict['KnobReadback']__: The actual value of the knob(s) at the time of meas
 __outdict['Observable']__: The measured value of the observable. The results are stored with the same order to KnobReadback. When multiple observables are assigned, each result is give as a list with the order defined in _Indict['Observable']_ . Note that the nesting is one level deeper, including the repeated measurement result for the same knob setting.
 
 __outdict['Validation']__: The result of the validation during the scan is reported here as a nested list with the same order to Observable.
-
-## Scan
-After the input dictionary is prepared, the scan is launched as follows:
-
-```Python
-from pyScan import *
-
-# Define your input dictionary here
-
-pscan = pyScan()
-outdict = pscan.initializeScan(indict) outdict = pscan.startScan()
-
-# Needed after every scan.
-pscan.finalizeScan()
-```
-
-For a nested scan, the initialization is done by `pscan.initializeScan([indict0, indict1, indict2, ..., indictN])` where indictN is defining the scan nested most inside of the measurement loop. Therefore the observable is defined only in indictN. The other input dictionaries are the input for the outer measurement loop.
-
-Schematically, the measurement loop looks like
-```Python
-for indict0
-    for indict1
-        for indict2...
-```

@@ -5,8 +5,8 @@
 **pyscan** is a Python scanning library for Channel Access and beam synchronous (SwissFEL) data. 
 
 There are multiple interfaces available for backward compatibility, but new features are available only on 
-the new interface, therefore using the new interface is strongly recommended. The old interfaces was developed 
-to facilitate the migration to the new library version. Only the new interface will be presented 
+the new interface, therefore using the new interface is strongly recommended. The old interfaces were developed 
+to facilitate the migration to the new library. Only the new interface will be presented 
 in this document. For information on how to use other interfaces, consult their original manual.
 
 # Install
@@ -82,3 +82,52 @@ result = scan(positioner=positioner,
               finalization=finalization)
 ```
 
+In the following chapters each component will be explained in more details:
+
+- **Settings**: Settings of the scan and acquisition of data.
+- **Positioner**: Generates positions, according to the input values, on which to place the writables.
+- **Writables**: PVs (motors, in most cases) to move according to the positioner values.
+- **Readables**: PVs or BS read properties to read at each position.
+- **Monitors**: PVs or BS read properties used to validate the readables at each position.
+- **Initialization**: Actions to execute before the scan.
+- **Finalization**: Actions to execute after the scan is completed or when the scan is aborted.
+
+For common use cases, see the chapter at the end of this document.
+
+
+## Positioner
+Positioners generate positions based on the input data received and the type of positioner selected. In case a 
+complex scan is required, more positioners can be chained together. Alternatively, the user can generate the list of 
+positions, and just use a Vector positioner (it just moved the motor to the provided positions).
+
+We have different positioners for different use cases:
+
+- **Vector positioner**: Scan over the provided positions, one by one. The most simple and flexible positioner.
+- **Line positioner**: Define start, end position, and number of steps. Step values will be automatically generated.
+- **Area positioner**: Like line positioner, but in multiple dimensions, varying one dimension at the time.
+- **Serial positioner**: Like vector positioner, but varying one motor at the time, 
+returning other motors at their initial position
+- **Compound positioner**: Combine multiple positioners together, generating the desired positions.
+
+It is recommended to start your scanning with the **Vector positioner**, as it is the most simple to use, 
+and in most cases it is powerful enough.
+
+### Vector positioner
+
+### Line positioner
+
+### Area positioner
+
+### Serial positioner
+
+## Writables
+
+## Readables
+
+## Monitors
+
+## Initialization and Finalization
+
+## Settings
+
+# Common use cases

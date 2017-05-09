@@ -40,13 +40,19 @@ def action_restore(writables):
     Restore the initial state of the writable PVs.
     :return: Empty tuple, to be replaced with the initial values.
     """
-    pv_names = [pv.pv_name for pv in convert_to_list(writables)]
+    writables = convert_to_list(writables)
+    pv_names = [pv.pv_name for pv in writables]
+    readback_pv_names = [pv.readback_pv_name for pv in writables]
+    tolerances = [pv.tolerance for pv in writables]
 
-    # reader = EPICS_READER(pv_names)
-    # current_values = reader.read()
-    # reader.close()
+    # Get the initial values.
+    reader = EPICS_READER(pv_names)
+    initial_values = reader.read()
+    reader.close()
 
     def execute():
-        print("restore %s" % pv_names)
+        writer = EPICS_WRITER(pv_names, readback_pv_names, tolerances)
+        writer.set_and_match(initial_values)
+        writer.close()
 
     return execute

@@ -18,7 +18,7 @@ requirements:
         - bsread
 
     test:
-         - pcaspy
+        - pcaspy
 
 test:
   source_files:

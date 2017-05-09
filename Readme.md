@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/paulscherrerinstitute/pyscan.svg?branch=master)](https://travis-ci.org/paulscherrerinstitute/pyscan)
+[![Build status](https://ci.appveyor.com/api/projects/status/9oq871y9281iw19y?svg=true)](https://ci.appveyor.com/project/simongregorebner/pyscan)
 
 # Overview
 pyScan is a python class that performs a scan for single or multiple given knobs. The user may specify single or multiple observables. The knobs and observables have to be available as Epics channels.

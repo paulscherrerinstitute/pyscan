@@ -175,14 +175,14 @@ class DiscreetPositionersTests(unittest.TestCase):
                            [2.0, 0], [2.0, 1.0], [2.0, 2.0], [2.0, 3.0], [2.0, 4.0],
                            [3.0, 0], [3.0, 1.0], [3.0, 2.0], [3.0, 3.0], [3.0, 4.0]]
         # Check if the dimensions are correct for 2d, with steps count.
-        self.verify_result(AreaPositioner([0, 0], [3, 4], [3, 4]), expected_result)
+        self.verify_result(AreaPositioner([0, 0], [3, 4], n_steps=[3, 4]), expected_result)
         # Check if the dimensions are correct for 2d, with steps size.
-        self.verify_result(AreaPositioner([0, 0], [3, 4], [1., 1.]), expected_result)
+        self.verify_result(AreaPositioner([0, 0], [3, 4], step_size=[1., 1.]), expected_result)
 
         # Check if the dimensions are correct for 2d, with steps count, multi passes
         self.verify_result(AreaPositioner([0, 0], [3, 4], [3, 4], passes=3), expected_result * 3)
         # Check if the dimensions are correct for 2d, with steps size, multi passes
-        self.verify_result(AreaPositioner([0, 0], [3, 4], [1., 1.], passes=3), expected_result * 3)
+        self.verify_result(AreaPositioner([0, 0], [3, 4], step_size=[1., 1.], passes=3), expected_result * 3)
 
         expected_result = [[0.0, 0, 0], [0.0, 0, 2.0], [0.0, 1.0, 0], [0.0, 1.0, 2.0], [0.0, 2.0, 0], [0.0, 2.0, 2.0],
                            [1.0, 0, 0], [1.0, 0, 2.0], [1.0, 1.0, 0], [1.0, 1.0, 2.0], [1.0, 2.0, 0], [1.0, 2.0, 2.0],
@@ -191,14 +191,14 @@ class DiscreetPositionersTests(unittest.TestCase):
                            [4.0, 0, 0], [4.0, 0, 2.0], [4.0, 1.0, 0], [4.0, 1.0, 2.0], [4.0, 2.0, 0], [4.0, 2.0, 2.0]]
 
         # Check if the dimensions are correct for 3d, with steps count.
-        self.verify_result(AreaPositioner([0, 0, 0], [4, 2, 2], [4, 2, 1]), expected_result)
+        self.verify_result(AreaPositioner([0, 0, 0], [4, 2, 2], n_steps=[4, 2, 1]), expected_result)
         # Check if the dimensions are correct for 3d, with steps size.
-        self.verify_result(AreaPositioner([0, 0, 0], [4, 2, 2], [1., 1., 2.]), expected_result)
+        self.verify_result(AreaPositioner([0, 0, 0], [4, 2, 2], step_size=[1., 1., 2.]), expected_result)
 
         # Check if the dimensions are correct for 3d, with steps count, multi passes.
         self.verify_result(AreaPositioner([0, 0, 0], [4, 2, 2], [4, 2, 1], passes=3), expected_result * 3)
         # Check if the dimensions are correct for 3d, with steps size, multi passes.
-        self.verify_result(AreaPositioner([0, 0, 0], [4, 2, 2], [1., 1., 2.], passes=3), expected_result * 3)
+        self.verify_result(AreaPositioner([0, 0, 0], [4, 2, 2], step_size=[1., 1., 2.], passes=3), expected_result * 3)
 
     def test_ZigZagAreaPositioner(self):
         self.standard_linear_tests(ZigZagAreaPositioner)
@@ -218,12 +218,12 @@ class DiscreetPositionersTests(unittest.TestCase):
         # Check if the dimensions are correct for 2d, with steps count.
         self.verify_result(ZigZagAreaPositioner([0, 0], [3, 4], [3, 4]), expected_result)
         # Check if the dimensions are correct for 2d, with steps size.
-        self.verify_result(ZigZagAreaPositioner([0, 0], [3, 4], [1., 1.]), expected_result)
+        self.verify_result(ZigZagAreaPositioner([0, 0], [3, 4], step_size=[1., 1.]), expected_result)
 
         # Check if the dimensions are correct for 2d, with steps count, multi passes
         self.verify_result(ZigZagAreaPositioner([0, 0], [3, 4], [3, 4], passes=3), expected_result * 3)
         # Check if the dimensions are correct for 2d, with steps size, multi passes
-        self.verify_result(ZigZagAreaPositioner([0, 0], [3, 4], [1., 1.], passes=3), expected_result * 3)
+        self.verify_result(ZigZagAreaPositioner([0, 0], [3, 4], step_size=[1., 1.], passes=3), expected_result * 3)
 
         expected_result = [[0.0, 0.0, 0.0], [0.0, 0.0, 2.0], [0.0, 1.0, 2.0], [0.0, 1.0, 0.0], [0.0, 2.0, 0.0],
                            [0.0, 2.0, 2.0], [1.0, 2.0, 2.0], [1.0, 2.0, 0.0], [1.0, 1.0, 0.0], [1.0, 1.0, 2.0],
@@ -233,14 +233,15 @@ class DiscreetPositionersTests(unittest.TestCase):
                            [4.0, 0.0, 2.0], [4.0, 1.0, 2.0], [4.0, 1.0, 0.0], [4.0, 2.0, 0.0], [4.0, 2.0, 2.0]]
 
         # Check if the dimensions are correct for 3d, with steps count.
-        self.verify_result(ZigZagAreaPositioner([0, 0, 0], [4, 2, 2], [4, 2, 1]), expected_result)
+        self.verify_result(ZigZagAreaPositioner([0, 0, 0], [4, 2, 2], n_steps=[4, 2, 1]), expected_result)
         # Check if the dimensions are correct for 3d, with steps size.
-        self.verify_result(ZigZagAreaPositioner([0, 0, 0], [4, 2, 2], [1., 1., 2.]), expected_result)
+        self.verify_result(ZigZagAreaPositioner([0, 0, 0], [4, 2, 2], step_size=[1., 1., 2.]), expected_result)
 
         # Check if the dimensions are correct for 3d, with steps count, multi passes.
         self.verify_result(ZigZagAreaPositioner([0, 0, 0], [4, 2, 2], [4, 2, 1], passes=3), expected_result * 3)
         # Check if the dimensions are correct for 3d, with steps size, multi passes.
-        self.verify_result(ZigZagAreaPositioner([0, 0, 0], [4, 2, 2], [1., 1., 2.], passes=3), expected_result * 3)
+        self.verify_result(ZigZagAreaPositioner([0, 0, 0], [4, 2, 2], step_size=[1., 1., 2.], passes=3),
+                           expected_result * 3)
 
     def test_MultiAreaPositioner(self):
         expected_result = [[[0.0, 0.0], [4, 4]], [[0.0, 0.0], [5.0, 5.0]], [[0.0, 0.0], [6.0, 6.0]],

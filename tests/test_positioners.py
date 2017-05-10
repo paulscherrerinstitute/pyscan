@@ -56,31 +56,31 @@ class DiscreetPositionersTests(unittest.TestCase):
         expected_result = [[-2.], [-1.], [0.], [1.], [2.]]
 
         # Generate 5 steps, from -2 to 2, using number of steps.
-        self.verify_result(positioner_type([-2], [2], [4]), expected_result)
+        self.verify_result(positioner_type([-2], [2], n_steps=4), expected_result)
 
         # Generate 5 steps, from -2 to 2, using step size.
-        self.verify_result(positioner_type([-2], [2], [1.]), expected_result)
+        self.verify_result(positioner_type([-2], [2], step_size=[1.]), expected_result)
 
         # Generate 5 steps, from -2 to 2, using number of steps, with offset.
-        self.verify_result(positioner_type([-4], [0], [4], offsets=[2]), expected_result)
+        self.verify_result(positioner_type(-4, 0, n_steps=4, offsets=2), expected_result)
 
         # Generate 5 steps, from -2 to 2, using step size, with offset.
-        self.verify_result(positioner_type([-4], [0], [1.], offsets=[2]), expected_result)
+        self.verify_result(positioner_type([-4], [0], step_size=1, offsets=[2]), expected_result)
 
         expected_result = [[-2.], [-0.8], [0.4], [1.6]]
 
         # Generate 4 steps, from -2 to 2, using step size 1.2
-        self.verify_result(positioner_type([-2], [2], [1.2]), expected_result)
+        self.verify_result(positioner_type([-2], [2], step_size=[1.2]), expected_result)
 
         expected_result = [[2.], [1.], [0.], [-1.], [-2.]]
 
         # Generate 4 steps, from 2 to -2, using number of steps.
-        self.verify_result(positioner_type([2], [-2], [4]), expected_result)
+        self.verify_result(positioner_type([2], [-2], n_steps=4), expected_result)
 
         expected_result = [[2], [0.8], [-0.4], [-1.6]]
 
         # Generate 4 steps, from 2 to -2, using step size -1.2
-        self.verify_result(positioner_type([2], [-2], [-1.2]), expected_result)
+        self.verify_result(positioner_type([2], [-2], step_size=[-1.2]), expected_result)
 
     def standard_linear_multipass_tests(self, positioner_type):
         """
@@ -90,13 +90,13 @@ class DiscreetPositionersTests(unittest.TestCase):
         expected_result = [[-2.], [-1.], [0.], [1.], [2.]]
 
         # Generate 10 steps, 2 passes, using number of steps.
-        self.verify_result(positioner_type([-2], [2], [4], passes=2), expected_result * 2)
+        self.verify_result(positioner_type([-2], [2], n_steps=4, passes=2), expected_result * 2)
 
         # Generate 10 steps, 2 passes, using step size.
-        self.verify_result(positioner_type([-2], [2], [1.], passes=2), expected_result * 2)
+        self.verify_result(positioner_type([-2], [2], step_size=1, passes=2), expected_result * 2)
 
         # Generate 10 steps, 2 passes, using step size, with offset.
-        self.verify_result(positioner_type([-4], [0], [1.], passes=2, offsets=[2]), expected_result * 2)
+        self.verify_result(positioner_type([-4], [0], step_size=[1.], passes=2, offsets=[2]), expected_result * 2)
 
     def standard_linear_multipass_zigzag_tests(self, positioner_type):
         """
@@ -106,19 +106,19 @@ class DiscreetPositionersTests(unittest.TestCase):
         expected_3pass_result = [[-2.], [-1.], [0.], [1.], [2.], [1.], [0.], [-1.], [-2.], [-1.], [0.], [1.], [2.]]
 
         # Test if with 3 passes, it omits the duplicate positions.
-        self.verify_result(positioner_type([-2], [2], [4], passes=3), expected_3pass_result)
+        self.verify_result(positioner_type([-2], [2], n_steps=4, passes=3), expected_3pass_result)
 
         expected_3pass_result = [[-2.], [-0.8], [0.4], [1.6], [0.4], [-0.8], [-2.], [-0.8], [0.4], [1.6]]
 
         # Test what happens if the step size is not dividable by the interval, 3 passes.
-        self.verify_result(positioner_type([-2], [2], [1.2], passes=3), expected_3pass_result)
+        self.verify_result(positioner_type([-2], [2], step_size=1.2, passes=3), expected_3pass_result)
 
         expected_3pass_result = [[2.], [0.8], [-0.4], [-1.6], [-0.4], [0.8], [2.], [0.8], [-0.4], [-1.6]]
 
         # Test what happens if the step size is not dividable by the interval, 3 passes, right to left.
-        self.verify_result(positioner_type([2], [-2], [-1.2], passes=3), expected_3pass_result)
+        self.verify_result(positioner_type([2], [-2], step_size=[-1.2], passes=3), expected_3pass_result)
 
-    def test_LinearPositioner(self):
+    def test_LinePositioner(self):
         self.standard_linear_tests(LinePositioner)
         self.standard_linear_multipass_tests(LinePositioner)
 
@@ -126,27 +126,13 @@ class DiscreetPositionersTests(unittest.TestCase):
         expected_result = [[0, 0, 0], [1.0, 1.0, 1.0], [2.0, 2.0, 2.0]]
 
         # Generate 3d steps, with number of steps.
-        self.verify_result(LinePositioner([0, 0, 0], [2, 2, 2], [2, 2, 2]), expected_result)
+        self.verify_result(LinePositioner([0, 0, 0], [2, 2, 2], n_steps=2), expected_result)
         # Generate 3d steps, with step size
-        self.verify_result(LinePositioner([0, 0, 0], [2, 2, 2], [1., 1., 1.]), expected_result)
-
-    def test_LinearPositioner_exceptions(self):
-        # TODO: Implement tests for input validation.
-        # Negative number of steps.
-        # Right to left, with positive step size
-        # Left to right, with negative step size
-        # Different number of steps for each axis.
-        # Different step size for same interval in more axes.
-        # Steps is not a float or an integer.
-        pass
+        self.verify_result(LinePositioner([0, 0, 0], [2, 2, 2], step_size=[1., 1., 1.]), expected_result)
 
     def test_ZigZagLinearPositioner(self):
         self.standard_linear_tests(ZigZagLinePositioner)
         self.standard_linear_multipass_zigzag_tests(ZigZagLinePositioner)
-
-    def test_ZigZagLinearPositioner_exceptions(self):
-        # TODO: Implement tests for input validation.
-        pass
 
     def test_VectorPositioner(self):
         expected_result = [[-2., -2], [-1., -1], [0., 0], [1., 1], [2., 2]]
@@ -162,9 +148,6 @@ class DiscreetPositionersTests(unittest.TestCase):
         # Test offset.
         self.verify_result(VectorPositioner(expected_result, offsets=[2, 1]), expected_result)
 
-    def test_VectorPositioner_exceptions(self):
-        # TODO: Test VectorPositioner validation.
-        pass
 
     def test_ZigZagVectorPositioner(self):
         expected_single_result = [[-2., -2], [-1., -1], [0., 0], [1., 1], [2., 2]]

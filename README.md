@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/paulscherrerinstitute/pyscan.svg?branch=master)](https://travis-ci.org/paulscherrerinstitute/pyscan)
 [![Build status](https://ci.appveyor.com/api/projects/status/9oq871y9281iw19y?svg=true)](https://ci.appveyor.com/project/simongregorebner/pyscan)
 
-# Overview
+# Overview <a id="overview"></a>
 **pyscan** is a Python scanning library for Channel Access and beam synchronous (SwissFEL) data. 
 
 There are multiple interfaces available for backward compatibility, but new features are available only on 
@@ -9,9 +9,27 @@ the new interface, therefore using the new interface is strongly recommended. Th
 to facilitate the migration to the new library. Only the new interface will be presented 
 in this document. For information on how to use other interfaces, consult their original manual.
 
-# Install
+# Table of content
+1. [Install](#install)
+    1. [Conda setup](#conda_setup)
+    2. [Local build](#local_build)
+2. [Usage](#usage)
+    1. [Positioners](#positioners)
+        1. [Vector and Linear positioner](#vector_and_line_positioner)
+        2. [Area positioner](#area_positioner)
+        3. [Serial positioner](#serial_positioner)
+        4. [Compound positioner](#compound_positioner)
+    2. [Writables](#writables)
+    3. [Readables](#readables)
+    4. [Monitors](#monitors)
+    5. [Initialization and Finalization](#init_and_fin)
+    6. [Settings](#settings)
+    7. [Scan result](#scan_results)
+3. [Common use cases](#common_use_cases)
 
-## Conda setup
+# Install <a id="install"></a>
+
+## Conda setup <a id="conda_setup"></a>
 If you use conda, you can create an environment with the pyscan library by running:
 
 ```bash
@@ -20,7 +38,7 @@ conda create -c paulscherrerinstitute --name <env_name> pyscan
 
 After that you can just source you newly created environment and start using the library.
 
-## Local build
+## Local build <a id="local_build"></a>
 You can build the library by running the setup script in the root folder of the project:
 
 ```bash
@@ -49,7 +67,7 @@ your conda config:
 conda config --add channels paulscherrerinstitute
 ```
 
-# Usage
+# Usage <a id="usage"></a>
 
 A sample scan, that uses the most common pyscan features, can be done by running:
 
@@ -105,7 +123,7 @@ In the following chapters, each component will be explained in more details:
 For common use cases, see the chapter at the end of this document.
 
 
-## Positioner
+## Positioners <a id="positioners"></a>
 Positioners generate positions based on the input data received and the type of positioner selected. In case a 
 complex scan is required, more positioners can be chained together. Alternatively, the user can generate the list of 
 positions, and just use a Vector positioner (it just moved the motor to the provided positions).
@@ -122,7 +140,7 @@ returning other motors at their initial position
 It is recommended to start your scanning with the **Vector positioner**, as it is the most simple to use, 
 and in most cases it is powerful enough.
 
-### Vector and Line positioner
+### Vector and Line positioner <a id="vector_and_line_positioner"></a>
 This 2 positioners are the most common ones and they are interchangable. A Line positioner is just a different 
 way of defining a vector positioner. In the example below, we will show how this 2 positioners work.
 
@@ -164,7 +182,7 @@ It is important to note:
 In case you specify the step size, **(end-start) / step_size** must be the same for all axis - because all axis are 
 moved at the same time, the number of steps for each axis must be the same.
 
-### Area positioner
+### Area positioner <a id="area_positioner"></a>
 The Area positioner is a multi dimensional variation of the LinePositioner. Instead of moving all axis at the same time, 
 it moves one axis at the time, covering all positions that can be reached by combing the given axis. With a 2 axis scan,
 you can imagine it as scanning line by line.
@@ -211,21 +229,21 @@ the faster changing one.
 of integers. This is due to the fact that the AreaPositioner can have a different number of steps for different axis,
 while LinePositioner cannot. The same logic holds true for the step_size.
 
-### Serial positioner
+### Serial positioner <a id="serial_positioner"></a>
 ![Serial positioner representation](/docs/images/serial.png?raw=true)
 
-### Compound positioner
+### Compound positioner <a id="compound_positioner"></a>
 
-## Writables
+## Writables <a id="writables"></a>
 
-## Readables
+## Readables <a id="readables"></a>
 
-## Monitors
+## Monitors <a id="monitors"></a>
 
-## Initialization and Finalization
+## Initialization and Finalization <a id="init_and_fin"></a>
 
-## Settings
+## Settings <a id="settings"></a>
 
-## Scan result
+## Scan result <a id="scan_results"></a>
 
-# Common use cases
+# Common use cases <a id="common_use_cases"></a>

@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/paulscherrerinstitute/pyscan.svg?branch=master)](https://travis-ci.org/paulscherrerinstitute/pyscan)
 [![Build status](https://ci.appveyor.com/api/projects/status/9oq871y9281iw19y?svg=true)](https://ci.appveyor.com/project/simongregorebner/pyscan)
 
-# Overview <a id="overview"></a>
+# Overview
 **pyscan** is a Python scanning library for Channel Access and beam synchronous (SwissFEL) data. 
 
 There are multiple interfaces available for backward compatibility, but new features are available only on 
@@ -27,9 +27,11 @@ in this document. For information on how to use other interfaces, consult their 
     7. [Scan result](#scan_results)
 3. [Common use cases](#common_use_cases)
 
-# Install <a id="install"></a>
+<a id="install"></a>
+# Install
 
-## Conda setup <a id="conda_setup"></a>
+<a id="conda_setup"></a>
+## Conda setup
 If you use conda, you can create an environment with the pyscan library by running:
 
 ```bash
@@ -38,7 +40,8 @@ conda create -c paulscherrerinstitute --name <env_name> pyscan
 
 After that you can just source you newly created environment and start using the library.
 
-## Local build <a id="local_build"></a>
+<a id="local_build"></a>
+## Local build
 You can build the library by running the setup script in the root folder of the project:
 
 ```bash
@@ -67,7 +70,8 @@ your conda config:
 conda config --add channels paulscherrerinstitute
 ```
 
-# Usage <a id="usage"></a>
+<a id="usage"></a>
+# Usage 
 
 A sample scan, that uses the most common pyscan features, can be done by running:
 
@@ -122,8 +126,8 @@ In the following chapters, each component will be explained in more details:
 
 For common use cases, see the chapter at the end of this document.
 
-
-## Positioners <a id="positioners"></a>
+<a id="positioners"></a>
+## Positioners
 Positioners generate positions based on the input data received and the type of positioner selected. In case a 
 complex scan is required, more positioners can be chained together. Alternatively, the user can generate the list of 
 positions, and just use a Vector positioner (it just moved the motor to the provided positions).
@@ -140,7 +144,8 @@ returning other motors at their initial position
 It is recommended to start your scanning with the **Vector positioner**, as it is the most simple to use, 
 and in most cases it is powerful enough.
 
-### Vector and Line positioner <a id="vector_and_line_positioner"></a>
+<a id="vector_and_line_positioner"></a>
+### Vector and Line positioner
 This 2 positioners are the most common ones and they are interchangable. A Line positioner is just a different 
 way of defining a vector positioner. In the example below, we will show how this 2 positioners work.
 
@@ -182,7 +187,8 @@ It is important to note:
 In case you specify the step size, **(end-start) / step_size** must be the same for all axis - because all axis are 
 moved at the same time, the number of steps for each axis must be the same.
 
-### Area positioner <a id="area_positioner"></a>
+<a id="area_positioner"></a>
+### Area positioner
 The Area positioner is a multi dimensional variation of the LinePositioner. Instead of moving all axis at the same time, 
 it moves one axis at the time, covering all positions that can be reached by combing the given axis. With a 2 axis scan,
 you can imagine it as scanning line by line.
@@ -229,21 +235,30 @@ the faster changing one.
 of integers. This is due to the fact that the AreaPositioner can have a different number of steps for different axis,
 while LinePositioner cannot. The same logic holds true for the step_size.
 
-### Serial positioner <a id="serial_positioner"></a>
+<a id="serial_positioner"></a>
+### Serial positioner
 ![Serial positioner representation](/docs/images/serial.png?raw=true)
 
-### Compound positioner <a id="compound_positioner"></a>
+<a id="compound_positioner"></a>
+### Compound positioner
 
-## Writables <a id="writables"></a>
+<a id="writables"></a>
+## Writables
 
-## Readables <a id="readables"></a>
+<a id="readables"></a>
+## Readables
 
-## Monitors <a id="monitors"></a>
+<a id="monitors"></a>
+## Monitors 
 
-## Initialization and Finalization <a id="init_and_fin"></a>
+<a id="init_and_fin"></a>
+## Initialization and Finalization
 
-## Settings <a id="settings"></a>
+<a id="settings"></a>
+## Settings
 
-## Scan result <a id="scan_results"></a>
+<a id="scan_results"></a>
+## Scan result
 
-# Common use cases <a id="common_use_cases"></a>
+<a id="common_use_cases"></a>
+# Common use cases

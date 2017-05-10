@@ -1,20 +1,33 @@
 from itertools import cycle, chain
 
+from pyscan.utils import convert_to_list
+
 
 class VectorPositioner(object):
     """
     Moves over the provided positions.
     """
+
+    def _validate_parameters(self):
+        if not all(len(convert_to_list(x)) == len(convert_to_list(self.positions[0])) for x in self.positions):
+            raise ValueError("All positions %s must have the same number of axis." % self.positions)
+
+        if not isinstance(self.passes, int) or self.passes < 1:
+            raise ValueError("Passes must be a positive integer value, but %s was given." % self.passes)
+
+        if self.offsets and (not len(self.offsets) == len(self.positions[0])):
+            raise ValueError("Number of offsets %s does not match the number of positions %s." %
+                             (self.offsets, self.positions[0]))
+
     def __init__(self, positions, passes=1, offsets=None):
-        self.positions = positions
+        self.positions = convert_to_list(positions)
         self.passes = passes
-        self.offsets = offsets
+        self.offsets = convert_to_list(offsets)
+
+        self._validate_parameters()
+
+        # Number of positions to move to.
         self.n_positions = len(self.positions)
-
-        if self.passes < 1:
-            raise ValueError("Passes cannot be negative or zero, but %s was provided." % self.passes)
-
-        # TODO: Check if the offsets and the number of axis on each position match.
 
         # Fix the offset if provided.
         if self.offsets:

@@ -81,6 +81,7 @@ finalization = [action_restore(writables)]
 # At each position, do 4 readings of the readables with 4Hz (0.25 seconds between readings).
 settings = scan_settings(measurement_interval=0.25, n_measurements=4)
 
+# Execute the scan and get the result.
 result = scan(positioner=positioner, 
               writables=writables, 
               readables=readables,
@@ -90,7 +91,7 @@ result = scan(positioner=positioner,
               settings=settings)
 ```
 
-In the following chapters each component will be explained in more details:
+In the following chapters, each component will be explained in more details:
 
 - **Positioner**: Generates positions, according to the input values, on which to place the writables.
 - **Writables**: PVs (motors, in most cases) to move according to the positioner values.
@@ -99,6 +100,7 @@ In the following chapters each component will be explained in more details:
 - **Initialization**: Actions to execute before the scan.
 - **Finalization**: Actions to execute after the scan is completed or when the scan is aborted.
 - **Settings**: Settings of the scan and acquisition of data.
+- **Scan result**: List of readables values at each scan position.
 
 For common use cases, see the chapter at the end of this document.
 
@@ -120,13 +122,16 @@ returning other motors at their initial position
 It is recommended to start your scanning with the **Vector positioner**, as it is the most simple to use, 
 and in most cases it is powerful enough.
 
-### Vector positioner
-
-### Line positioner
+### Vector and Line positioner
+![Vector positioner representation](/docs/images/vector.png?raw=true)
 
 ### Area positioner
+![Area positioner representation](/docs/images/area.png?raw=true)
 
 ### Serial positioner
+![Serial positioner representation](/docs/images/serial.png?raw=true)
+
+### Compound positioner
 
 ## Writables
 
@@ -137,5 +142,7 @@ and in most cases it is powerful enough.
 ## Initialization and Finalization
 
 ## Settings
+
+## Scan result
 
 # Common use cases

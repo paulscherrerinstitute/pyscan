@@ -130,7 +130,8 @@ All the positioners specified in the code snippet below generate **exactly the s
 
 ```python
 # Dummy value initialization.
-x1, x2, x3, x4, y1, y2, y3, y4 = [None] * 8
+x1, x2, x3, x4 = range(1, 5)
+y1, y2, y3, y4 = range(1, 5)
 
 from pyscan.positioner.vector import VectorPositioner
 from pyscan.positioner.line import LinePositioner
@@ -174,7 +175,9 @@ show the difference in output positions.
 
 ```python
 # Dummy value initialization.
-x1, x2, x3, x4, y1, y2, y3, y4 = [None] * 8
+x1, x2, x3, x4 = range(1, 5)
+y1, y2, y3, y4 = range(1, 5)
+
 from pyscan.positioner.area import AreaPositioner
 
 area_positioner_n_steps = AreaPositioner(start=[x1, y1], end=[x4, y4], n_steps=[3,3])

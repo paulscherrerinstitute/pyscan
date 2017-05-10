@@ -231,7 +231,7 @@ the faster changing one.
 - AreaPositioner accepts either the number of steps (array of numbers, one for each axis) or the step size 
 (array of numbers, one for each axis). 
 
-**Important to note**: LinePositioner accepts an integer for n_steps, while AreaPositioners accepts an array 
+**Warning**: LinePositioner accepts an integer for n_steps, while AreaPositioners accepts an array 
 of integers. This is due to the fact that the AreaPositioner can have a different number of steps for different axis,
 while LinePositioner cannot. The same logic holds true for the step_size.
 

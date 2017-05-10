@@ -128,13 +128,13 @@ way of defining a vector positioner. In the example below, we will show how this
 
 
 
-![Vector positioner representation](/docs/images/vector.png?raw=true =250px)
+![Vector positioner representation](/docs/images/vector.png?raw=true)
 
 ### Area positioner
-![Area positioner representation](/docs/images/area.png?raw=true =250px)
+![Area positioner representation](/docs/images/area.png?raw=true)
 
 ### Serial positioner
-![Serial positioner representation](/docs/images/serial.png?raw=true =250px)
+![Serial positioner representation](/docs/images/serial.png?raw=true)
 
 ### Compound positioner
 

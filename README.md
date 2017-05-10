@@ -123,13 +123,18 @@ It is recommended to start your scanning with the **Vector positioner**, as it i
 and in most cases it is powerful enough.
 
 ### Vector and Line positioner
-![Vector positioner representation](/docs/images/vector.png?raw=true)
+This 2 positioners are the most common ones and they are interchangable. A Line positioner is just a different 
+way of defining a vector positioner. In the example below, we will show how this 2 positioners work.
+
+
+
+![Vector positioner representation](/docs/images/vector.png?raw=true =250px)
 
 ### Area positioner
-![Area positioner representation](/docs/images/area.png?raw=true)
+![Area positioner representation](/docs/images/area.png?raw=true =250px)
 
 ### Serial positioner
-![Serial positioner representation](/docs/images/serial.png?raw=true)
+![Serial positioner representation](/docs/images/serial.png?raw=true =250px)
 
 ### Compound positioner
 

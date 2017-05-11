@@ -73,6 +73,8 @@ conda config --add channels paulscherrerinstitute
 <a id="usage"></a>
 # Usage 
 
+**Note**: All the examples in this README can also be found in the **tests/test_readme.py** file.
+
 A sample scan, that uses the most common pyscan features, can be done by running:
 
 ```Python

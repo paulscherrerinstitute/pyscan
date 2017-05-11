@@ -1,5 +1,7 @@
 from copy import copy
 
+from pyscan import convert_to_list
+
 
 class CompoundPositioner(object):
     """
@@ -15,6 +17,6 @@ class CompoundPositioner(object):
                 yield copy(output_positions)
             else:
                 for current_positions in self.positioners[index].get_generator():
-                    yield from walk_positioner(index+1, output_positions + current_positions)
+                    yield from walk_positioner(index+1, output_positions + convert_to_list(current_positions))
 
         yield from walk_positioner(0, [])

@@ -1,4 +1,5 @@
 import unittest
+from pyscan import *
 
 
 class Readme(unittest.TestCase):
@@ -12,9 +13,6 @@ class Readme(unittest.TestCase):
         # Dummy value initialization.
         x1, x2, x3, x4 = range(1, 5)
         y1, y2, y3, y4 = range(1, 5)
-
-        from pyscan.positioner.vector import VectorPositioner
-        from pyscan.positioner.line import LinePositioner
 
         # Move to positions x1,y1; then x2,y2; x3,y3; x4,y4.
         vector_positioner = VectorPositioner(positions=[[x1, y1], [x2, y2], [x3, y3], [x4, y4]])
@@ -31,8 +29,6 @@ class Readme(unittest.TestCase):
     def test_AreaPositioner(self):
         x1, x2, x3, x4 = range(1, 5)
         y1, y2, y3, y4 = range(1, 5)
-
-        from pyscan.positioner.area import AreaPositioner
 
         area_positioner_n_steps = AreaPositioner(start=[x1, y1], end=[x4, y4], n_steps=[3, 3])
         area_positioner_step_size = AreaPositioner(start=[x1, y1], end=[x4, y4], step_size=[x2 - x1, y2 - y1])

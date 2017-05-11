@@ -78,10 +78,7 @@ conda config --add channels paulscherrerinstitute
 A sample scan, that uses the most common pyscan features, can be done by running:
 
 ```Python
-from pyscan.positioner.vector import VectorPositioner
-from pyscan.scan_parameters import epics_pv, epics_monitor, scan_settings
-from pyscan.dal.epics_utils import action_set_epics_pv, action_restore
-from pyscan.scan import scan
+from pyscan import *
 
 # Defines positions to move the motor to.
 positions = [1, 2, 3, 4]
@@ -154,12 +151,11 @@ way of defining a vector positioner. In the example below, we will show how this
 All the positioners specified in the code snippet below generate **exactly the same positions**.
 
 ```python
+from pyscan import *
+
 # Dummy value initialization.
 x1, x2, x3, x4 = range(1, 5)
 y1, y2, y3, y4 = range(1, 5)
-
-from pyscan.positioner.vector import VectorPositioner
-from pyscan.positioner.line import LinePositioner
 
 # Move to positions x1,y1; then x2,y2; x3,y3; x4,y4.
 vector_positioner = VectorPositioner(positions=[[x1, y1], [x2, y2], [x3, y3], [x4, y4]])
@@ -200,11 +196,11 @@ parameters for the AreaPositioner are very similar to the one used in the previo
 show the difference in output positions.
 
 ```python
+from pyscan import *
+
 # Dummy value initialization.
 x1, x2, x3, x4 = range(1, 5)
 y1, y2, y3, y4 = range(1, 5)
-
-from pyscan.positioner.area import AreaPositioner
 
 area_positioner_n_steps = AreaPositioner(start=[x1, y1], end=[x4, y4], n_steps=[3,3])
 area_positioner_step_size = AreaPositioner(start=[x1, y1], end=[x4, y4], step_size=[x2-x1, y2-y1])

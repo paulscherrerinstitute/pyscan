@@ -1,3 +1,4 @@
+from itertools import count
 from time import sleep
 
 from pyscan.config import acquisition_retry_limit, pause_sleep_interval, acquisition_retry_delay
@@ -118,11 +119,14 @@ class Scanner(object):
         Perform a discrete scan - set a position, read, continue. Return value at the end.
         """
         try:
+            # Get how many positions we have in total.
+            n_of_positions = self.positioner.get_positions_count()
+
             # Set up the experiment.
             if self.initialization_executor:
                 self.initialization_executor(self)
 
-            for next_positions in self.positioner.get_generator():
+            for position_index, next_positions in zip(count(), self.positioner.get_generator()):
                 # Position yourself before reading.
                 self.writer(next_positions)
                 # Settling time, wait after positions has been reached.
@@ -138,6 +142,9 @@ class Scanner(object):
                 # Post reading callbacks.
                 if self.after_executor:
                     self.after_executor(self)
+
+                # Report about the progress.
+                self.settings.progress_callback(position_index, n_of_positions)
 
                 # Verify is the scan should continue.
                 self._verify_scan_status()

@@ -7,7 +7,7 @@ EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "
 BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "camera", "property"])
 BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "camera", "property", "value", "action", "tolerance"])
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
-                                             "write_timeout", "settling_time"])
+                                             "write_timeout", "settling_time", "progress_callback"])
 
 
 def epics_pv(pv_name, readback_pv_name=None, tolerance=None):
@@ -109,7 +109,8 @@ def bs_monitor(name, value, tolerance=None):
     return BS_MONITOR(identifier, camera_name, property_name, value, action, tolerance)
 
 
-def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=None, settling_time=None):
+def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=None, settling_time=None,
+                  progress_callback=None):
     if not measurement_interval or measurement_interval < 0:
         measurement_interval = 0
 
@@ -122,4 +123,11 @@ def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=
     if not settling_time or settling_time < 0:
         settling_time = 0
 
-    return SCAN_SETTINGS(measurement_interval, n_measurements, write_timeout, settling_time)
+    if not progress_callback:
+        def default_progress_callback(current_position, total_positions):
+            completed_percentage = 100.0 * (current_position / total_positions)
+            print("Scan: %.2f %% completed (%d/%d)" % (completed_percentage, current_position, total_positions))
+
+        progress_callback = default_progress_callback
+
+    return SCAN_SETTINGS(measurement_interval, n_measurements, write_timeout, settling_time, progress_callback)

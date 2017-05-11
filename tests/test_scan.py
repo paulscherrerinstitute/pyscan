@@ -2,26 +2,34 @@ import time
 import unittest
 from threading import Thread
 
+import sys
 from bsread.sender import Sender
 
-import pyscan.scan
-from pyscan.positioner.vector import VectorPositioner
-from pyscan.scan import scan
-from pyscan.scan_parameters import epics_pv, bs_property, epics_monitor, bs_monitor, scan_settings
+# BEGIN EPICS MOCK.
 
-from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, pv_cache
+from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, cached_initial_values
 
-# Mock the Epics DAL.
-pyscan.scan.EPICS_READER = MockReadGroupInterface
-pyscan.scan.EPICS_WRITER = MockWriteGroupInterface
+scan_module = sys.modules["pyscan.scan"]
+utils_module = sys.modules["pyscan.dal.epics_utils"]
 
-# Load the module after the mock dal is established.
-from pyscan.dal.epics_utils import action_set_epics_pv, action_restore
+utils_module.EPICS_READER = MockReadGroupInterface
+utils_module.EPICS_WRITER = MockWriteGroupInterface
+scan_module.EPICS_READER = MockReadGroupInterface
+scan_module.EPICS_WRITER = MockWriteGroupInterface
 
 # Setup mock values
-from tests.helpers.mock_epics_dal import cached_initial_values
 cached_initial_values["PYSCAN:TEST:VALID1"] = 10
 cached_initial_values["PYSCAN:TEST:OBS1"] = 1
+
+# END OF MOCK.
+
+from pyscan.scan import scan
+from pyscan.positioner.vector import VectorPositioner
+from pyscan.scan_parameters import epics_pv, bs_property, epics_monitor, bs_monitor, scan_settings
+from pyscan.dal.epics_utils import action_set_epics_pv, action_restore
+from tests.helpers.mock_epics_dal import pv_cache
+
+
 
 bs_sending = True
 
@@ -42,7 +50,6 @@ def start_sender():
 
 
 class ScanTests(unittest.TestCase):
-
     def setUp(self):
         global bs_sending
         bs_sending = True

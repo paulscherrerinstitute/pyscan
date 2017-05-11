@@ -38,3 +38,18 @@ class Readme(unittest.TestCase):
                                               [2, 1], [2, 2], [2, 3], [2, 4], 
                                               [3, 1], [3, 2], [3, 3], [3, 4], 
                                               [4, 1], [4, 2], [4, 3], [4, 4]])
+
+    def test_CompoundPositioner(self):
+        x1, x2, x3, x4 = range(1, 5)
+        y1, y2, y3, y4 = range(1, 5)
+
+        line_positioner = VectorPositioner([x1, x2, x3, x4])
+        column_positioner = VectorPositioner([y1, y2, y3, y4])
+
+        area_positioner = CompoundPositioner([line_positioner, column_positioner])
+
+        self.compare_results(results=[area_positioner],
+                             expected_result=[[1, 1], [1, 2], [1, 3], [1, 4],
+                                              [2, 1], [2, 2], [2, 3], [2, 4],
+                                              [3, 1], [3, 2], [3, 3], [3, 4],
+                                              [4, 1], [4, 2], [4, 3], [4, 4]])

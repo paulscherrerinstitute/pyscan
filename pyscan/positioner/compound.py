@@ -1,6 +1,5 @@
 from copy import copy
-
-from pyscan import convert_to_list
+from pyscan.utils import convert_to_list
 
 
 class CompoundPositioner(object):

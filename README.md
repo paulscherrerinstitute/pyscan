@@ -243,6 +243,16 @@ while LinePositioner cannot. The same logic holds true for the step_size.
 
 <a id="compound_positioner"></a>
 ### Compound positioner
+A compound positioner allows you to combine multiple positioners together. This allows you to generate more complex 
+motions without having to generate all the positions up front and passing them to the VectorPositioner.
+The CompoundPositioner can be compared to the AreaPositioner in the sense that it combines multiple positioners in the 
+same way as AreaPositioner combines multiple axis.
+
+The CompoundPositioner concatenates all positioner values in a single output. It iterates over each given positioner,
+one at the time, covering all possible permutations - In a 2D scan, you can imagine it as scanning line by line. The
+last provided positioner is always the fastest changing one, while the first provided one is the slowest.
+
+To better explain how it works, the following example demonstrates its usage.
 
 <a id="writables"></a>
 ## Writables

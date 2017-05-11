@@ -38,3 +38,6 @@ class SerialPositioner(object):
                 for axis_position_index in range(n_steps_in_axis):
                     current_state[axis_index] = convert_to_list(self.positions[axis_index])[axis_position_index]
                     yield copy(current_state)
+
+    def get_positions_count(self):
+        return sum(1 for _ in self.get_generator())

@@ -40,6 +40,9 @@ class VectorPositioner(object):
             for position in self.positions:
                 yield position
 
+    def get_positions_count(self):
+        return sum(1 for _ in self.get_generator())
+
 
 class ZigZagVectorPositioner(VectorPositioner):
     def get_generator(self):

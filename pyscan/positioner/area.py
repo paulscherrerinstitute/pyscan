@@ -86,6 +86,9 @@ class AreaPositioner(object):
 
             yield from scan_axis(0)
 
+    def get_positions_count(self):
+        return sum(1 for _ in self.get_generator())
+
 
 class ZigZagAreaPositioner(AreaPositioner):
     def get_generator(self):
@@ -182,3 +185,6 @@ class MultiAreaPositioner(object):
                 positions[axis_number] = self.start[axis_number]
 
             yield from scan_axis(0)
+
+    def get_positions_count(self):
+        return sum(1 for _ in self.get_generator())

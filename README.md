@@ -79,6 +79,7 @@ conda config --add channels paulscherrerinstitute
 A sample scan, that uses the most common pyscan features, can be done by running:
 
 ```Python
+# Import everything you need.
 from pyscan import *
 
 # Defines positions to move the motor to.
@@ -380,6 +381,59 @@ model yourself. Your callback function will in fact be blocking the scan until i
 
 <a id="scan_results"></a>
 ## Scan result
+The scan results are given as a flat list, with each value position corresponding to the positions 
+defined in the readables. In case of multiple measurements, they are grouped together inside another list.
+
+```python
+# Dummy value initialization.
+x1, x2, x3 = [1] * 3
+y1, y2, y3 = [2] * 3
+z1, z2, z3 = [3] * 3
+
+from pyscan import *
+# Scan at position 1, 2, and 3.
+positioner = VectorPositioner([1, 2, 3])
+# Define 1 writable motor
+writables = epics_pv("MOTOR")
+# Define 3 readables: X, Y, Z.
+readables = [epics_pv("X"), epics_pv("Y"), epics_pv("Z")]
+# Perform the scan.
+result = scan(positioner, writables, readables)
+
+# The result is a list, with a list of measurement for each position.
+result == [[x1, y1, z1], 
+           [x2, y2, z2], 
+           [x3, y3, z3]]
+
+# In case we want to do 2 measurements at each position.
+result = scan(positioner, writables, readables, settings=scan_settings(n_measurements=2))
+
+# The result is a list, with a list for each position, which again has a list for each measurement. 
+result == [[[x1, y1, z1], [x1, y1, z1]],
+           [[x2, y2, z2], [x2, y2, z2]],
+           [[x3, y3, z3], [x2, y2, z2]]]
+           
+# In case you have a single readable.
+readables = epics_pv("X")
+result = scan(positioner, writables, readables)
+
+# The measurements are still wrapped in a list (with a single element, this time).
+result == [[x1], [x2], [x3]]
+
+# Scan with only 1 position, 1 motor, 1 readable.
+positioner = VectorPositioner(1)
+writables = epics_pv("MOTOR")
+readables = epics_pv("X")
+result = scan(positioner, writables, readables)
+
+# The result is still wrapped in 2 lists. The reason is described in the note below.
+result == [[x1]]
+```
+
+**Note**: The measurement result is always wrapped in a list (even if only 1 variable is acquired). This is needed 
+because external, processing code, can always rely on the fact that there will be an iterable object available, no 
+matter what the readables are. For the same reason, in a scan with a single readable, single position, 
+and 1 measurement, the output will still be wrapped in 2 lists: **\[\[measurement_result\]\]**
 
 <a id="configuration"></a>
 # Library configuration

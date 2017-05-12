@@ -1,9 +1,28 @@
 import unittest
+from itertools import cycle
+
+import sys
+
+# BEGIN EPICS MOCK.
+from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, fixed_values
+
+scan_module = sys.modules["pyscan.scan"]
+utils_module = sys.modules["pyscan.scan_actions"]
+
+utils_module.EPICS_READER = MockReadGroupInterface
+utils_module.EPICS_WRITER = MockWriteGroupInterface
+scan_module.EPICS_READER = MockReadGroupInterface
+scan_module.EPICS_WRITER = MockWriteGroupInterface
+
+fixed_values["X"] = cycle([1])
+fixed_values["Y"] = cycle([2])
+fixed_values["Z"] = cycle([3])
+# END OF MOCK.
+
 from pyscan import *
 
 
 class Readme(unittest.TestCase):
-
     def compare_results(self, results, expected_result):
         for result in results:
             positions = list(result.get_generator())
@@ -34,9 +53,9 @@ class Readme(unittest.TestCase):
         area_positioner_step_size = AreaPositioner(start=[x1, y1], end=[x4, y4], step_size=[x2 - x1, y2 - y1])
 
         self.compare_results(results=[area_positioner_n_steps, area_positioner_step_size],
-                             expected_result=[[1, 1], [1, 2], [1, 3], [1, 4], 
-                                              [2, 1], [2, 2], [2, 3], [2, 4], 
-                                              [3, 1], [3, 2], [3, 3], [3, 4], 
+                             expected_result=[[1, 1], [1, 2], [1, 3], [1, 4],
+                                              [2, 1], [2, 2], [2, 3], [2, 4],
+                                              [3, 1], [3, 2], [3, 3], [3, 4],
                                               [4, 1], [4, 2], [4, 3], [4, 4]])
 
     def test_CompoundPositioner(self):
@@ -53,3 +72,47 @@ class Readme(unittest.TestCase):
                                               [2, 1], [2, 2], [2, 3], [2, 4],
                                               [3, 1], [3, 2], [3, 3], [3, 4],
                                               [4, 1], [4, 2], [4, 3], [4, 4]])
+
+    def test_ScanResult(self):
+        # Dummy value initialization.
+        x1, x2, x3 = [1] * 3
+        y1, y2, y3 = [2] * 3
+        z1, z2, z3 = [3] * 3
+
+        # Scan at position 1, 2, and 3.
+        positioner = VectorPositioner([1, 2, 3])
+        # Define 1 writable motor
+        writables = epics_pv("MOTOR")
+        # Define 3 readables: X, Y, Z.
+        readables = [epics_pv("X"), epics_pv("Y"), epics_pv("Z")]
+        # Perform the scan.
+        result = scan(positioner, writables, readables)
+
+        # The result is a list, with a list of measurement for each position.
+        self.assertEqual([[x1, y1, z1],
+                          [x2, y2, z2],
+                          [x3, y3, z3]], result, "The result is not the expected one.")
+
+        # In case we want to do 2 measurements at each position.
+        result = scan(positioner, writables, readables, settings=scan_settings(n_measurements=2))
+
+        # The result is a list, with a list for each position, which again has a list for each measurement.
+        self.assertEqual([[[x1, y1, z1], [x1, y1, z1]],
+                          [[x2, y2, z2], [x2, y2, z2]],
+                          [[x3, y3, z3], [x2, y2, z2]]], result, "The result is not the expected one.")
+
+        # In case you have a single readable.
+        readables = epics_pv("X")
+        result = scan(positioner, writables, readables)
+
+        # The measurements are still wrapped in a list (with a single element, this time).
+        self.assertEqual([[x1], [x2], [x3]], result, "The result is not the expected one.")
+
+        # Scan with only 1 position, 1 motor, 1 readable.
+        positioner = VectorPositioner(1)
+        writables = epics_pv("MOTOR")
+        readables = epics_pv("X")
+        result = scan(positioner, writables, readables)
+
+        # The result is still wrapped in 2 lists. The reason is described in the note below.
+        result == [[x1]]

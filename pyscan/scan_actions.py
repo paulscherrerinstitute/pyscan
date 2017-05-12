@@ -1,6 +1,5 @@
 from collections import namedtuple
-
-from pyscan.config import epics_default_read_write_timeout
+from pyscan import config
 from pyscan.scan import EPICS_WRITER, EPICS_READER
 from pyscan.scan_parameters import epics_pv
 from pyscan.utils import convert_to_list
@@ -25,7 +24,7 @@ def action_set_epics_pv(pv_name, value, readback_pv_name=None, tolerance=None, t
         raise ValueError("pv value not specified.")
 
     if not timeout or timeout < 0:
-        timeout = epics_default_read_write_timeout
+        timeout = config.epics_default_read_write_timeout
 
     def execute():
         writer = EPICS_WRITER(pv_name, readback_pv_name, tolerance, timeout)

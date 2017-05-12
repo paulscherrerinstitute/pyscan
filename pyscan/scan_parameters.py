@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from pyscan.config import epics_default_read_write_timeout, min_tolerance, epics_default_monitor_timeout
+from pyscan import config
 
 EPICS_PV = namedtuple("EPICS_PV", ["pv_name", "readback_pv_name", "tolerance"])
 EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "action", "tolerance", "timeout"])
@@ -25,8 +25,8 @@ def epics_pv(pv_name, readback_pv_name=None, tolerance=None):
     if not readback_pv_name:
         readback_pv_name = pv_name
 
-    if not tolerance or tolerance < min_tolerance:
-        tolerance = min_tolerance
+    if not tolerance or tolerance < config.min_tolerance:
+        tolerance = config.min_tolerance
 
     return EPICS_PV(pv_name, readback_pv_name, tolerance)
 
@@ -53,11 +53,11 @@ def epics_monitor(pv_name, value, action=None, tolerance=None, timeout=None):
     if not action:
         action = "Abort"
 
-    if not tolerance or tolerance < min_tolerance:
-        tolerance = min_tolerance
+    if not tolerance or tolerance < config.min_tolerance:
+        tolerance = config.min_tolerance
 
     if not timeout or timeout < 0:
-        timeout = epics_default_monitor_timeout
+        timeout = config.epics_default_monitor_timeout
 
     return EPICS_MONITOR(identifier, pv_name, value, action, tolerance, timeout)
 
@@ -98,8 +98,8 @@ def bs_monitor(name, value, tolerance=None):
     if value is None:
         raise ValueError("value not specified.")
 
-    if not tolerance or tolerance < min_tolerance:
-        tolerance = min_tolerance
+    if not tolerance or tolerance < config.min_tolerance:
+        tolerance = config.min_tolerance
 
     # We do not support other actions for BS monitors.
     action = "Abort"
@@ -118,7 +118,7 @@ def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=
         n_measurements = 1
 
     if not write_timeout or write_timeout < 0:
-        write_timeout = epics_default_read_write_timeout
+        write_timeout = config.epics_default_read_write_timeout
 
     if not settling_time or settling_time < 0:
         settling_time = 0

@@ -2,7 +2,7 @@ from time import sleep
 
 from epics.pv import PV
 
-from pyscan.config import min_tolerance
+from pyscan import config
 
 
 def compare_channel_value(current_value, expected_value, tolerance=0.0):
@@ -14,7 +14,7 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0):
     :return: True if the value matches.
     """
     # Minimum tolerance allowed.
-    tolerance = max(tolerance, min_tolerance)
+    tolerance = max(tolerance, config.min_tolerance)
 
     def compare_value(value):
         # If we set a string, we expect the result to match exactly.

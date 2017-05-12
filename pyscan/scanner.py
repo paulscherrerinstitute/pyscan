@@ -121,12 +121,14 @@ class Scanner(object):
         try:
             # Get how many positions we have in total.
             n_of_positions = sum(1 for _ in self.positioner.get_generator())
+            # Report the 0% completed.
+            self.settings.progress_callback(0, n_of_positions)
 
             # Set up the experiment.
             if self.initialization_executor:
                 self.initialization_executor(self)
 
-            for position_index, next_positions in zip(count(), self.positioner.get_generator()):
+            for position_index, next_positions in zip(count(1), self.positioner.get_generator()):
                 # Position yourself before reading.
                 self.writer(next_positions)
                 # Settling time, wait after positions has been reached.

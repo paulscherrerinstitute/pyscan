@@ -127,3 +127,29 @@ class ScanTests(unittest.TestCase):
 
         # The first 2 attributes are from bs_read, they should be equal to the pulse ID processed.
         self.assertTrue(all(x[0] == x[1] and x[2] == 1 for x in result), "The result is wrong.")
+
+    def test_progress_monitor(self):
+
+        current_index = []
+        total_positions = 0
+        current_percentage = []
+
+        def progress(current_position, max_position):
+            current_index.append(current_position)
+            current_percentage.append(100 * (current_position/max_position))
+
+            nonlocal total_positions
+            total_positions = max_position
+
+        positions = [1, 2, 3, 4, 5]
+        positioner = VectorPositioner(positions)
+        writables = epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET")
+        readables = epics_pv("PYSCAN:TEST:OBS1")
+        settings = scan_settings(progress_callback=progress)
+
+        scan(positioner, writables, readables, settings=settings)
+
+        self.assertEqual(len(positions) + 1, len(current_index), "The number of reported positions is wrong.")
+        self.assertEqual(total_positions, 5, "The number of total positions is wrong.")
+        self.assertEqual(current_index, [0, 1, 2, 3, 4, 5], "The reported percentage is wrong.")
+        self.assertEqual(current_percentage, [0, 20, 40, 60, 80, 100], "The reported percentage is wrong.")

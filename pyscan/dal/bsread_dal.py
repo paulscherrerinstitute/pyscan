@@ -12,7 +12,7 @@ class ReadGroupInterface(object):
     Provide a beam synchronous acquisition for PV data.
     """
 
-    def __init__(self, properties, monitor_properties=None, waiting=None, host=None, port=None):
+    def __init__(self, properties, monitor_properties=None, host=None, port=None):
         """
         Create the bsread group read interface.
         :param properties: List of PVs to read for processing.
@@ -22,7 +22,6 @@ class ReadGroupInterface(object):
         self.port = port
         self.properties = convert_to_list(properties)
         self.monitor_properties = convert_to_list(monitor_properties)
-        self.waiting = waiting or config.bs_default_waiting
 
         self._message_cache = None
         self._message_cache_timestamp = None

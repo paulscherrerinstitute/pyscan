@@ -108,7 +108,7 @@ def bs_monitor(name, value, tolerance=None):
 def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=None, settling_time=None,
                   progress_callback=None):
     if not measurement_interval or measurement_interval < 0:
-        measurement_interval = 0
+        measurement_interval = config.scan_default_measurement_interval
 
     if not n_measurements or n_measurements < 1:
         n_measurements = config.scan_default_n_measurements

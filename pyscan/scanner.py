@@ -1,7 +1,7 @@
 from itertools import count
 from time import sleep
 
-from pyscan.config import acquisition_retry_limit, pause_sleep_interval, acquisition_retry_delay
+from pyscan import config
 from pyscan.scan_parameters import scan_settings
 
 
@@ -68,7 +68,7 @@ class Scanner(object):
         while self._user_pause_scan_flag:
             if self._user_abort_scan_flag:
                 raise Exception("User aborted scan in pause.")
-            sleep(pause_sleep_interval)
+            sleep(config.pause_sleep_interval)
 
     def _perform_single_read(self, current_position):
         """
@@ -78,7 +78,7 @@ class Scanner(object):
         """
         n_current_acquisition = 0
         # Collect data until acquired data is valid or retry limit reached.
-        while n_current_acquisition < acquisition_retry_limit:
+        while n_current_acquisition < config.acquisition_retry_limit:
             single_measurement = self.reader()
 
             # If the data is valid, break out of the loop.
@@ -86,11 +86,11 @@ class Scanner(object):
                 return single_measurement
 
             n_current_acquisition += 1
-            sleep(acquisition_retry_delay)
+            sleep(config.acquisition_retry_delay)
         # Could not read the data within the retry limit.
         else:
             raise Exception("Number of maximum read attempts (%d) exceeded. Cannot read valid data at position %s."
-                            % (acquisition_retry_limit, current_position))
+                            % (config.acquisition_retry_limit, current_position))
 
     def _read_and_process_data(self, current_position):
         """

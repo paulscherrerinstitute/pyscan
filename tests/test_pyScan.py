@@ -2,6 +2,9 @@ import threading
 import unittest
 from time import sleep, time
 
+# Speed up the tests
+import pyscan.config
+pyscan.config.acquisition_retry_delay = 0.01
 
 from pyscan.utils import flat_list_generator
 
@@ -24,20 +27,23 @@ from tests.helpers.mock_epics_dal import MockPyEpicsDal as CurrentMockDal
 
 
 class PyScan(unittest.TestCase):
+
     @staticmethod
     def get_ScanLine_indices():
         indict1 = dict()
         indict1['Knob'] = ["1.1", "1.2"]
         indict1["ScanValues"] = [[-3, -2, -1, 0], [-3, -2, -1, 0]]
         indict1['Observable'] = ["READ1", "READ2", "READ3"]
-        indict1['Waiting'] = 0.1
+        indict1['Waiting'] = 0.01
+        indict1['KnobWaitingExtra'] = 0.01
 
         indict2 = dict()
         indict2['Knob'] = ["2.1", "2.2"]
         indict2['ScanRange'] = [[0, 2], [0, 2]]
         indict2['Nstep'] = 3
         indict2['Observable'] = ["READ4", "READ5"]
-        indict2['Waiting'] = 0.1
+        indict2['Waiting'] = 0.01
+        indict1['KnobWaitingExtra'] = 0.01
 
         return indict1, indict2
 
@@ -48,14 +54,16 @@ class PyScan(unittest.TestCase):
         indict1["ScanValues"] = [[-3, -2, -1, 0], [-3, -2, -1, 0]]
         indict1['Series'] = 1
         indict1['Observable'] = ["READ1", "READ2", "READ3"]
-        indict1['Waiting'] = 0.1
+        indict1['Waiting'] = 0.01
+        indict1['KnobWaitingExtra'] = 0.01
 
         indict2 = dict()
         indict2['Knob'] = ["2.1", "2.2"]
         indict2["ScanValues"] = [[0, 1, 2], [0, 1]]
         indict2['Series'] = 1
         indict2['Observable'] = ["READ4", "READ5"]
-        indict2['Waiting'] = 0.1
+        indict2['Waiting'] = 0.01
+        indict2['KnobWaitingExtra'] = 0.01
 
         return indict1, indict2
 
@@ -415,13 +423,14 @@ class PyScan(unittest.TestCase):
         #                  "Observable format does not match")
 
     def test_Monitors(self):
+
         indict1, indict2 = self.get_ScanLine_indices()
         # Only the number of measurements on the last dimension can influence the result.
         indict2['Monitor'] = ["PYSCAN:TEST:MONITOR1"]
         indict2['MonitorValue'] = [1]
         indict2['MonitorTolerance'] = [0.01]
         indict2['MonitorAction'] = ["WaitAndAbort"]
-        indict2['MonitorTimeout'] = [3]
+        indict2['MonitorTimeout'] = [0.1]
 
         # This will pass, because every 2 read attempts the monitor will have a valid value.
         test_dal = CurrentMockDal(pv_fixed_values={"PYSCAN:TEST:MONITOR1": [0, 1]})
@@ -459,7 +468,7 @@ class PyScan(unittest.TestCase):
         indict1['Knob'] = ["1.1"]
         indict1["ScanValues"] = [-3, -2, -1, 0]
         indict1['Observable'] = ["READ1"]
-        indict1['Waiting'] = 0.3
+        indict1['Waiting'] = 0.01
         indict1["KnobWaitingExtra"] = 0.3
 
         test_dal = CurrentMockDal()
@@ -488,7 +497,7 @@ class PyScan(unittest.TestCase):
         indict1['Knob'] = ["1.1"]
         indict1["ScanValues"] = [-3, -2, -1, 0]
         indict1['Observable'] = ["READ1"]
-        indict1['Waiting'] = 0.3
+        indict1['Waiting'] = 0.01
         indict1["KnobWaitingExtra"] = 0.3
         indict1['StepbackOnPause'] = 0
 
@@ -505,12 +514,13 @@ class PyScan(unittest.TestCase):
             while n_retry < 5:
                 try:
                     pyscan.pauseScan = 1
+                    break
                 except:
                     pass
                 n_retry += 1
                 # Initialization should not take more than 1 second.
-                sleep(0.2)
-            sleep(3)
+                sleep(0.1)
+            sleep(1)
             pyscan.pauseScan = 0
 
         begin_timestamp = time()
@@ -518,15 +528,15 @@ class PyScan(unittest.TestCase):
         pyscan.startScan()
 
         time_elapsed = time() - begin_timestamp
-        self.assertTrue(time_elapsed > 3, "We paused the scan for 3 seconds, but this did not "
-                                          "reflect in the execution time %f." % time_elapsed)
+        self.assertTrue(time_elapsed > 1.5, "We paused the scan for 1 seconds, but this did not "
+                                            "reflect in the execution time %f." % time_elapsed)
 
     def test_abort_paused_scan(self):
         indict1 = dict()
         indict1['Knob'] = ["1.1"]
         indict1["ScanValues"] = [-3, -2, -1, 0]
         indict1['Observable'] = ["READ1"]
-        indict1['Waiting'] = 0.3
+        indict1['Waiting'] = 0.01
         indict1["KnobWaitingExtra"] = 0.3
         indict1['StepbackOnPause'] = 0
 
@@ -543,12 +553,13 @@ class PyScan(unittest.TestCase):
             while n_retry < 5:
                 try:
                     pyscan.pauseScan = 1
+                    break
                 except:
                     pass
                 n_retry += 1
                 # Initialization should not take more than 1 second.
                 sleep(0.2)
-            sleep(3)
+            sleep(1.5)
             pyscan.abortScan = 1
 
         begin_timestamp = time()
@@ -556,14 +567,14 @@ class PyScan(unittest.TestCase):
 
         self.assertRaisesRegex(Exception, "aborted", pyscan.startScan)
         time_elapsed = time() - begin_timestamp
-        self.assertTrue(time_elapsed > 3, "We paused the scan for 3 seconds before aborting, "
+        self.assertTrue(time_elapsed > 1.5, "We paused the scan for 1 seconds before aborting, "
                                           "but this did not reflect in the execution time %f." % time_elapsed)
 
     def test_progress(self):
         indict = {}
         indict['Knob'] = "PYSCAN:TEST:MOTOR1:SET"
-        indict['Waiting'] = 0.5
-        indict["KnobWaitingExtra"] = 0.5
+        indict['Waiting'] = 0.1
+        indict["KnobWaitingExtra"] = 0.3
 
         indict['Observable'] = "PYSCAN:TEST:OBS1"
         # One percentage step for each scan value.
@@ -578,7 +589,7 @@ class PyScan(unittest.TestCase):
         def monitor_scan():
             # make sure the initialization is done:
             while pyscan.ProgDisp.Progress:
-                sleep(1)
+                sleep(0.01)
 
             current_value = 0
             while current_value < 100:

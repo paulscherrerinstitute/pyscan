@@ -34,7 +34,7 @@ class IntegrationTests(unittest.TestCase):
         indict1['KnobReadback'] = [c.replace('SET', 'GET') for c in QuadIch]
         indict1['KnobTolerance'] = [0.01] * len(QuadIch)
         indict1['KnobWaiting'] = [10] * len(QuadIch)
-        indict1['KnobWaitingExtra'] = 0.5
+        indict1['KnobWaitingExtra'] = 0.01
         indict1['ScanValues'] = QuadI
 
         # Measurement setup.
@@ -42,7 +42,7 @@ class IntegrationTests(unittest.TestCase):
                                  "PYSCAN:TEST:OBS2",
                                  "PYSCAN:TEST:OBS3",
                                  "PYSCAN:TEST:OBS4"]
-        indict1['Waiting'] = 0.25
+        indict1['Waiting'] = 0.01
         indict1['NumberOfMeasurements'] = int(Images)
 
         # Monitor setup
@@ -122,9 +122,9 @@ class IntegrationTests(unittest.TestCase):
 
         indict = {}
         indict['Knob'] = knob
-        indict['KnobWaiting'] = 0.1  # later set by expert panel...
-        indict['KnobWaitingExtra'] = 0.2  # later set by expert panel...
-        indict['Waiting'] = 0.5  # later set by expert panel...
+        indict['KnobWaiting'] = 0.001  # later set by expert panel...
+        indict['KnobWaitingExtra'] = 0.1  # later set by expert panel...
+        indict['Waiting'] = 0.01  # later set by expert panel...
 
         indict['Observable'] = instrument
         indict['ScanValues'] = scanValues
@@ -140,7 +140,7 @@ class IntegrationTests(unittest.TestCase):
         def monitor_scan():
             # make sure the initialization is done:
             while pyscan.ProgDisp.Progress:
-                sleep(1)
+                sleep(0.001)
 
             current_value = 0
             while current_value < 100:

@@ -24,7 +24,7 @@ def action_set_epics_pv(pv_name, value, readback_pv_name=None, tolerance=None, t
         raise ValueError("pv value not specified.")
 
     if not timeout or timeout < 0:
-        timeout = config.epics_default_read_write_timeout
+        timeout = config.epics_default_set_and_match_timeout
 
     def execute():
         writer = EPICS_WRITER(pv_name, readback_pv_name, tolerance, timeout)

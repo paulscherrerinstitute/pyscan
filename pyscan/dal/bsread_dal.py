@@ -32,12 +32,12 @@ class ReadGroupInterface(object):
         if host and port:
             self.stream = Source(host=host,
                                  port=port,
-                                 queue_size=config.bs_default_queue_size,
-                                 receive_timeout=config.bs_default_receive_timeout)
+                                 queue_size=config.bs_queue_size,
+                                 receive_timeout=config.bs_receive_timeout)
         else:
             self.stream = Source(channels=self.properties + self.monitor_properties,
-                                 queue_size=config.bs_default_queue_size,
-                                 receive_timeout=config.bs_default_receive_timeout)
+                                 queue_size=config.bs_queue_size,
+                                 receive_timeout=config.bs_receive_timeout)
         self.stream.connect()
 
     @staticmethod
@@ -91,7 +91,7 @@ class ReadGroupInterface(object):
         :return: List of values for read pvs. Note: Monitor PVs are excluded.
         """
         read_timestamp = time()
-        while time()-read_timestamp < config.bs_default_read_timeout:
+        while time()-read_timestamp < config.bs_read_timeout:
             message = self.stream.receive()
             if self.is_message_after_timestamp(message, read_timestamp):
                 self._message_cache = message

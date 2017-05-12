@@ -1,39 +1,44 @@
 #########################
-# general configuration #
+# General configuration #
 #########################
 
-# Minimum tolerance for comparing numbers.
+# Minimum tolerance for comparing floats.
 min_tolerance = 0.00001
+
+######################
+# Scan configuration #
+######################
+
+# Default number of scans.
+scan_default_n_measurements = 1
+# Interval to sleep while the scan is paused.
+scan_pause_sleep_interval = 1
+# Maximum number of retries to read the channels to get valid data.
+scan_acquisition_retry_limit = 3
+# Delay between acquisition retries.
+scan_acquisition_retry_delay = 1
 
 ############################
 # BSREAD DAL configuration #
 ############################
 
-bs_default_n_measurements = 1
-# Number of second between measurements.
-bs_default_waiting = 0
-bs_default_queue_size = 20
-bs_default_read_timeout = 5
-bs_default_receive_timeout = 1
+# Queue size for collecting messages from bs_read.
+bs_queue_size = 20
+# Max time to wait until the bs read message we need arrives.
+bs_read_timeout = 5
+# Max time to wait for a message (if there is none). Important for stopping threads etc.
+bs_receive_timeout = 1
 
-# Default connection settings.
+# Default bs_read connection address.
 bs_default_host = "127.0.0.1"
+# Default bs_read connection port.
 bs_default_port = 9999
 
 ###########################
 # EPICS DAL configuration #
 ###########################
 
-epics_default_read_write_timeout = 3
-epics_default_monitor_timeout = 3
-
-#########################
-# Scanner configuration #
-#########################
-
-# Interval to sleep while in pause.
-pause_sleep_interval = 1
-# Maximum number of times we wait to retry the acquisition.
-acquisition_retry_limit = 3
-# Delay between acquisition retries.
-acquisition_retry_delay = 1
+# Default set and match timeout - how much time a PV has to reach the target value.
+epics_default_set_and_match_timeout = 3
+# After all motors have reached their destination (set_and_match), extra time to wait.
+epics_default_settling_time = 0

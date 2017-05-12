@@ -4,7 +4,7 @@ from time import sleep, time
 
 # Speed up the tests
 import pyscan.config
-pyscan.config.acquisition_retry_delay = 0.01
+pyscan.config.scan_acquisition_retry_delay = 0.01
 
 from pyscan.utils import flat_list_generator
 

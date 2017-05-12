@@ -23,9 +23,10 @@ in this document. For information on how to use other interfaces, consult their 
     3. [Readables](#readables)
     4. [Monitors](#monitors)
     5. [Initialization and Finalization](#init_and_fin)
-    6. [Settings](#settings)
+    6. [Scan settings](#settings)
     7. [Scan result](#scan_results)
-3. [Common use cases](#common_use_cases)
+3. [Library configuration](#configuration)
+4. [Common use cases](#common_use_cases)
 
 <a id="install"></a>
 # Install
@@ -120,7 +121,7 @@ In the following chapters, each component will be explained in more details:
 - **Monitors**: PVs or BS read properties used to validate the readables at each position.
 - **Initialization**: Actions to execute before the scan.
 - **Finalization**: Actions to execute after the scan is completed or when the scan is aborted.
-- **Settings**: Settings of the scan and acquisition of data.
+- **Scan settings**: Settings of the scan and acquisition of data.
 - **Scan result**: List of readables values at each scan position.
 
 For common use cases, see the chapter at the end of this document.
@@ -332,10 +333,41 @@ time (write_timeout setting, check chapter **Settings**), an exception is thrown
 ## Initialization and Finalization
 
 <a id="settings"></a>
-## Settings
+## Scan settings
+Settings allow to specify the scan parameters. They provide already some defaults which should work for the most 
+common scans. The available settings are:
+
+- **measurement_interval**
+- **n_measurements**
+- **write_timeout**
+- **settling_time**
+- **progress_callback** (Default: print progress to console): Callback function to be invoked for progress updates.
 
 <a id="scan_results"></a>
 ## Scan result
+
+<a id="configuration"></a>
+# Library configuration
+Common library settings can be set in the **pyscan/config.py** module, either at run time or when deployed. Runtime 
+changes are preferable, since they do not affect other users.
+
+For example, to change the bs_read connection address and port, execute:
+
+```python
+from pyscan import config
+config.bs_default_host = "127.0.0.1"
+config.bs_default_port = 9999
+```
+
+To get the list of available configuration check the module source or run:
+
+```python
+from pyscan import config
+help(config)
+```
+
+**Warning**: Only in rare cases, if at all, this settings should be changed. Most strictly scan related parameters 
+can be configured using the [Scan settings](#settings).
 
 <a id="common_use_cases"></a>
 # Common use cases

@@ -1,9 +1,9 @@
 package:
     name: pyscan
-    version: 2.0.0
+    version: 2.0.1
 
 build:
-  number: 1
+  number: 0
 
 source:
     path: ..
@@ -16,9 +16,6 @@ requirements:
         - numpy
         - pyepics
         - bsread
-
-    test:
-        - pcaspy
 
 test:
   source_files:

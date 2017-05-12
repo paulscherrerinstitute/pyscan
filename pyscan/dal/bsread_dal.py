@@ -3,8 +3,7 @@ from time import time
 
 from bsread import Source
 
-from pyscan.config import bs_default_n_measurements, bs_default_waiting, bs_default_queue_size, \
-    bs_default_receive_timeout, bs_default_port, bs_default_host, bs_default_read_timeout
+from pyscan import config
 from pyscan.utils import convert_to_list
 
 
@@ -13,32 +12,33 @@ class ReadGroupInterface(object):
     Provide a beam synchronous acquisition for PV data.
     """
 
-    def __init__(self, properties, monitor_properties=None, n_measurements=None, waiting=None, host=None, port=None):
+    def __init__(self, properties, monitor_properties=None, waiting=None, host=None, port=None):
         """
         Create the bsread group read interface.
         :param properties: List of PVs to read for processing.
         :param monitor_properties: List of PVs to read as monitors.
         """
+        self.host = host
+        self.port = port
         self.properties = convert_to_list(properties)
         self.monitor_properties = convert_to_list(monitor_properties)
-        self.n_measurements = n_measurements or bs_default_n_measurements
-        self.waiting = waiting or bs_default_waiting
+        self.waiting = waiting or config.bs_default_waiting
 
         self._message_cache = None
         self._message_cache_timestamp = None
 
-        self._connect_bsread(bs_default_host, bs_default_port)
+        self._connect_bsread(config.bs_default_host, config.bs_default_port)
 
     def _connect_bsread(self, host, port):
         if host and port:
             self.stream = Source(host=host,
                                  port=port,
-                                 queue_size=bs_default_queue_size,
-                                 receive_timeout=bs_default_receive_timeout)
+                                 queue_size=config.bs_default_queue_size,
+                                 receive_timeout=config.bs_default_receive_timeout)
         else:
             self.stream = Source(channels=self.properties + self.monitor_properties,
-                                 queue_size=bs_default_queue_size,
-                                 receive_timeout=bs_default_receive_timeout)
+                                 queue_size=config.bs_default_queue_size,
+                                 receive_timeout=config.bs_default_receive_timeout)
         self.stream.connect()
 
     @staticmethod
@@ -92,7 +92,7 @@ class ReadGroupInterface(object):
         :return: List of values for read pvs. Note: Monitor PVs are excluded.
         """
         read_timestamp = time()
-        while time()-read_timestamp < bs_default_read_timeout:
+        while time()-read_timestamp < config.bs_default_read_timeout:
             message = self.stream.receive()
             if self.is_message_after_timestamp(message, read_timestamp):
                 self._message_cache = message

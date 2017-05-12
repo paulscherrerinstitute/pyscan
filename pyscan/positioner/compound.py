@@ -19,6 +19,3 @@ class CompoundPositioner(object):
                     yield from walk_positioner(index+1, output_positions + convert_to_list(current_positions))
 
         yield from walk_positioner(0, [])
-
-    def get_positions_count(self):
-        return sum(1 for _ in self.get_generator())

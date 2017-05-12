@@ -73,9 +73,6 @@ class LinePositioner(object):
 
                 yield current_positions
 
-    def get_positions_count(self):
-        return sum(1 for _ in self.get_generator())
-
 
 class ZigZagLinePositioner(LinePositioner):
     def get_generator(self):

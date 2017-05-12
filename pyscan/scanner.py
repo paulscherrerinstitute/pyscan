@@ -120,7 +120,7 @@ class Scanner(object):
         """
         try:
             # Get how many positions we have in total.
-            n_of_positions = self.positioner.get_positions_count()
+            n_of_positions = sum(1 for _ in self.positioner.get_generator())
 
             # Set up the experiment.
             if self.initialization_executor:

@@ -165,7 +165,8 @@ vector_positioner = VectorPositioner(positions=[[x1, y1], [x2, y2], [x3, y3], [x
 # Start at positions x1,y1; end at positions x4,y4; make 3 steps to reach the end.
 line_positioner_n_steps = LinePositioner(start=[x1, y1], end=[x4, y4], n_steps=3)
 
-# Start at position x1,y1; end at position x4,y4: make steps of size x2-x1 for x axis and y2-y1 for y axis.
+# Start at position x1,y1; end at position x4,y4: make steps of size x2-x1 for x axis and 
+# y2-y1 for y axis.
 line_positioner_step_size = LinePositioner(start=[x1, y1], end=[x4, y4], step_size=[x2-x1, y2-y1])
 ```
 
@@ -310,7 +311,8 @@ motor_1 = epics_pv(pv_name="PYSCAN:TEST:MOTOR1:GET",
                    readback_pv_name="PYSCAN:TEST:MOTOR1:SET",
                    tolerance=0.01)
                                  
-# Define a writable, with PV "PYSCAN:TEST:MOTOR2" for both set and readback. Tolerance will be the default one.
+# Define a writable, with PV "PYSCAN:TEST:MOTOR2" for both set and readback. Tolerance will be the 
+# default one.
 motor_2 = epics_pv(pv_name="PYSCAN:TEST:MOTOR2")
 
 # We would like to move both above defined motors in this scan.
@@ -358,7 +360,8 @@ from pyscan import *
 example_settings_1 = scan_settings(measurement_interval=0.1,
                                    n_measurements=3)
                                    
-# Give the motors 10 seconds to reach their position, and wait 2 additional seconds after the position is reached.
+# Give the motors 10 seconds to reach their position, and wait 2 additional seconds after the 
+# position is reached.
 example_settings_2 = scan_settings(write_timeout=10,
                                    settling_time=2)
 

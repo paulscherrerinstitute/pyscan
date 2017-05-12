@@ -23,7 +23,7 @@ in this document. beginningrmation on how to use other interfaces, consult their
     3. [Readables](#readables)
     4. [Monitors](#monitors)
     5. [Initialization and Finalization](#init_and_fin)
-    6. [Scan settings](#settings)
+    6. [Scan settings](#scan_settings)
     7. [Scan result](#scan_results)
 3. [Library configuration](#configuration)
 4. [Common use cases](#common_use_cases)
@@ -332,7 +332,7 @@ time (write_timeout setting, check chapter **Settings**), an exception is thrown
 <a id="init_and_fin"></a>
 ## Initialization and Finalization
 
-<a id="settings"></a>
+<a id="scan_settings"></a>
 ## Scan settings
 Settings allow to specify the scan parameters. They provide already some defaults which should work for the most 
 common scans. The available settings are:
@@ -370,7 +370,7 @@ def scan_progress(current_position, total_positions):
     completed_percentage = 100 * (current_position/total_positions)
     print("Scan: %.2f %% completed (%d/%d)" % (completed_percentage, current_position, total_positions))
     
-# Call the **scan_progress* function at the beginning and after every position is scanned.
+# Call the scan_progress function at the beginning and after every position is the scan.
 example_settings_3 = scan_settings(progress_callback=scan_progress)
 ```
 
@@ -402,7 +402,7 @@ help(config)
 ```
 
 **Warning**: Only in rare cases, if at all, this settings should be changed. Most strictly scan related parameters 
-can be configured using the [Scan settings](#settings).
+can be configured using the [Scan settings](#scan_settings).
 
 <a id="common_use_cases"></a>
 # Common use cases

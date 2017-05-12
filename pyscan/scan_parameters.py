@@ -3,7 +3,7 @@ from collections import namedtuple
 from pyscan import config
 
 EPICS_PV = namedtuple("EPICS_PV", ["pv_name", "readback_pv_name", "tolerance"])
-EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "action", "tolerance", "timeout"])
+EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "action", "tolerance"])
 BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "camera", "property"])
 BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "camera", "property", "value", "action", "tolerance"])
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
@@ -31,14 +31,13 @@ def epics_pv(pv_name, readback_pv_name=None, tolerance=None):
     return EPICS_PV(pv_name, readback_pv_name, tolerance)
 
 
-def epics_monitor(pv_name, value, action=None, tolerance=None, timeout=None):
+def epics_monitor(pv_name, value, action=None, tolerance=None):
     """
     Construct a tuple for an epics monitor representation.
     :param pv_name: Name of the PV to monitor.
     :param value: Value we expect the PV to be in.
     :param action: What to do when the monitor fails ('Abort' and 'WaitAndAbort' supporteds)
     :param tolerance: Tolerance within which the monitor needs to be.
-    :param timeout: Timeout before the WaitAndAbort monitor aborts the scan.
     :return: Tuple of ("pv_name", "value", "action", "tolerance", "timeout")
     """
     identifier = pv_name
@@ -56,10 +55,7 @@ def epics_monitor(pv_name, value, action=None, tolerance=None, timeout=None):
     if not tolerance or tolerance < config.min_tolerance:
         tolerance = config.min_tolerance
 
-    if not timeout or timeout < 0:
-        timeout = config.epics_default_monitor_timeout
-
-    return EPICS_MONITOR(identifier, pv_name, value, action, tolerance, timeout)
+    return EPICS_MONITOR(identifier, pv_name, value, action, tolerance)
 
 
 def bs_property(name):
@@ -115,13 +111,13 @@ def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=
         measurement_interval = 0
 
     if not n_measurements or n_measurements < 1:
-        n_measurements = 1
+        n_measurements = config.scan_default_n_measurements
 
     if not write_timeout or write_timeout < 0:
-        write_timeout = config.epics_default_read_write_timeout
+        write_timeout = config.epics_default_set_and_match_timeout
 
     if not settling_time or settling_time < 0:
-        settling_time = 0
+        settling_time = config.epics_default_settling_time
 
     if not progress_callback:
         def default_progress_callback(current_position, total_positions):

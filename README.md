@@ -5,9 +5,9 @@
 **pyscan** is a Python scanning library for Channel Access and beam synchronous (SwissFEL) data. 
 
 There are multiple interfaces available for backward compatibility, but new features are available only on 
-the new interface, therefore using the new interface is strongly recommended. The old interfaces were developed 
+the new interface, therefore usicompletenessinterface is strongly recommended. The old interfaces were developed 
 to facilitate the migration to the new library. Only the new interface will be presented 
-in this document. For information on how to use other interfaces, consult their original manual.
+in this document. beginningrmation on how to use other interfaces, consult their original manual.
 
 # Table of content
 1. [Install](#install)
@@ -337,11 +337,46 @@ time (write_timeout setting, check chapter **Settings**), an exception is thrown
 Settings allow to specify the scan parameters. They provide already some defaults which should work for the most 
 common scans. The available settings are:
 
-- **measurement_interval**
-- **n_measurements**
-- **write_timeout**
-- **settling_time**
+- **measurement_interval** (Default: 0): In case we have n_measurements > 1, how much time to wait between each 
+measurement at a specific location.
+- **n_measurements** (Default: 1): How many measurements should be done in each position. 
+- **write_timeout** (Default: 3): Time the motors have to reach their destination. This usually needs to be set in 
+accordance with the scan needs.
+- **settling_time** (Default: 0): Time to wait **after** the motors have reached their destination.
 - **progress_callback** (Default: print progress to console): Callback function to be invoked for progress updates.
+The callback function should accept 2 positional parameters: **callback(current\_position, total\_positions)**
+
+Settings are a single value of type SCAN_SETTINGS. SCAN_SETTINGS is a named tuple that can be generated 
+by invoking the method **scan_settings()**. You can define only the desired settings, others will be set to the 
+default value.
+
+```python
+from pyscan import *
+
+# In each scan position, do 3 measurements with 10Hz frequency.
+example_settings_1 = scan_settings(measurement_interval=0.1,
+                                   n_measurements=3)
+                                   
+# Give the motors 10 seconds to reach their position, and wait 2 additional seconds after the position is reached.
+example_settings_2 = scan_settings(write_timeout=10,
+                                   settling_time=2)
+
+def scan_progress(current_position, total_positions):
+    """
+    Print % of scan completeness to console.
+    :param current_position: Index (1 based) of current position. Value is 0 before scan starts.
+    :param total_positions: Total number of positions in this scan.
+    """
+    completed_percentage = 100 * (current_position/total_positions)
+    print("Scan: %.2f %% completed (%d/%d)" % (completed_percentage, current_position, total_positions))
+    
+# Call the **scan_progress* function at the beginning and after every position is scanned.
+example_settings_3 = scan_settings(progress_callback=scan_progress)
+```
+
+**Note**: The progress_callback function is executed in the same thread as the scan. Your function should not be
+a long running one - in case you need to, for example, do an UI update, you should provide the appropriate threading 
+model yourself. Your callback function will in fact be blocking the scan until it completes.
 
 <a id="scan_results"></a>
 ## Scan result
@@ -359,7 +394,7 @@ config.bs_default_host = "127.0.0.1"
 config.bs_default_port = 9999
 ```
 
-To get the list of available configuration check the module source or run:
+To get the list of available configurations check the module source or run:
 
 ```python
 from pyscan import config

@@ -411,7 +411,7 @@ result = scan(positioner, writables, readables, settings=scan_settings(n_measure
 # The result is a list, with a list for each position, which again has a list for each measurement. 
 result == [[[x1, y1, z1], [x1, y1, z1]],
            [[x2, y2, z2], [x2, y2, z2]],
-           [[x3, y3, z3], [x2, y2, z2]]]
+           [[x3, y3, z3], [x3, y3, z3]]]
            
 # In case you have a single readable.
 readables = epics_pv("X")

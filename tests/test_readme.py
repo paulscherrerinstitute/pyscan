@@ -99,7 +99,7 @@ class Readme(unittest.TestCase):
         # The result is a list, with a list for each position, which again has a list for each measurement.
         self.assertEqual([[[x1, y1, z1], [x1, y1, z1]],
                           [[x2, y2, z2], [x2, y2, z2]],
-                          [[x3, y3, z3], [x2, y2, z2]]], result, "The result is not the expected one.")
+                          [[x3, y3, z3], [x3, y3, z3]]], result, "The result is not the expected one.")
 
         # In case you have a single readable.
         readables = epics_pv("X")

@@ -386,7 +386,7 @@ class DiscreetPositionersTests(unittest.TestCase):
         median_acquisition_time = 0.03
         deviation_percentage = 0.5
 
-        time_positioner = TimePositioner(acquisition_delay)
+        time_positioner = TimePositioner(acquisition_delay, num_samples)
         time_positioner_generator = time_positioner.get_generator()
         acquisition_times = []
 

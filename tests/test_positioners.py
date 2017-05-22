@@ -1,10 +1,14 @@
 import unittest
 from itertools import count
+from random import randrange, random
+from time import sleep, time
 
+from pyscan.config import min_time_tolerance
 from pyscan.positioner.area import AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner
 from pyscan.positioner.compound import CompoundPositioner
 from pyscan.positioner.line import LinePositioner, ZigZagLinePositioner
 from pyscan.positioner.serial import SerialPositioner
+from pyscan.positioner.time import TimePositioner
 from pyscan.positioner.vector import VectorPositioner, ZigZagVectorPositioner
 from pyscan.utils import convert_to_position_list
 from tests.helpers.utils import is_close
@@ -153,7 +157,6 @@ class DiscreetPositionersTests(unittest.TestCase):
 
         # Test offset.
         self.verify_result(VectorPositioner(expected_result, offsets=[2, 1]), expected_result)
-
 
     def test_ZigZagVectorPositioner(self):
         expected_single_result = [[-2., -2], [-1., -1], [0., 0], [1., 1], [2., 2]]
@@ -375,3 +378,28 @@ class DiscreetPositionersTests(unittest.TestCase):
         self.verify_result(CompoundPositioner([VectorPositioner(first_input),
                                                SerialPositioner(second_input, second_initial)]),
                            expected_result)
+
+    def test_TimePositioner(self):
+        acquisition_delay = 0.07
+        num_samples = 25
+
+        median_acquisition_time = 0.03
+        deviation_percentage = 0.5
+
+        time_positioner = TimePositioner(acquisition_delay)
+        time_positioner_generator = time_positioner.get_generator()
+        acquisition_times = []
+
+        for _ in range(num_samples):
+            next(time_positioner_generator)
+            # Adjust the median acquisition time by the random acquisition time deviation.
+            acquisition_variance = ((random() * 2) - 1) * median_acquisition_time * deviation_percentage
+            random_acquisition_time = median_acquisition_time + acquisition_variance
+            sleep(random_acquisition_time)
+
+            acquisition_times.append(time())
+
+        for index in range(num_samples - 1):
+            time_difference = acquisition_times[index + 1] - acquisition_times[index]
+            self.assertTrue(abs(time_difference-acquisition_delay) < min_time_tolerance,
+                            "The acquisition time difference is larger than the minimum tolerance.")

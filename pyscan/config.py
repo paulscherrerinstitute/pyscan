@@ -4,6 +4,8 @@
 
 # Minimum tolerance for comparing floats.
 min_tolerance = 0.00001
+# 1ms time tolerance for time critical measurements.
+min_time_tolerance = 0.05
 
 ######################
 # Scan configuration #

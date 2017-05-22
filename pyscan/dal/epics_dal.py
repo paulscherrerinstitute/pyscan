@@ -90,9 +90,9 @@ class WriteGroupInterface(object):
         :return: Tolerances adjusted to the minimum value, if needed.
         """
         # If the provided tolerances are empty, substitute them with a list of default tolerances.
-        tolerances = convert_to_list(tolerances) or [config.min_tolerance] * len(self.pvs)
+        tolerances = convert_to_list(tolerances) or [config.max_float_tolerance] * len(self.pvs)
         # Each tolerance needs to be at least the size of the minimum tolerance.
-        tolerances = [max(config.min_tolerance, tolerance) for tolerance in tolerances]
+        tolerances = [max(config.max_float_tolerance, tolerance) for tolerance in tolerances]
 
         return tolerances
 

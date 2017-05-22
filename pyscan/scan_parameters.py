@@ -25,8 +25,8 @@ def epics_pv(pv_name, readback_pv_name=None, tolerance=None):
     if not readback_pv_name:
         readback_pv_name = pv_name
 
-    if not tolerance or tolerance < config.min_tolerance:
-        tolerance = config.min_tolerance
+    if not tolerance or tolerance < config.max_float_tolerance:
+        tolerance = config.max_float_tolerance
 
     return EPICS_PV(pv_name, readback_pv_name, tolerance)
 
@@ -52,8 +52,8 @@ def epics_monitor(pv_name, value, action=None, tolerance=None):
     if not action:
         action = "Abort"
 
-    if not tolerance or tolerance < config.min_tolerance:
-        tolerance = config.min_tolerance
+    if not tolerance or tolerance < config.max_float_tolerance:
+        tolerance = config.max_float_tolerance
 
     return EPICS_MONITOR(identifier, pv_name, value, action, tolerance)
 
@@ -94,8 +94,8 @@ def bs_monitor(name, value, tolerance=None):
     if value is None:
         raise ValueError("value not specified.")
 
-    if not tolerance or tolerance < config.min_tolerance:
-        tolerance = config.min_tolerance
+    if not tolerance or tolerance < config.max_float_tolerance:
+        tolerance = config.max_float_tolerance
 
     # We do not support other actions for BS monitors.
     action = "Abort"

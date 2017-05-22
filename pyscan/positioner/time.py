@@ -1,8 +1,9 @@
 from time import time, sleep
 
-from pyscan.config import min_time_tolerance
+from pyscan.config import max_time_tolerance
 
 smoothing_factor = 0.95
+
 
 class TimePositioner(object):
     def __init__(self, time_interval, tolerance=None):
@@ -12,8 +13,8 @@ class TimePositioner(object):
         """
         self.time_interval = time_interval
         # Tolerance cannot be less than the min set tolerance.
-        if tolerance is None or tolerance < min_time_tolerance:
-            tolerance = min_time_tolerance
+        if tolerance is None or tolerance < max_time_tolerance:
+            tolerance = max_time_tolerance
         self.tolerance = tolerance
 
     def get_generator(self):
@@ -30,7 +31,7 @@ class TimePositioner(object):
             time_to_sleep = (smoothing_factor * time_to_sleep) + ((1-smoothing_factor) * last_time_to_sleep)
 
             # Time to sleep is negative (more time has elapsed, we cannot achieve the requested time interval.
-            if time_to_sleep < (-1 * min_time_tolerance):
+            if time_to_sleep < (-1 * max_time_tolerance):
                 raise ValueError("The requested time interval cannot be achieved. Last iteration took %.2f seconds, "
                                  "but a %.2f seconds time interval was set." % (measurement_time, self.time_interval))
 

@@ -3,7 +3,7 @@ from itertools import count
 from random import randrange, random
 from time import sleep, time
 
-from pyscan.config import min_time_tolerance
+from pyscan.config import max_time_tolerance
 from pyscan.positioner.area import AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner
 from pyscan.positioner.compound import CompoundPositioner
 from pyscan.positioner.line import LinePositioner, ZigZagLinePositioner
@@ -401,5 +401,5 @@ class DiscreetPositionersTests(unittest.TestCase):
 
         for index in range(num_samples - 1):
             time_difference = acquisition_times[index + 1] - acquisition_times[index]
-            self.assertTrue(abs(time_difference-acquisition_delay) < min_time_tolerance,
+            self.assertTrue(abs(time_difference-acquisition_delay) < max_time_tolerance,
                             "The acquisition time difference is larger than the minimum tolerance.")

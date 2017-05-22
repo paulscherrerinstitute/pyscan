@@ -14,7 +14,7 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0):
     :return: True if the value matches.
     """
     # Minimum tolerance allowed.
-    tolerance = max(tolerance, config.min_tolerance)
+    tolerance = max(tolerance, config.max_float_tolerance)
 
     def compare_value(value):
         # If we set a string, we expect the result to match exactly.

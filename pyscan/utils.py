@@ -80,7 +80,12 @@ def convert_to_list(value):
     If the input parameter is not a list, convert to one.
     :return: The value in a list, or None.
     """
-    return [value] if (value is not None) and (not isinstance(value, list)) else value
+    # If None or a list, just return the value as it is.
+    if (value is None) or isinstance(value, list):
+        return value
+
+    # Otherwise treat the value as the first element in a list.
+    return [value]
 
 
 def convert_to_position_list(axis_list):

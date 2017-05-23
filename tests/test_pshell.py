@@ -2,9 +2,8 @@ import unittest
 
 
 import sys
-
-from pyscan import epics_pv
-from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, cached_initial_values
+from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, cached_initial_values, \
+    pv_cache
 
 # BEGIN EPICS MOCK.
 
@@ -20,14 +19,45 @@ scan_module.EPICS_WRITER = MockWriteGroupInterface
 cached_initial_values["PYSCAN:TEST:VALID1"] = 10
 cached_initial_values["PYSCAN:TEST:OBS1"] = 1
 
+cached_initial_values["PYSCAN:TEST:MOTOR1:GET"] = -10
+cached_initial_values["PYSCAN:TEST:MOTOR1:SET"] = -10
+cached_initial_values["PYSCAN:TEST:MOTOR2:GET"] = -20
+cached_initial_values["PYSCAN:TEST:MOTOR2:SET"] = -20
+
 # END OF MOCK.
 
-from pyscan.interface.pshell import tscan
+from pyscan import epics_pv
+from pyscan.interface.pshell import tscan, lscan
 
 
 class PShell(unittest.TestCase):
     def test_lscan(self):
-        pass
+        writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET"),
+                     epics_pv("PYSCAN:TEST:MOTOR2:SET", "PYSCAN:TEST:MOTOR2:GET")]
+
+        readables = [epics_pv("PYSCAN:TEST:OBS1")]
+
+        start = [0, 0]
+        end = [2, 6]
+        steps = 2
+
+        # Collect motor positions after each measurement.
+        def after_read():
+            motor_positions.append((pv_cache["PYSCAN:TEST:MOTOR1:SET"][0].value,
+                                    pv_cache["PYSCAN:TEST:MOTOR2:SET"][0].value))
+        motor_positions = []
+
+        result = lscan(writables=writables, readables=readables, start=start, end=end, steps=steps, relative=True,
+                       after_read=after_read)
+
+        self.assertEqual(len(result), steps + 1, "The result length does not match the number of steps.")
+
+        self.assertEqual((pv_cache["PYSCAN:TEST:MOTOR1:SET"][0].value,
+                          pv_cache["PYSCAN:TEST:MOTOR2:SET"][0].value), (-10, -20),
+                         "Initial motor positions not restored.")
+
+        self.assertEqual(motor_positions, [(-10, -20), (-9, -17), (-8, -14)],
+                         "Motor did not move on relative positions.")
 
     def test_tscan(self):
         points = 5

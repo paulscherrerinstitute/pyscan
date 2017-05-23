@@ -1,8 +1,5 @@
-from collections import namedtuple
-
 from pyscan import scan, action_restore
-from pyscan.dal import epics_dal, bsread_dal
-from pyscan.dal.epics_dal import WriteGroupInterface, ReadGroupInterface
+from pyscan.scan import EPICS_READER
 from pyscan.positioner.area import AreaPositioner, ZigZagAreaPositioner
 from pyscan.positioner.line import ZigZagLinePositioner, LinePositioner
 from pyscan.positioner.time import TimePositioner
@@ -17,7 +14,7 @@ def _generate_scan_parameters(relative, writables, latency):
     finalization_action = []
     if relative:
         pv_names = [x.pv_name for x in convert_to_list(writables) or []]
-        reader = ReadGroupInterface(pv_names)
+        reader = EPICS_READER(pv_names)
         offsets = reader.read()
         reader.close()
 
@@ -31,6 +28,14 @@ def _generate_scan_parameters(relative, writables, latency):
 def _convert_steps_parameter(steps):
     n_steps = None
     step_size = None
+
+    steps_list = convert_to_list(steps)
+    # If steps is a float or a list of floats, then this are step sizes.
+    if isinstance(steps_list[0], float):
+        step_size = steps_list
+    # If steps is an int, this is the number of steps.
+    elif isinstance(steps, int):
+        n_steps = steps
 
     return n_steps, step_size
 

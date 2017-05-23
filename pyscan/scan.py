@@ -8,6 +8,7 @@ EPICS_WRITER = epics_dal.WriteGroupInterface
 EPICS_READER = epics_dal.ReadGroupInterface
 BS_READER = bsread_dal.ReadGroupInterface
 DATA_PROCESSOR = SimpleDataProcessor
+ACTION_EXECUTOR = ActionExecutor
 
 
 def scan(positioner, readables, writables=None, monitors=None, initialization=None, finalization=None, settings=None,
@@ -75,11 +76,11 @@ def scan(positioner, readables, writables=None, monitors=None, initialization=No
 
     initialization_executor = None
     if initialization:
-        initialization_executor = ActionExecutor(initialization).execute
+        initialization_executor = ACTION_EXECUTOR(initialization).execute
 
     finalization_executor = None
     if finalization:
-        finalization_executor = ActionExecutor(finalization).execute
+        finalization_executor = ACTION_EXECUTOR(finalization).execute
 
     scanner = Scanner(positioner=positioner, data_processor=data_processor, reader=read_data,
                       writer=epics_write_method, initialization_executor=initialization_executor,

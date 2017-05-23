@@ -101,32 +101,21 @@ def ascan(writables, readables, start, end, steps, latency=0.0, relative=False,
     :return: Data from the scan.
     """
 
-    # Allow the user to specify a single item or a list of items, but always convert to a list of items.
-    writables = convert_to_list(writables)
-    readables = convert_to_list(readables)
-    start = convert_to_list(start)
-    end = convert_to_list(end)
-    steps = convert_to_list(steps)
-
-    writer = WriteGroupInterface(writables)
-    reader = ReadGroupInterface(readables)
-
-    offsets = reader.read() if relative else None
-
-    # TODO: Figure out if steps is n_step or step_sizes
+    offsets, finalization_actions, settings = _generate_scan_parameters(relative, writables, latency)
+    n_steps, step_size = _convert_steps_parameter(steps)
 
     if zigzag:
-        positioner = AreaPositioner(start, end, steps, passes, offsets)
+        positioner_class = ZigZagAreaPositioner
     else:
-        positioner = ZigZagAreaPositioner(start, end, steps, passes, offsets)
+        positioner_class = AreaPositioner
 
-    before_executer = ActionExecutor(before_read)
-    after_executer = ActionExecutor(after_read)
+    positioner = positioner_class(start=start, end=end, step_size=step_size,
+                                  n_steps=n_steps, offsets=offsets, passes=passes)
 
-    settings = scan_settings(settling_time=latency)
+    result = scan(positioner, readables, writables, before_read=before_read, after_read=after_read, settings=settings,
+                  finalization=finalization_actions)
 
-    scanner = Scanner(positioner, reader, before_executer, writer, after_executer, settings=settings)
-    return scanner.discrete_scan()
+    return result
 
 
 def vscan(writables, readables, vector, line=False, latency=0.0, relative=False, passes=1, zigzag=False,
@@ -282,13 +271,7 @@ def bscan(stream, records, before_read=None, after_read=None, title=None):
         ScanResult object.
 
     """
-    stream = string_to_obj(stream)
-    scan = BsScan(stream, int(records))
-    scan.before_read = before_read
-    scan.after_read = after_read
-    scan.setPlotTitle(title)
-    scan.start()
-    return scan.getResult()
+    raise NotImplementedError("BS scan not supported.")
 
 
 def tscan(readables, points, interval, before_read=None, after_read=None, title=None):

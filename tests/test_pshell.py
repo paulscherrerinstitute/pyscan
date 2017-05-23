@@ -27,11 +27,24 @@ cached_initial_values["PYSCAN:TEST:MOTOR2:SET"] = -20
 # END OF MOCK.
 
 from pyscan import epics_pv
-from pyscan.interface.pshell import tscan, lscan
+from pyscan.interface.pshell import tscan, lscan, ascan
 
 
 class PShell(unittest.TestCase):
     def test_lscan(self):
+        # Initialize the motor values.
+        cached_initial_values["PYSCAN:TEST:MOTOR1:GET"] = -10
+        cached_initial_values["PYSCAN:TEST:MOTOR1:SET"] = -10
+        cached_initial_values["PYSCAN:TEST:MOTOR2:GET"] = -20
+        cached_initial_values["PYSCAN:TEST:MOTOR2:SET"] = -20
+
+        # Collect motor positions after each measurement.
+        def after_read():
+            motor_positions.append((pv_cache["PYSCAN:TEST:MOTOR1:SET"][0].value,
+                                    pv_cache["PYSCAN:TEST:MOTOR2:SET"][0].value))
+
+        motor_positions = []
+
         writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET"),
                      epics_pv("PYSCAN:TEST:MOTOR2:SET", "PYSCAN:TEST:MOTOR2:GET")]
 
@@ -40,12 +53,6 @@ class PShell(unittest.TestCase):
         start = [0, 0]
         end = [2, 6]
         steps = 2
-
-        # Collect motor positions after each measurement.
-        def after_read():
-            motor_positions.append((pv_cache["PYSCAN:TEST:MOTOR1:SET"][0].value,
-                                    pv_cache["PYSCAN:TEST:MOTOR2:SET"][0].value))
-        motor_positions = []
 
         result = lscan(writables=writables, readables=readables, start=start, end=end, steps=steps, relative=True,
                        after_read=after_read)
@@ -58,6 +65,28 @@ class PShell(unittest.TestCase):
 
         self.assertEqual(motor_positions, [(-10, -20), (-9, -17), (-8, -14)],
                          "Motor did not move on relative positions.")
+
+    def test_ascan(self):
+        num_expected_steps = 4 * 13
+
+        start = [0, 0]
+        end = [3, 6]
+        steps = [1., 0.5]
+
+        writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET"),
+                     epics_pv("PYSCAN:TEST:MOTOR2:SET", "PYSCAN:TEST:MOTOR2:GET")]
+
+        readables = [epics_pv("PYSCAN:TEST:OBS1")]
+
+        result = ascan(writables=writables, readables=readables, start=start, end=end, steps=steps)
+
+        self.assertEqual(len(result), num_expected_steps, "Wrong number of acquisitions.")
+
+    def test_vscan(self):
+        pass
+
+    def test_rscan(self):
+        pass
 
     def test_tscan(self):
         points = 5

@@ -86,7 +86,7 @@ class Readme(unittest.TestCase):
         # Define 3 readables: X, Y, Z.
         readables = [epics_pv("X"), epics_pv("Y"), epics_pv("Z")]
         # Perform the scan.
-        result = scan(positioner, writables, readables)
+        result = scan(positioner, readables, writables)
 
         # The result is a list, with a list of measurement for each position.
         self.assertEqual([[x1, y1, z1],
@@ -94,7 +94,7 @@ class Readme(unittest.TestCase):
                           [x3, y3, z3]], result, "The result is not the expected one.")
 
         # In case we want to do 2 measurements at each position.
-        result = scan(positioner, writables, readables, settings=scan_settings(n_measurements=2))
+        result = scan(positioner, readables, writables, settings=scan_settings(n_measurements=2))
 
         # The result is a list, with a list for each position, which again has a list for each measurement.
         self.assertEqual([[[x1, y1, z1], [x1, y1, z1]],
@@ -103,7 +103,7 @@ class Readme(unittest.TestCase):
 
         # In case you have a single readable.
         readables = epics_pv("X")
-        result = scan(positioner, writables, readables)
+        result = scan(positioner, readables, writables)
 
         # The measurements are still wrapped in a list (with a single element, this time).
         self.assertEqual([[x1], [x2], [x3]], result, "The result is not the expected one.")
@@ -112,7 +112,7 @@ class Readme(unittest.TestCase):
         positioner = VectorPositioner(1)
         writables = epics_pv("MOTOR")
         readables = epics_pv("X")
-        result = scan(positioner, writables, readables)
+        result = scan(positioner, readables, writables)
 
         # The result is still wrapped in 2 lists. The reason is described in the note below.
         result == [[x1]]

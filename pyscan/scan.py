@@ -10,7 +10,7 @@ BS_READER = bsread_dal.ReadGroupInterface
 DATA_PROCESSOR = SimpleDataProcessor
 
 
-def scan(positioner, writables, readables, monitors=None, initialization=None, finalization=None, settings=None):
+def scan(positioner, readables, writables=None, monitors=None, initialization=None, finalization=None, settings=None):
     # Allow a list or a single value to be passed.
     writables = convert_to_list(writables) or []
     readables = convert_to_list(readables) or []

@@ -80,13 +80,9 @@ class ScanTests(unittest.TestCase):
         initialization = [action_set_epics_pv("PYSCAN:TEST:OBS1", -33)]
         finalization = [action_restore(writables)]
 
-        result = scan(positioner=positioner,
-                      writables=writables,
-                      readables=readables,
-                      initialization=initialization,
-                      finalization=finalization,
-                      settings=scan_settings(measurement_interval=0.25,
-                                             n_measurements=1))
+        result = scan(positioner=positioner, readables=readables, writables=writables, initialization=initialization,
+                      finalization=finalization, settings=scan_settings(measurement_interval=0.25,
+                                                                        n_measurements=1))
 
         self.assertEqual(pv_cache["PYSCAN:TEST:MOTOR1:SET"][0].value, -11,
                          "Finalization did not restore original value.")
@@ -114,12 +110,8 @@ class ScanTests(unittest.TestCase):
         finalization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 0, "PYSCAN:TEST:PRE1:GET"),
                         action_restore(writables)]
 
-        result = scan(positioner=positioner,
-                      writables=writables,
-                      readables=readables,
-                      monitors=monitors,
-                      initialization=initialization,
-                      finalization=finalization,
+        result = scan(positioner=positioner, readables=readables, writables=writables, monitors=monitors,
+                      initialization=initialization, finalization=finalization,
                       settings=scan_settings(measurement_interval=0.25,
                                              n_measurements=1))
 
@@ -147,7 +139,7 @@ class ScanTests(unittest.TestCase):
         readables = epics_pv("PYSCAN:TEST:OBS1")
         settings = scan_settings(progress_callback=progress)
 
-        scan(positioner, writables, readables, settings=settings)
+        scan(positioner, readables, writables, settings=settings)
 
         self.assertEqual(len(positions) + 1, len(current_index), "The number of reported positions is wrong.")
         self.assertEqual(total_positions, 5, "The number of total positions is wrong.")

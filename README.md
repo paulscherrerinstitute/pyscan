@@ -86,11 +86,11 @@ from pyscan import *
 positions = [1, 2, 3, 4]
 positioner = VectorPositioner(positions)
 
-# Move MOTOR1 over defined positions.
-writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET")]
-
 # Read "PYSCAN:TEST:OBS1" value at each position.
 readables = [epics_pv("PYSCAN:TEST:OBS1")]
+
+# Move MOTOR1 over defined positions.
+writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET")]
 
 # At each read of "PYSCAN:TEST:OBS1", check if "PYSCAN:TEST:VALID1" == 10
 monitors = [epics_monitor("PYSCAN:TEST:VALID1", 10)]
@@ -106,8 +106,8 @@ settings = scan_settings(measurement_interval=0.25, n_measurements=4)
 
 # Execute the scan and get the result.
 result = scan(positioner=positioner, 
-              writables=writables, 
               readables=readables,
+              writables=writables, 
               monitors=monitors,
               initialization=initialization,
               finalization=finalization,
@@ -117,8 +117,8 @@ result = scan(positioner=positioner,
 In the following chapters, each component will be explained in more details:
 
 - **Positioner**: Generates positions, according to the input values, on which to place the writables.
-- **Writables**: PVs (motors, in most cases) to move according to the positioner values.
 - **Readables**: PVs or BS read properties to read at each position.
+- **Writables**: PVs (motors, in most cases) to move according to the positioner values.
 - **Monitors**: PVs or BS read properties used to validate the readables at each position.
 - **Initialization**: Actions to execute before the scan.
 - **Finalization**: Actions to execute after the scan is completed or when the scan is aborted.
@@ -396,12 +396,12 @@ z1, z2, z3 = [3] * 3
 from pyscan import *
 # Scan at position 1, 2, and 3.
 positioner = VectorPositioner([1, 2, 3])
-# Define 1 writable motor
-writables = epics_pv("MOTOR")
 # Define 3 readables: X, Y, Z.
 readables = [epics_pv("X"), epics_pv("Y"), epics_pv("Z")]
+# Define 1 writable motor
+writables = epics_pv("MOTOR")
 # Perform the scan.
-result = scan(positioner, writables, readables)
+result = scan(positioner, readables, writables)
 
 # The result is a list, with a list of measurement for each position.
 result == [[x1, y1, z1], 
@@ -409,7 +409,7 @@ result == [[x1, y1, z1],
            [x3, y3, z3]]
 
 # In case we want to do 2 measurements at each position.
-result = scan(positioner, writables, readables, settings=scan_settings(n_measurements=2))
+result = scan(positioner, readables, writables, settings=scan_settings(n_measurements=2))
 
 # The result is a list, with a list for each position, which again has a list for each measurement. 
 result == [[[x1, y1, z1], [x1, y1, z1]],
@@ -418,7 +418,7 @@ result == [[[x1, y1, z1], [x1, y1, z1]],
            
 # In case you have a single readable.
 readables = epics_pv("X")
-result = scan(positioner, writables, readables)
+result = scan(positioner, readables, writables)
 
 # The measurements are still wrapped in a list (with a single element, this time).
 result == [[x1], [x2], [x3]]
@@ -427,7 +427,7 @@ result == [[x1], [x2], [x3]]
 positioner = VectorPositioner(1)
 writables = epics_pv("MOTOR")
 readables = epics_pv("X")
-result = scan(positioner, writables, readables)
+result = scan(positioner, readables, writables)
 
 # The result is still wrapped in 2 lists. The reason is described in the note below.
 result == [[x1]]

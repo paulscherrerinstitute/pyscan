@@ -33,8 +33,20 @@ class PShell(unittest.TestCase):
         points = 5
         acquisition_interval = 0.1
 
+        def increase_before():
+            nonlocal before_counter
+            before_counter += 1
+        before_counter = 0
+
+        def increase_after():
+            nonlocal after_counter
+            after_counter += 1
+        after_counter = 0
+
         readables = epics_pv("PYSCAN:TEST:OBS1")
-        result = tscan(readables, points=points, interval=acquisition_interval)
+        result = tscan(readables, points=points, interval=acquisition_interval,
+                       before_read=increase_before, after_read=increase_after)
 
         self.assertEqual(len(result), points, "Number of received points does not math the requirement.")
-
+        self.assertEqual(points, before_counter, "The number of before_read invocation does not match.")
+        self.assertEqual(points, after_counter, "The number of after_read invocation does not match.")

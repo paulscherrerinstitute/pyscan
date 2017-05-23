@@ -18,7 +18,7 @@ def action_set_epics_pv(pv_name, value, readback_pv_name=None, tolerance=None, t
     :param timeout: Timeout for setting the pv value.
     :return: Tuple of (pv_name, pv_readback, tolerance)
     """
-    pv_name, readback_pv_name, tolerance = epics_pv(pv_name, readback_pv_name, tolerance)
+    pv_name, readback_pv_name, tolerance, readback_pv_value = epics_pv(pv_name, readback_pv_name, tolerance)
 
     if value is None:
         raise ValueError("pv value not specified.")

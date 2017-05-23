@@ -11,8 +11,8 @@ DATA_PROCESSOR = SimpleDataProcessor
 ACTION_EXECUTOR = ActionExecutor
 
 
-def scan(positioner, readables, writables=None, monitors=None, initialization=None, finalization=None, settings=None,
-         data_processor=None):
+def scan(positioner, readables, writables=None, monitors=None, before_read=None, after_read=None, initialization=None,
+         finalization=None, settings=None, data_processor=None):
     # Allow a list or a single value to be passed.
     writables = convert_to_list(writables) or []
     readables = convert_to_list(readables) or []
@@ -70,20 +70,34 @@ def scan(positioner, readables, writables=None, monitors=None, initialization=No
     if not data_processor:
         data_processor = DATA_PROCESSOR()
 
+    # Object to move the motors.
     epics_write_method = None
     if epics_writer:
         epics_write_method = epics_writer.set_and_match
 
+    # Before acquisition hook.
+    before_executor = None
+    if before_read:
+        before_executor = ACTION_EXECUTOR(before_read).execute
+
+    # After acquisition hook.
+    after_executor = None
+    if after_read:
+        after_executor = ACTION_EXECUTOR(after_read).execute
+
+    # Initialization (before move to first position) hook.
     initialization_executor = None
     if initialization:
         initialization_executor = ACTION_EXECUTOR(initialization).execute
 
+    # Finalization (after last acquisition AND on error) hook.
     finalization_executor = None
     if finalization:
         finalization_executor = ACTION_EXECUTOR(finalization).execute
 
     scanner = Scanner(positioner=positioner, data_processor=data_processor, reader=read_data,
-                      writer=epics_write_method, initialization_executor=initialization_executor,
+                      writer=epics_write_method, before_executor=before_executor,
+                      after_executor=after_executor, initialization_executor=initialization_executor,
                       finalization_executor=finalization_executor, data_validator=validate_data, settings=settings)
 
     return scanner.discrete_scan()

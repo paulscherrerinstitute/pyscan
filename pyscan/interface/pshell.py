@@ -1,10 +1,9 @@
-from pyscan import scan, action_restore
+from pyscan import scan, action_restore, ZigZagVectorPositioner, VectorPositioner
 from pyscan.scan import EPICS_READER
 from pyscan.positioner.area import AreaPositioner, ZigZagAreaPositioner
 from pyscan.positioner.line import ZigZagLinePositioner, LinePositioner
 from pyscan.positioner.time import TimePositioner
 from pyscan.scan_parameters import scan_settings
-from pyscan.scanner import Scanner
 from pyscan.utils import convert_to_list
 
 
@@ -140,20 +139,21 @@ def vscan(writables, readables, vector, line=False, latency=0.0, relative=False,
         ScanResult object.
 
     """
-    latency_ms = int(latency * 1000)
-    writables = to_list(string_to_obj(writables))
-    readables = to_list(string_to_obj(readables))
-    if len(vector) == 0:
-        vector.append([])
-    elif (not is_list(vector[0])) and (not isinstance(vector[0], PyArray)):
-        vector = [[x, ] for x in vector]
-    vector = to_array(vector, 'd')
-    scan = VectorScan(writables, readables, vector, line, relative, latency_ms, passes, zigzag)
-    scan.before_read = before_read
-    scan.after_read = after_read
-    scan.setPlotTitle(title)
-    scan.start()
-    return scan.getResult()
+    offsets, finalization_actions, settings = _generate_scan_parameters(relative, writables, latency)
+
+    # TODO: Line scan for vector positioner.
+
+    if zigzag:
+        positioner_class = ZigZagVectorPositioner
+    else:
+        positioner_class = VectorPositioner
+
+    positioner = positioner_class(positions=vector, passes=passes, offsets=offsets)
+
+    result = scan(positioner, readables, writables, before_read=before_read, after_read=after_read, settings=settings,
+                  finalization=finalization_actions)
+
+    return result
 
 
 def rscan(writable, readables, regions, latency=0.0, relative=False, passes=1, zigzag=False, before_read=None,
@@ -180,25 +180,7 @@ def rscan(writable, readables, regions, latency=0.0, relative=False, passes=1, z
         ScanResult object.
 
     """
-    start = []
-    end = []
-    steps = []
-    for region in regions:
-        start.append(region[0])
-        end.append(region[1])
-        steps.append(region[2])
-    latency_ms = int(latency * 1000)
-    writable = string_to_obj(writable)
-    readables = to_list(string_to_obj(readables))
-    start = to_list(start)
-    end = to_list(end)
-    steps = to_list(steps)
-    scan = RegionScan(writable, readables, start, end, steps, relative, latency_ms, passes, zigzag)
-    scan.before_read = before_read
-    scan.after_read = after_read
-    scan.setPlotTitle(title)
-    scan.start()
-    return scan.getResult()
+    raise NotImplementedError("Region scan not supported.")
 
 
 def cscan(writables, readables, start, end, steps, latency=0.0, time=None, relative=False, passes=1, zigzag=False,

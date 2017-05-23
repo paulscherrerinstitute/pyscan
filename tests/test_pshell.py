@@ -85,9 +85,6 @@ class PShell(unittest.TestCase):
     def test_vscan(self):
         pass
 
-    def test_rscan(self):
-        pass
-
     def test_tscan(self):
         points = 5
         acquisition_interval = 0.1

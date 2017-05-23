@@ -10,7 +10,8 @@ BS_READER = bsread_dal.ReadGroupInterface
 DATA_PROCESSOR = SimpleDataProcessor
 
 
-def scan(positioner, readables, writables=None, monitors=None, initialization=None, finalization=None, settings=None):
+def scan(positioner, readables, writables=None, monitors=None, initialization=None, finalization=None, settings=None,
+         data_processor=None):
     # Allow a list or a single value to be passed.
     writables = convert_to_list(writables) or []
     readables = convert_to_list(readables) or []
@@ -65,6 +66,9 @@ def scan(positioner, readables, writables=None, monitors=None, initialization=No
 
         return True
 
+    if not data_processor:
+        data_processor = DATA_PROCESSOR()
+
     epics_write_method = None
     if epics_writer:
         epics_write_method = epics_writer.set_and_match
@@ -77,7 +81,7 @@ def scan(positioner, readables, writables=None, monitors=None, initialization=No
     if finalization:
         finalization_executor = ActionExecutor(finalization).execute
 
-    scanner = Scanner(positioner=positioner, data_processor=DATA_PROCESSOR(), reader=read_data,
+    scanner = Scanner(positioner=positioner, data_processor=data_processor, reader=read_data,
                       writer=epics_write_method, initialization_executor=initialization_executor,
                       finalization_executor=finalization_executor, data_validator=validate_data, settings=settings)
 

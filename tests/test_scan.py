@@ -5,6 +5,9 @@ from threading import Thread
 
 from bsread.sender import Sender
 
+from pyscan import SimpleDataProcessor
+from pyscan.config import max_time_tolerance
+from pyscan.positioner.time import TimePositioner
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, cached_initial_values
 
 # BEGIN EPICS MOCK.
@@ -145,3 +148,23 @@ class ScanTests(unittest.TestCase):
         self.assertEqual(total_positions, 5, "The number of total positions is wrong.")
         self.assertEqual(current_index, [0, 1, 2, 3, 4, 5], "The reported percentage is wrong.")
         self.assertEqual(current_percentage, [0, 20, 40, 60, 80, 100], "The reported percentage is wrong.")
+
+    def test_time_scan(self):
+        n_intervals = 10
+        time_interval = 0.1
+
+        positioner = TimePositioner(time_interval, n_intervals)
+        readables = epics_pv("PYSCAN:TEST:OBS1")
+        data_processor = SimpleDataProcessor()
+
+        scan(positioner, readables, data_processor=data_processor)
+        result = data_processor.get_data()
+
+        self.assertEqual(len(result), n_intervals)
+
+        acquisition_times = data_processor.get_positions()
+
+        for index in range(n_intervals - 1):
+            time_difference = acquisition_times[index + 1] - acquisition_times[index]
+            self.assertTrue(abs(time_difference-time_interval) < max_time_tolerance,
+                            "The acquisition time difference is larger than the minimum tolerance.")

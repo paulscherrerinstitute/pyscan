@@ -10,7 +10,7 @@ class Scanner(object):
     Perform discrete and continues scans.
     """
 
-    def __init__(self, positioner, writer, data_processor, reader, before_executor=None, after_executor=None,
+    def __init__(self, positioner, data_processor, reader, writer=None, before_executor=None, after_executor=None,
                  initialization_executor=None, finalization_executor=None, data_validator=None, settings=None):
         """
         Initialize scanner.
@@ -130,7 +130,9 @@ class Scanner(object):
 
             for position_index, next_positions in zip(count(1), self.positioner.get_generator()):
                 # Position yourself before reading.
-                self.writer(next_positions)
+                if self.writer:
+                    self.writer(next_positions)
+
                 # Settling time, wait after positions has been reached.
                 sleep(self.settings.settling_time)
 

@@ -78,10 +78,9 @@ class Scan(object):
                                              n_observables=self.n_observables,
                                              n_measurements=settings.n_measurements)
 
-        self.scanner = Scanner(positioner=self.get_positioner(),
-                               writer=self.epics_dal.get_group(WRITE_GROUP).set_and_match,
-                               data_processor=data_processor,
+        self.scanner = Scanner(positioner=self.get_positioner(), data_processor=data_processor,
                                reader=self.epics_dal.get_group(READ_GROUP).read,
+                               writer=self.epics_dal.get_group(WRITE_GROUP).set_and_match,
                                before_executor=self.get_action_executor("In-loopPreAction"),
                                after_executor=progress_after_executor,
                                initialization_executor=self.get_action_executor("PreAction"),

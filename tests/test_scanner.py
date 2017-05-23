@@ -22,7 +22,7 @@ class ScannerTests(unittest.TestCase):
         read_buffer = [0, 11, 22, 33, 44, 55]
         reader = TestReader(read_buffer).read
 
-        scanner = Scanner(positioner, writer, data_processor, reader)
+        scanner = Scanner(positioner, data_processor, reader, writer)
         scanner.discrete_scan()
 
         self.assertEqual(target_positions, test_positions,

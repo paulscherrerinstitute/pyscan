@@ -65,6 +65,10 @@ def scan(positioner, writables, readables, monitors=None, initialization=None, f
 
         return True
 
+    epics_write_method = None
+    if epics_writer:
+        epics_write_method = epics_writer.set_and_match
+
     initialization_executor = None
     if initialization:
         initialization_executor = ActionExecutor(initialization).execute
@@ -73,31 +77,29 @@ def scan(positioner, writables, readables, monitors=None, initialization=None, f
     if finalization:
         finalization_executor = ActionExecutor(finalization).execute
 
-    scanner = Scanner(positioner=positioner,
-                      writer=epics_writer.set_and_match,
-                      data_processor=DATA_PROCESSOR(),
-                      reader=read_data,
-                      data_validator=validate_data,
-                      initialization_executor=initialization_executor,
-                      finalization_executor=finalization_executor,
-                      settings=settings)
+    scanner = Scanner(positioner=positioner, data_processor=DATA_PROCESSOR(), reader=read_data,
+                      writer=epics_write_method, initialization_executor=initialization_executor,
+                      finalization_executor=finalization_executor, data_validator=validate_data, settings=settings)
 
     return scanner.discrete_scan()
 
 
 def _initialize_epics_dal(writables, readables, monitors, settings):
-    # We support only epics_pv writables.
-    if not all((isinstance(x, EPICS_PV) for x in writables)):
-        raise ValueError("Only EPICS_PV can be used as writables.")
+
+    epics_writer = None
+    if writables:
+        # We support only epics_pv writables.
+        if not all((isinstance(x, EPICS_PV) for x in writables)):
+            raise ValueError("Only EPICS_PV can be used as writables.")
+
+        # Instantiate the PVs to move the motors.
+        epics_writer = EPICS_WRITER(pv_names=[pv.pv_name for pv in writables],
+                                    readback_pv_names=[pv.readback_pv_name for pv in writables],
+                                    tolerances=[pv.tolerance for pv in writables],
+                                    timeout=settings.write_timeout)
 
     epics_readables_pv_names = [x.pv_name for x in filter(lambda x: isinstance(x, EPICS_PV), readables)]
     epics_monitors_pv_names = [x.pv_name for x in filter(lambda x: isinstance(x, EPICS_MONITOR), monitors)]
-
-    # Instantiate the PVs to move the motors.
-    epics_writer = EPICS_WRITER(pv_names=[pv.pv_name for pv in writables],
-                                readback_pv_names=[pv.readback_pv_name for pv in writables],
-                                tolerances=[pv.tolerance for pv in writables],
-                                timeout=settings.write_timeout)
 
     # Reading epics PV values.
     epics_pv_reader = None

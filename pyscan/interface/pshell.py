@@ -1,9 +1,38 @@
+from collections import namedtuple
+
+from pyscan import scan, action_restore
+from pyscan.dal import epics_dal, bsread_dal
 from pyscan.dal.epics_dal import WriteGroupInterface, ReadGroupInterface
 from pyscan.positioner.area import AreaPositioner, ZigZagAreaPositioner
 from pyscan.positioner.line import ZigZagLinePositioner, LinePositioner
+from pyscan.positioner.time import TimePositioner
 from pyscan.scan_parameters import scan_settings
 from pyscan.scanner import Scanner
-from pyscan.utils import convert_to_list, ActionExecutor
+from pyscan.utils import convert_to_list
+
+
+def _generate_scan_parameters(relative, writables, latency):
+    # If the scan is relative we collect the initial writables offset, and restore the state at the end of the scan.
+    offsets = None
+    finalization_action = []
+    if relative:
+        pv_names = [x.pv_name for x in convert_to_list(writables) or []]
+        reader = ReadGroupInterface(pv_names)
+        offsets = reader.read()
+        reader.close()
+
+        finalization_action.append(action_restore(writables))
+
+    settings = scan_settings(settling_time=latency)
+
+    return offsets, finalization_action, settings
+
+
+def _convert_steps_parameter(steps):
+    n_steps = None
+    step_size = None
+
+    return n_steps, step_size
 
 
 def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
@@ -31,39 +60,21 @@ def lscan(writables, readables, start, end, steps, latency=0.0, relative=False,
         ScanResult object.
 
     """
-
-    # Allow the user to specify a single item or a list of items, but always convert to a list of items.
-    writables = convert_to_list(writables)
-    readables = convert_to_list(readables)
-    start = convert_to_list(start)
-    end = convert_to_list(end)
-    steps = convert_to_list(steps)
-
-    writer = WriteGroupInterface(writables)
-    reader = ReadGroupInterface(readables)
-
-    offsets = reader.read() if relative else None
-
-    # TODO: Figure out if steps is n_step or step_sizes
+    offsets, finalization_actions, settings = _generate_scan_parameters(relative, writables, latency)
+    n_steps, step_size = _convert_steps_parameter(steps)
 
     if zigzag:
-        positioner = ZigZagLinePositioner(start, end, steps, passes, offsets)
+        positioner_class = ZigZagLinePositioner
     else:
-        positioner = LinePositioner(start, end, steps, passes, offsets)
+        positioner_class = LinePositioner
 
-    before_executer = ActionExecutor(before_read)
-    after_executer = ActionExecutor(after_read)
+    positioner = positioner_class(start=start, end=end, step_size=step_size,
+                                  n_steps=n_steps, offsets=offsets, passes=passes)
 
-    settings = scan_settings(settling_time=latency)
+    result = scan(positioner, readables, writables, before_read=before_read, after_read=after_read, settings=settings,
+                  finalization=finalization_actions)
 
-    scanner = Scanner(positioner=positioner,
-                      writer=writer,
-                      reader=reader,
-                      before_executor=before_executer,
-                      after_executor=after_executer,
-                      settings=settings)
-
-    return scanner.discrete_scan()
+    return result
 
 
 def ascan(writables, readables, start, end, steps, latency=0.0, relative=False,
@@ -109,7 +120,7 @@ def ascan(writables, readables, start, end, steps, latency=0.0, relative=False,
 
     settings = scan_settings(settling_time=latency)
 
-    scanner = Scanner(positioner, writer, reader, before_executer, after_executer, settings=settings)
+    scanner = Scanner(positioner, reader, before_executer, writer, after_executer, settings=settings)
     return scanner.discrete_scan()
 
 
@@ -290,15 +301,9 @@ def tscan(readables, points, interval, before_read=None, after_read=None, title=
         ScanResult object.
 
     """
-    interval = max(interval, 0.001)  # Minimum temporization is 1ms
-    interval_ms = int(interval * 1000)
-    readables = to_list(string_to_obj(readables))
-    scan = TimeScan(readables, points, interval_ms)
-    scan.before_read = before_read
-    scan.after_read = after_read
-    scan.setPlotTitle(title)
-    scan.start()
-    return scan.getResult()
+    positioner = TimePositioner(interval, points)
+    result = scan(positioner, readables, before_read=before_read, after_read=after_read)
+    return result
 
 
 def mscan(trigger, readables, points, timeout=None, async=True, take_initial=False, before_read=None, after_read=None,
@@ -325,14 +330,7 @@ def mscan(trigger, readables, points, timeout=None, async=True, take_initial=Fal
         ScanResult object.
 
     """
-    timeout_ms = int(timeout * 1000) if ((timeout is not None) and (timeout >= 0)) else -1
-    readables = to_list(string_to_obj(readables))
-    scan = MonitorScan(trigger, readables, points, timeout_ms, async, take_initial)
-    scan.before_read = before_read
-    scan.after_read = after_read
-    scan.setPlotTitle(title)
-    scan.start()
-    return scan.getResult()
+    raise NotImplementedError("Monitor scan not supported.")
 
 
 def escan(name, title=None):

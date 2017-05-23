@@ -48,4 +48,5 @@ class TimePositioner(object):
             last_time_to_sleep = time_to_sleep
             measurement_time_start = time()
 
-            yield None
+            # Return the timestamp at which the measurement should begin.
+            yield measurement_time_start

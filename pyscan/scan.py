@@ -13,10 +13,12 @@ ACTION_EXECUTOR = ActionExecutor
 
 def scan(positioner, readables, writables=None, monitors=None, before_read=None, after_read=None, initialization=None,
          finalization=None, settings=None, data_processor=None):
-    # Allow a list or a single value to be passed.
+    # Allow a list or a single value to be passed. Initialize None values.
     writables = convert_to_list(writables) or []
     readables = convert_to_list(readables) or []
     monitors = convert_to_list(monitors) or []
+    before_read = convert_to_list(before_read) or []
+    after_read = convert_to_list(after_read) or []
     initialization = convert_to_list(initialization) or []
     finalization = convert_to_list(finalization) or []
     settings = settings or scan_settings()

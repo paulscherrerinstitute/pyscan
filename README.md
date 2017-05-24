@@ -32,10 +32,10 @@
 
 <a id="overview"></a>
 # Overview
-There are multiple interfaces available for backward compatibility, but new features are available only on 
-the new interface, therefore using the new interface is strongly recommended. The old interfaces were developed 
-to facilitate the migration to the new library. Only the new interface will be presented 
-in this document. For information on how to use other interfaces, consult their original manual. A few exampes 
+There are multiple interfaces available, but new features are available only on 
+the new interface, therefore using the new interface is strongly recommended. The other interfaces were developed 
+to facilitate the migration to and integration of pyscan. Only the new interface will be presented 
+in this document. For information on how to use the other interfaces, consult their original manual. A few examples 
 are however available at the end of this document, under the [Other interfaces](#other_interfaces) chapter.
 
 <a id="sample_scan"></a>
@@ -445,6 +445,29 @@ readables = [value1, value2, value3]
 
 <a id="monitors"></a>
 ## Monitors 
+This are variables you monitor after each data acquisition to be sure that they have a certain values. A typical 
+example would be to verify if the beam repetition rate is in the desired range. The library supports both 
+PV monitors and bsread properties.
+
+Monitors can be created by invoking **** for PV monitors, and **** for bsread monitors.
+```python
+from pyscan import *
+# Acquired data is valid when "PYSCAN:TEST:VALID1" == 10
+monitor1 = epics_monitor("PYSCAN:TEST:VALID1", 10)
+# Acquired data is valid when 4 < "CAMERA1:VALID1" < 6
+monitor2 = bs_monitor("CAMERA1:VALID1", 5, tolerance=1)
+
+monitors = [monitor1, monitor2]
+```
+
+When any of the monitors fail (the monitor value not match the specified one), the **scan is aborted**.
+
+It is important to note:
+
+- Monitors (contrary to what the name suggests) do not use the epics monitoring feature, but do a caget every time 
+the value is requested. This is to ensure the most recent possible value is available to the monitor.
+- bsread monitors match the pulse id of the acquisition data pulse id. This guarantees that the monitor matches 
+the pulse of the data acquisition.
 
 <a id="init_and_fin"></a>
 ## Initialization and Finalization
@@ -585,7 +608,7 @@ can be configured using the [Scan settings](#scan_settings).
 # Other interfaces
 
 <a id="pshell"></a>
-## pshell(#pshell)
+## pshell
 
 <a id="old_pyscan"></a>
-## Old pyScan
+## pyScan

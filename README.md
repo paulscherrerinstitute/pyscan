@@ -5,8 +5,8 @@
 
 # Table of content
 1. [Overview](#overview)
-    1. [Introduction](#introduction)
-    2. [Sample scan](#sample_scan)
+    1. [Sample scan](#sample_scan)
+    2. [Introduction](#introduction)
 2. [Install](#install)
     1. [Conda setup](#conda_setup)
     2. [Local build](#local_build)
@@ -37,64 +37,6 @@ the new interface, therefore using the new interface is strongly recommended. Th
 to facilitate the migration to the new library. Only the new interface will be presented 
 in this document. For information on how to use other interfaces, consult their original manual. A few exampes 
 are however available at the end of this document, under the [Other interfaces](#other_interfaces) chapter.
-
-<a id="introduction"></a>
-## Introduction
-In this chapter we summerize the various object described in detail in this document. To access the objects 
-documentation directly, you can consult the source code or simply execute, for example:
-```python
-from pyscan import *
-help(epics_pv)
-```
-This will give you the documentation for **epics_pv**, but you can substitute this with any other bolded object in 
-this chapter.
-
-### Positioners
-How should we move the writables - in most cases motors - in the desired position.
-
-- **VectorPositioner**: Move all the axis according to the supplied list of positions.
-- **LinePositioner**: Move all the provided axis at once.
-- **AreaPositioner**: Move all provided axis, one by one, covering all combinations.
-- **SerialPositioner**: Move one axis at the time. Before moving the next axis, return the first to the original 
-position.
-- **CompoundPositioner**: Combine multiple other positioners, with the AreaPositioner logic (all combinations).
-- **TimePositioner**: Sample readables, without moving motors, at a specified interval.
-
-### Writables
-Which variables - motors in most cases - to write the values from the positioners to.
-
-- **epics_pv**: Write to epics process variable.
-
-### Readables
-Which variables to read at each position.
-
-- **epics_pv**: Read an epics process variable.
-- **bs_property**: Read a bsread property.
-
-### Monitors
-Which values to check after each data acquisition. Useful to verify if the acquired data is valid.
-
-- **epics_monitor**: Verify that an epics PV has a certain value.
-- **bs_monitor**: Verify that a bsread property has a certain value.
-
-### Actions
-Action can be executed for initialization, finalization, before and after each scan.
-
-- initialization: Executed once, before the beginning of the scan.
-- before_read: Executed every time before the measurements are taken.
-- after_read: Executed every time after the measurements are taken.
-- finalization: Executed once, at the end of the scan or when an exception is raise during the scan.
-
-Available actions:
-
-- **action_set_epics_pv**: Set an epics PV value.
-- **action_restore**: Restore the writables (to be used in finalization)
-- Any method you provide. The method has no call parameters.
-
-### Settings
-Setup the various scan parameters.
-
-- **scan\_settings**: All available parameters to set.
 
 <a id="sample_scan"></a>
 ## Sample scan
@@ -136,6 +78,68 @@ result = scan(positioner=positioner,
               finalization=finalization,
               settings=settings)
 ```
+
+<a id="introduction"></a>
+## Introduction
+In this chapter we summarize the various objects described in detail in this document. To access the objects 
+documentation directly, you can consult the source code or simply execute, for example:
+```python
+from pyscan import *
+help(epics_pv)
+```
+This will give you the documentation for **epics_pv**, but you can substitute this with any other bolded object in 
+this chapter.
+
+### Positioners
+How should we move the writables - in most cases motors - to the desired position.
+
+- **VectorPositioner**: Move all the axis according to the supplied list of positions.
+- **LinePositioner**: Move all the provided axis at once.
+- **AreaPositioner**: Move all provided axis, one by one, covering all combinations.
+- **SerialPositioner**: Move one axis at the time. Before moving the next axis, return the first to the original 
+position.
+- **CompoundPositioner**: Combine multiple other positioners, with the AreaPositioner logic (all combinations).
+- **TimePositioner**: Sample readables, without moving motors, at a specified interval.
+
+### Writables
+Which variables - motors in most cases - to write the values from the positioners.
+
+- **epics_pv**: Write to epics process variable.
+
+### Readables
+Which variables to read at each position.
+
+- **epics_pv**: Read an epics process variable.
+- **bs_property**: Read a bsread property.
+
+### Monitors
+Which values to check after each data acquisition. Useful to verify if the acquired data is valid.
+
+- **epics_monitor**: Verify that an epics PV has a certain value.
+- **bs_monitor**: Verify that a bsread property has a certain value.
+
+### Actions
+Action can be executed for initialization, finalization, before and after each data acquisition.
+
+- initialization: Executed once, before the beginning of the scan.
+- before_read: Executed every time before the measurements are taken.
+- after_read: Executed every time after the measurements are taken.
+- finalization: Executed once, at the end of the scan or when an exception is raise during the scan.
+
+Available actions:
+
+- **action_set_epics_pv**: Set an epics PV value.
+- **action_restore**: Restore the original pre-scan values of specified PVs.
+- Any method you provide. The method must be without arguments. Example:
+```python
+def do_something(): 
+    pass
+```
+
+### Settings
+Setup the various scan parameters.
+
+- **scan\_settings**: All available parameters to set.
 
 <a id="install"></a>
 # Install

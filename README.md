@@ -1,32 +1,141 @@
 [![Build Status](https://travis-ci.org/paulscherrerinstitute/pyscan.svg?branch=master)](https://travis-ci.org/paulscherrerinstitute/pyscan)
 [![Build status](https://ci.appveyor.com/api/projects/status/9oq871y9281iw19y?svg=true)](https://ci.appveyor.com/project/simongregorebner/pyscan)
 
-# Overview
 **pyscan** is a Python scanning library for Channel Access and beam synchronous (SwissFEL) data. 
 
-There are multiple interfaces available for backward compatibility, but new features are available only on 
-the new interface, therefore usicompletenessinterface is strongly recommended. The old interfaces were developed 
-to facilitate the migration to the new library. Only the new interface will be presented 
-in this document. beginningrmation on how to use other interfaces, consult their original manual.
-
 # Table of content
-1. [Install](#install)
+1. [Overview](#overview)
+    1. [Introduction](#introduction)
+    2. [Sample scan](#sample_scan)
+2. [Install](#install)
     1. [Conda setup](#conda_setup)
     2. [Local build](#local_build)
-2. [Usage](#usage)
+3. [Usage](#usage)
     1. [Positioners](#positioners)
-        1. [Vector and Linear positioner](#vector_and_line_positioner)
+        1. [Vector and Line positioner](#vector_and_line_positioner)
         2. [Area positioner](#area_positioner)
         3. [Serial positioner](#serial_positioner)
         4. [Compound positioner](#compound_positioner)
+        5. [Time positioner](#time_positioner)
     2. [Writables](#writables)
     3. [Readables](#readables)
     4. [Monitors](#monitors)
     5. [Initialization and Finalization](#init_and_fin)
-    6. [Scan settings](#scan_settings)
-    7. [Scan result](#scan_results)
-3. [Library configuration](#configuration)
-4. [Common use cases](#common_use_cases)
+    6. [Before and after read](#before_and_after)
+    7. [Scan settings](#scan_settings)
+    8. [Scan result](#scan_results)
+4. [Library configuration](#configuration)
+5. [Common use cases](#common_use_cases)
+6. [Other interfaces](#other_interfaces)
+    1. [pshell](#pshell)
+    2. [Old pyScan](#old_pyscan)
+
+<a id="overview"></a>
+# Overview
+There are multiple interfaces available for backward compatibility, but new features are available only on 
+the new interface, therefore using the new interface is strongly recommended. The old interfaces were developed 
+to facilitate the migration to the new library. Only the new interface will be presented 
+in this document. For information on how to use other interfaces, consult their original manual. A few exampes 
+are however available at the end of this document, under the [Other interfaces](#other_interfaces) chapter.
+
+<a id="introduction"></a>
+## Introduction
+In this chapter we summerize the various object described in detail in this document. To access the objects 
+documentation directly, you can consult the source code or simply execute, for example:
+```python
+from pyscan import *
+help(epics_pv)
+```
+This will give you the documentation for **epics_pv**, but you can substitute this with any other bolded object in 
+this chapter.
+
+### Positioners
+How should we move the writables - in most cases motors - in the desired position.
+
+- **VectorPositioner**: Move all the axis according to the supplied list of positions.
+- **LinePositioner**: Move all the provided axis at once.
+- **AreaPositioner**: Move all provided axis, one by one, covering all combinations.
+- **SerialPositioner**: Move one axis at the time. Before moving the next axis, return the first to the original 
+position.
+- **CompoundPositioner**: Combine multiple other positioners, with the AreaPositioner logic (all combinations).
+- **TimePositioner**: Sample readables, without moving motors, at a specified interval.
+
+### Writables
+Which variables - motors in most cases - to write the values from the positioners to.
+
+- **epics_pv**: Write to epics process variable.
+
+### Readables
+Which variables to read at each position.
+
+- **epics_pv**: Read an epics process variable.
+- **bs_property**: Read a bsread property.
+
+### Monitors
+Which values to check after each data acquisition. Useful to verify if the acquired data is valid.
+
+- **epics_monitor**: Verify that an epics PV has a certain value.
+- **bs_monitor**: Verify that a bsread property has a certain value.
+
+### Actions
+Action can be executed for initialization, finalization, before and after each scan.
+
+- initialization: Executed once, before the beginning of the scan.
+- before_read: Executed every time before the measurements are taken.
+- after_read: Executed every time after the measurements are taken.
+- finalization: Executed once, at the end of the scan or when an exception is raise during the scan.
+
+Available actions:
+
+- **action_set_epics_pv**: Set an epics PV value.
+- **action_restore**: Restore the writables (to be used in finalization)
+- Any method you provide. The method has no call parameters.
+
+### Settings
+Setup the various scan parameters.
+
+- **scan\_settings**: All available parameters to set.
+
+<a id="sample_scan"></a>
+## Sample scan
+
+A sample scan, that uses the most common pyscan features, can be done by running:
+
+```Python
+# Import everything you need.
+from pyscan import *
+
+# Defines positions to move the motor to.
+positions = [1, 2, 3, 4]
+positioner = VectorPositioner(positions)
+
+# Read "PYSCAN:TEST:OBS1" value at each position.
+readables = [epics_pv("PYSCAN:TEST:OBS1")]
+
+# Move MOTOR1 over defined positions.
+writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET")]
+
+# At each read of "PYSCAN:TEST:OBS1", check if "PYSCAN:TEST:VALID1" == 10
+monitors = [epics_monitor("PYSCAN:TEST:VALID1", 10)]
+
+# Before the scan starts, set "PYSCAN:TEST:PRE1:SET" to 1.
+initialization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 1, "PYSCAN:TEST:PRE1:GET")]
+
+# After the scan completes, restore the original value of "PYSCAN:TEST:MOTOR1:SET".
+finalization = [action_restore(writables)]
+
+# At each position, do 4 readings of the readables with 10Hz (0.1 seconds between readings).
+settings = scan_settings(measurement_interval=0.1, n_measurements=4)
+
+# Execute the scan and get the result.
+result = scan(positioner=positioner, 
+              readables=readables,
+              writables=writables, 
+              monitors=monitors,
+              initialization=initialization,
+              finalization=finalization,
+              settings=settings)
+```
 
 <a id="install"></a>
 # Install
@@ -75,44 +184,6 @@ conda config --add channels paulscherrerinstitute
 # Usage 
 
 **Note**: All the examples in this README can also be found in the **tests/test_readme.py** file.
-
-A sample scan, that uses the most common pyscan features, can be done by running:
-
-```Python
-# Import everything you need.
-from pyscan import *
-
-# Defines positions to move the motor to.
-positions = [1, 2, 3, 4]
-positioner = VectorPositioner(positions)
-
-# Read "PYSCAN:TEST:OBS1" value at each position.
-readables = [epics_pv("PYSCAN:TEST:OBS1")]
-
-# Move MOTOR1 over defined positions.
-writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET")]
-
-# At each read of "PYSCAN:TEST:OBS1", check if "PYSCAN:TEST:VALID1" == 10
-monitors = [epics_monitor("PYSCAN:TEST:VALID1", 10)]
-
-# Before the scan starts, set "PYSCAN:TEST:PRE1:SET" to 1.
-initialization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 1, "PYSCAN:TEST:PRE1:GET")]
-
-# After the scan completes, restore the original value of "PYSCAN:TEST:MOTOR1:SET".
-finalization = [action_restore(writables)]
-
-# At each position, do 4 readings of the readables with 4Hz (0.25 seconds between readings).
-settings = scan_settings(measurement_interval=0.25, n_measurements=4)
-
-# Execute the scan and get the result.
-result = scan(positioner=positioner, 
-              readables=readables,
-              writables=writables, 
-              monitors=monitors,
-              initialization=initialization,
-              finalization=finalization,
-              settings=settings)
-```
 
 In the following chapters, each component will be explained in more details:
 
@@ -291,6 +362,25 @@ the faster changing one.
 positions provided by each positioners in the same order that they were specified when constructing the 
 CompoundPositioner.
 
+<a id="time_positioner"></a>
+### Time positioner
+This positioner is different from the others in the sense that it does not generate positions for the motors, 
+but time intervals at which to sample the readables. It is useful for acquisitions that recquire a time based 
+sampling without moving any motors. One such example you be to sample a bsread source with a certain interval.
+
+Because this positioner does not move any motor, you should not specify any writables, as they will not be moved.
+
+```python
+from pyscan import *
+
+# Sample the readables at 10Hz, acquire 30 samples.
+time_positioner = TimePositioner(time_interval=0.1, n_intervals=30)
+# Read "PYSCAN:TEST:OBS1" epics PV.
+readables = [epics_pv("PYSCAN:TEST:OBS1")]
+
+result = scan(positioner=time_positioner, readables=readables)
+```
+
 <a id="writables"></a>
 ## Writables
 Writables are PVs that are used to move the motors. The positions generated by the positioner are passed to the 
@@ -328,12 +418,35 @@ time (write_timeout setting, check chapter **Settings**), an exception is thrown
 
 <a id="readables"></a>
 ## Readables
+This are variables you read at every scan position. The result of the read is saved as a list entry in the output.
+You can have as many readables as you like, but at least 1 is mandatory (a scan without readables does not make much 
+sense).
+
+Readables can be a list or a single value of types:
+
+- **epics\_pv**: Epics process variable.
+- **bs\_property**: BS read property.
+
+You can mix the 2 types in any order you like. The order in which you declare the variables will be the order in which 
+they appear in the result list.
+
+```python
+from pyscan import *
+value1 = epics_pv("PYSCAN:TEST:OBS1")
+value2 = bs_property("CAMERA1:OBS2")
+value3 = epics_pv("PYSCAN:TEST:OBS3")
+
+readables = [value1, value2, value3]
+```
 
 <a id="monitors"></a>
 ## Monitors 
 
 <a id="init_and_fin"></a>
 ## Initialization and Finalization
+
+<a id="before_and_after"></a>
+## Before and after read
 
 <a id="scan_settings"></a>
 ## Scan settings
@@ -463,3 +576,12 @@ can be configured using the [Scan settings](#scan_settings).
 
 <a id="common_use_cases"></a>
 # Common use cases
+
+<a id="other_interfaces"></a>
+# Other interfaces
+
+<a id="pshell"></a>
+## pshell(#pshell)
+
+<a id="old_pyscan"></a>
+## Old pyScan

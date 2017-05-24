@@ -674,12 +674,16 @@ can be configured using the [Scan settings](#scan_settings).
 
 <a id="common_use_cases"></a>
 # Common use cases
+**TBD**
 
 <a id="other_interfaces"></a>
 # Other interfaces
+**TBD**
 
 <a id="pshell"></a>
 ## pshell
+**TBD**
 
 <a id="old_pyscan"></a>
 ## pyScan
+**TBD**

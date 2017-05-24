@@ -501,6 +501,41 @@ the pulse of the data acquisition.
 
 <a id="init_and_fin"></a>
 ## Initialization and Finalization
+The initialization and finalization actions are executed, respectively, before the first writables move and after the 
+last data acquisition. The finalization actions are always executed, also in case of scan abort. This methods are 
+useful for setting up scan related attributes, and for example restoring the original variable values. The most 
+common actions are already available in pyscan, but you can also provide your own method. The method must be without 
+arguments.
+
+```python
+from pyscan import *
+# Just for demonstrating the writables restore.
+writables = epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET")
+
+# Before starting the scan, move the SLIT1 into the beam.
+set_slit = action_set_epics_pv(pv_name="PYSCAN:TEST:SLIT1", value=1)
+
+# Just to demonstrate the possibility to execute any provided method.
+def notify_user():
+    print("Slit inserted..")
+# Execute the notify_user method specified above.
+notify_slit_inserted = notify_user
+
+# When the scan is completed, restore the pre-scan SLIT1 values.
+restore_slit = action_restore(epics_pv(pv_name="PYSCAN:TEST:SLIT1"))
+# When the scan is completed, restore the pre-scan writables values.
+restore_writables = action_restore(writables)
+
+initialization = [set_slit, notify_slit_inserted]
+finalization = [restore_slit, restore_writables]
+```
+
+It is important to note:
+
+- Actions are executed in the order they are provided. You must be careful if there are any inter-dependent variables 
+that must be set in a specific order.
+- Methods you provide must have no call arguments, they can however be closures if you need access to function external 
+variables.
 
 <a id="before_and_after"></a>
 ## Before and after read

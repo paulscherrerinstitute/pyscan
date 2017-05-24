@@ -539,6 +539,12 @@ variables.
 
 <a id="before_and_after"></a>
 ## Before and after read
+The before and after read action are execute before each measurement (after the writables moved), and right 
+after the measurements are finished. This actions can be used for user notifications, various verifications or 
+data storage preparations (for example setting a measurement header etc.).
+
+Apart from the execution points, the same actions and behaviours described in the 
+[Initialization and Finalization](#init_and_fin) chapter apply. Consult that chapter for more information on usage.
 
 <a id="scan_settings"></a>
 ## Scan settings

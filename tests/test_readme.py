@@ -17,6 +17,7 @@ scan_module.EPICS_WRITER = MockWriteGroupInterface
 fixed_values["X"] = cycle([1])
 fixed_values["Y"] = cycle([2])
 fixed_values["Z"] = cycle([3])
+fixed_values["PYSCAN:TEST:VALID1"] = cycle([10])
 # END OF MOCK.
 
 from pyscan import *
@@ -27,6 +28,38 @@ class Readme(unittest.TestCase):
         for result in results:
             positions = list(result.get_generator())
             self.assertEqual(expected_result, positions, "The result does not match the expected result.")
+
+    def test_sample(self):
+        # Defines positions to move the motor to.
+        positions = [1, 2, 3, 4]
+        positioner = VectorPositioner(positions)
+
+        # Read "PYSCAN:TEST:OBS1" value at each position.
+        readables = [epics_pv("PYSCAN:TEST:OBS1")]
+
+        # Move MOTOR1 over defined positions.
+        writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET")]
+
+        # At each read of "PYSCAN:TEST:OBS1", check if "PYSCAN:TEST:VALID1" == 10
+        monitors = [epics_monitor("PYSCAN:TEST:VALID1", 10)]
+
+        # Before the scan starts, set "PYSCAN:TEST:PRE1:SET" to 1.
+        initialization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 1, "PYSCAN:TEST:PRE1:GET")]
+
+        # After the scan completes, restore the original value of "PYSCAN:TEST:MOTOR1:SET".
+        finalization = [action_restore(writables)]
+
+        # At each position, do 4 readings of the readables with 4Hz (0.25 seconds between readings).
+        settings = scan_settings(measurement_interval=0.25, n_measurements=4)
+
+        # Execute the scan and get the result.
+        scan(positioner=positioner,
+             readables=readables,
+             writables=writables,
+             monitors=monitors,
+             initialization=initialization,
+             finalization=finalization,
+             settings=settings)
 
     def test_VectorAndLinePositioner(self):
         # Dummy value initialization.

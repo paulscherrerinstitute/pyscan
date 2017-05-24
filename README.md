@@ -313,7 +313,37 @@ while LinePositioner cannot. The same logic holds true for the step_size.
 
 <a id="serial_positioner"></a>
 ### Serial positioner
+A serial positioners moves one axis at the time, returning the previously moved axis back to its original position.
+
+```python
+from pyscan import *
+
+# Dummy value initialization.
+x0 = y0 = 0
+x1, x2, x3, x4 = range(1, 5)
+y1, y2, y3, y4 = range(1, 5)
+
+serial_positioner = SerialPositioner(positions=[[x1, x2, x3, x4], [y1, y2, y3, y4]],
+                                     initial_positions=[x0, y0])
+```
+
+The positions generated from the positioner above can be visualized as:
+
 ![Serial positioner representation](/docs/images/serial.png?raw=true)
+
+**Pn** denotes the point given by the positioner. In this case, the positions in ascending order are:
+
+- P1 (x1, y0)
+- P2 (x2, y0)
+- P3 (x3, y0)
+- P4 (x4, y0)
+- P5 (x0, y1)
+- P6 (x0, y2)
+- P7 (x0, y3)
+- P8 (x0, y4)
+
+**Warning**: Unlike other positioners, in the Serial positioner the first dimension is the one that changes first.
+In the example above, this means that X gets iterated over first, and then Y.
 
 <a id="compound_positioner"></a>
 ### Compound positioner

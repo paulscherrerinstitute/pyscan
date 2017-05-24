@@ -106,6 +106,19 @@ class Readme(unittest.TestCase):
                                               [3, 1], [3, 2], [3, 3], [3, 4],
                                               [4, 1], [4, 2], [4, 3], [4, 4]])
 
+    def test_SerialPositioner(self):
+        # Dummy value initialization.
+        x0 = y0 = 0
+        x1, x2, x3, x4 = range(1, 5)
+        y1, y2, y3, y4 = range(1, 5)
+
+        serial_positioner = SerialPositioner(positions=[[x1, x2, x3, x4], [y1, y2, y3, y4]],
+                                             initial_positions=[x0, y0])
+
+        self.compare_results(results=[serial_positioner],
+                             expected_result=[[1, 0], [2, 0], [3, 0], [4, 0],
+                                              [0, 1], [0, 2], [0, 3], [0, 4]])
+
     def test_ScanResult(self):
         # Dummy value initialization.
         x1, x2, x3 = [1] * 3

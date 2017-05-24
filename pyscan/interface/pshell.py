@@ -1,4 +1,4 @@
-from pyscan import scan, action_restore, ZigZagVectorPositioner, VectorPositioner
+from pyscan import scan, action_restore, ZigZagVectorPositioner, VectorPositioner, CompoundPositioner
 from pyscan.scan import EPICS_READER
 from pyscan.positioner.area import AreaPositioner, ZigZagAreaPositioner
 from pyscan.positioner.line import ZigZagLinePositioner, LinePositioner
@@ -141,14 +141,26 @@ def vscan(writables, readables, vector, line=False, latency=0.0, relative=False,
     """
     offsets, finalization_actions, settings = _generate_scan_parameters(relative, writables, latency)
 
-    # TODO: Line scan for vector positioner.
+    # The compound positioner does not allow you to do zigzag positioning.
+    if not line and zigzag:
+        raise ValueError("Area vector scan cannot use zigzag positioning.")
 
     if zigzag:
         positioner_class = ZigZagVectorPositioner
     else:
         positioner_class = VectorPositioner
 
-    positioner = positioner_class(positions=vector, passes=passes, offsets=offsets)
+    # If the vector is treated as a line scan, move all motors to the next position at the same time.
+    if line:
+        positioner = positioner_class(positions=vector, passes=passes, offsets=offsets)
+    # The vector is treated as an area scan. Move motors one by one, covering all positions.
+    else:
+        vector = convert_to_list(vector)
+        if not all(isinstance(x, list) for x in vector):
+            raise ValueError("In case of area scan, a list of lists is required for a vector.")
+
+        positioner = CompoundPositioner([VectorPositioner(positions=x, passes=passes, offsets=offsets)
+                                         for x in vector])
 
     result = scan(positioner, readables, writables, before_read=before_read, after_read=after_read, settings=settings,
                   finalization=finalization_actions)

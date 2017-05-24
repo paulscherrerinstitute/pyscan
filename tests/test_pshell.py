@@ -27,8 +27,7 @@ cached_initial_values["PYSCAN:TEST:MOTOR2:SET"] = -20
 # END OF MOCK.
 
 from pyscan import epics_pv
-from pyscan.interface.pshell import tscan, lscan, ascan
-
+from pyscan.interface.pshell import tscan, lscan, ascan, vscan
 
 class PShell(unittest.TestCase):
     def test_lscan(self):
@@ -83,7 +82,38 @@ class PShell(unittest.TestCase):
         self.assertEqual(len(result), num_expected_steps, "Wrong number of acquisitions.")
 
     def test_vscan(self):
-        pass
+        writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET"),
+                     epics_pv("PYSCAN:TEST:MOTOR2:SET", "PYSCAN:TEST:MOTOR2:GET")]
+
+        readables = [epics_pv("PYSCAN:TEST:OBS1")]
+
+        vector = [[1, 2, 3], [1, 2]]
+
+        result = vscan(writables=writables, readables=readables, vector=vector, line=False)
+
+        self.assertEqual(len(result), 6, "Wrong number of results.")
+
+        with self.assertRaisesRegex(ValueError, "must have the same number of axis."):
+            vscan(writables=writables, readables=readables, vector=vector, line=True)
+
+        with self.assertRaisesRegex(ValueError, "Area vector scan cannot use zigzag positioning."):
+            vscan(writables=writables, readables=readables, vector=vector, line=False, zigzag=True)
+
+        # Collect motor positions after each measurement.
+        def after_read():
+            motor_positions.append((pv_cache["PYSCAN:TEST:MOTOR1:SET"][0].value,
+                                    pv_cache["PYSCAN:TEST:MOTOR2:SET"][0].value))
+
+        motor_positions = []
+        vscan(writables=writables, readables=readables, vector=vector, line=False, after_read=after_read)
+        self.assertEqual(motor_positions, [(1, 1), (1, 2), (2, 1), (2, 2), (3, 1), (3, 2)],
+                         "Motor positions different than expected.")
+
+        vector = [[1, 1], [2, 2], [3, 3]]
+        motor_positions = []
+        vscan(writables=writables, readables=readables, vector=vector, line=True, after_read=after_read)
+        self.assertEqual(motor_positions, [(1, 1), (2, 2), (3, 3)],
+                         "Motor positions different than expected.")
 
     def test_tscan(self):
         points = 5

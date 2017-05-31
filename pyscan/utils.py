@@ -29,8 +29,11 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0):
 
         # We cannot set and match other than strings and numbers.
         else:
-            raise ValueError("Do not know how to compare %s with the expected value %s."
-                             % (current_value, expected_value))
+            try:
+                return current_value == expected_value
+            except:
+                raise ValueError("Do not know how to compare %s with the expected value %s."
+                                 % (current_value, expected_value))
 
         return False
 

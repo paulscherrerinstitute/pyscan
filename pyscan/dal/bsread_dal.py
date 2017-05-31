@@ -89,7 +89,7 @@ class ReadGroupInterface(object):
 
             # TODO: Check if the python conversion works in every case?
             # BS read always return numpy, and we always convert it to Python.
-            pv_values.append(value.item())
+            pv_values.append(value)
 
         return pv_values
 

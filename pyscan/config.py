@@ -34,9 +34,11 @@ bs_read_timeout = 5
 bs_receive_timeout = 1
 
 # Default bs_read connection address.
-bs_default_host = "127.0.0.1"
+bs_default_host = "localhost"
 # Default bs_read connection port.
 bs_default_port = 9999
+# Default bs connection port.
+bs_connection_mode = "sub"
 
 ###########################
 # EPICS DAL configuration #

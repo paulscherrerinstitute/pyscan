@@ -1,7 +1,7 @@
 import math
 from time import time
 
-from bsread import Source
+from bsread import Source, mflow
 
 from pyscan import config
 from pyscan.utils import convert_to_list
@@ -29,15 +29,23 @@ class ReadGroupInterface(object):
         self._connect_bsread(config.bs_default_host, config.bs_default_port)
 
     def _connect_bsread(self, host, port):
+        # Configure the connection type.
+        if config.bs_connection_mode.lower() == "sub":
+            mode = mflow.SUB
+        elif config.bs_connection_mode.lower() == "pull":
+            mode = mflow.PULL
+
         if host and port:
             self.stream = Source(host=host,
                                  port=port,
                                  queue_size=config.bs_queue_size,
-                                 receive_timeout=config.bs_receive_timeout)
+                                 receive_timeout=config.bs_receive_timeout,
+                                 mode=mode)
         else:
             self.stream = Source(channels=self.properties + self.monitor_properties,
                                  queue_size=config.bs_queue_size,
-                                 receive_timeout=config.bs_receive_timeout)
+                                 receive_timeout=config.bs_receive_timeout,
+                                 mode=mode)
         self.stream.connect()
 
     @staticmethod

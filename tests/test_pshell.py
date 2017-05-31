@@ -29,6 +29,7 @@ cached_initial_values["PYSCAN:TEST:MOTOR2:SET"] = -20
 from pyscan import epics_pv
 from pyscan.interface.pshell import tscan, lscan, ascan, vscan
 
+
 class PShell(unittest.TestCase):
     def test_lscan(self):
         # Initialize the motor values.

@@ -4,8 +4,8 @@ from pyscan import config
 
 EPICS_PV = namedtuple("EPICS_PV", ["pv_name", "readback_pv_name", "tolerance", "readback_pv_value"])
 EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "action", "tolerance"])
-BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "camera", "property"])
-BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "camera", "property", "value", "action", "tolerance"])
+BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "property"])
+BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "property", "value", "action", "tolerance"])
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
                                              "write_timeout", "settling_time", "progress_callback"])
 
@@ -70,11 +70,7 @@ def bs_property(name):
     if not name:
         raise ValueError("name not specified.")
 
-    if not name.count(":") == 1:
-        raise ValueError("Property name needs to be in format 'camera_name:property_name', but %s was provided" % name)
-
-    camera_name, property_name = name.split(":")
-    return BS_PROPERTY(identifier, camera_name, property_name)
+    return BS_PROPERTY(identifier, name)
 
 
 def bs_monitor(name, value, tolerance=None):
@@ -83,15 +79,12 @@ def bs_monitor(name, value, tolerance=None):
     :param name: Complete property name.
     :param value: Expected value.
     :param tolerance: Tolerance within which the monitor needs to be.
-    :return:  Tuple of ("camera", "property", "value", "action", "tolerance")
+    :return:  Tuple of ("property", "value", "action", "tolerance")
     """
     identifier = name
 
     if not name:
         raise ValueError("name not specified.")
-
-    if not name.count(":") == 1:
-        raise ValueError("Property name needs to be in format 'camera_name:property_name', but %s was provided" % name)
 
     if value is None:
         raise ValueError("value not specified.")
@@ -102,9 +95,7 @@ def bs_monitor(name, value, tolerance=None):
     # We do not support other actions for BS monitors.
     action = "Abort"
 
-    camera_name, property_name = name.split(":")
-
-    return BS_MONITOR(identifier, camera_name, property_name, value, action, tolerance)
+    return BS_MONITOR(identifier, name, value, action, tolerance)
 
 
 def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=None, settling_time=None,

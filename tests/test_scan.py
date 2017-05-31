@@ -5,7 +5,7 @@ from threading import Thread
 
 from bsread.sender import Sender
 
-from pyscan import SimpleDataProcessor
+from pyscan import SimpleDataProcessor, config
 from pyscan.config import max_time_tolerance
 from pyscan.positioner.time import TimePositioner
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, cached_initial_values
@@ -95,6 +95,8 @@ class ScanTests(unittest.TestCase):
         self.assertEqual(result[0][0], -33, "Initialization action did not work.")
 
     def test_mixed_sources(self):
+        config.bs_connection_mode = "pull"
+
         positions = [[1, 1], [2, 2], [3, 3], [4, 4]]
         positioner = VectorPositioner(positions)
 

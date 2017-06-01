@@ -5,7 +5,7 @@ from threading import Thread
 
 from bsread.sender import Sender
 
-from pyscan import SimpleDataProcessor, config
+from pyscan import SimpleDataProcessor, config, NImagePositioner
 from pyscan.config import max_time_tolerance
 from pyscan.positioner.time import TimePositioner
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, cached_initial_values
@@ -170,3 +170,34 @@ class ScanTests(unittest.TestCase):
             time_difference = acquisition_times[index + 1] - acquisition_times[index]
             self.assertTrue(abs(time_difference-time_interval) < max_time_tolerance,
                             "The acquisition time difference is larger than the minimum tolerance.")
+
+    def test_convert_readables(self):
+        config.bs_connection_mode = "pull"
+
+        positions = [[0, 10], [1, 11], [2, 12], [2, 13]]
+        positioner = VectorPositioner(positions)
+
+        readables = [bs_property("CAMERA1:X"),
+                     "bs://CAMERA1:X",
+                     "BS://CAMERA1:X",
+                     epics_pv("PYSCAN:TEST:OBS1"),
+                     "PYSCAN:TEST:OBS1",
+                     "ca://PYSCAN:TEST:OBS1",
+                     "CA://PYSCAN:TEST:OBS1"]
+
+        writables = ["ca://PYSCAN:TEST:MOTOR1:SET",
+                     "PYSCAN:TEST:MOTOR2:SET"]
+
+        def collect_positions():
+            actual_positions.append([pv_cache["PYSCAN:TEST:MOTOR1:SET"][0].value,
+                                     pv_cache["PYSCAN:TEST:MOTOR2:SET"][0].value])
+        actual_positions = []
+
+        result = scan(positioner=positioner, readables=readables, writables=writables, after_read=collect_positions)
+        for index in range(len(positions)):
+            self.assertTrue(result[index][0] == result[index][1] == result[index][2],
+                            "Not all acquisitions are equal.")
+            self.assertTrue(result[index][3] == result[index][4] == result[index][5],
+                            "Not all acquisitions are equal.")
+
+        self.assertEqual(positions, actual_positions, "Does not work for writables.")

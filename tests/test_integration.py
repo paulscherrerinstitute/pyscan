@@ -24,6 +24,7 @@ class IntegrationTests(unittest.TestCase):
                                                   "PYSCAN:TEST:OBS3": 1,
                                                   "PYSCAN:TEST:OBS4": 1,
                                                   "PYSCAN:TEST:MONITOR1": 9.95},
+
                                   pv_fixed_values={"PYSCAN:TEST:OBS1": [0.8, 0.9, 1.0, 1.1, 1.2],
                                                    "PYSCAN:TEST:OBS2": [-0.8, -0.9, -1.0, -1.1, -1.2]},)
         pyscan = CurrentScan()

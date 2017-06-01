@@ -34,10 +34,6 @@ class Scan(object):
             self.ProgDisp.Progress = 100.0 * (self.n_done_measurements /
                                               self.n_total_positions)
 
-            print("Scan: %.2f %% completed (%d/%d)" % (self.ProgDisp.Progress,
-                                                      self.n_done_measurements,
-                                                      self.n_total_positions))
-
         def prepare_monitors(reader):
             # If there are no monitors defined we have nothing to validate.
             if not self.dimensions[-1]["Monitor"]:

@@ -687,7 +687,7 @@ logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
 # Get current stream of local cam instance
 from cam import api
 api_client = api.get_client("http://localhost:10000")
-port = api_client.get_first_address()  # port is port of the REST api
+port = api_client.get_first_stream_address()  # port is port of the REST api
 
 # Configure bsread
 config.bs_default_host = "localhost"

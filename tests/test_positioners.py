@@ -3,7 +3,7 @@ from itertools import count
 from random import randrange, random
 from time import sleep, time
 
-from pyscan import NImagePositioner
+from pyscan import StaticPositioner
 from pyscan.config import max_time_tolerance
 from pyscan.positioner.area import AreaPositioner, ZigZagAreaPositioner, MultiAreaPositioner
 from pyscan.positioner.compound import CompoundPositioner
@@ -405,9 +405,9 @@ class DiscreetPositionersTests(unittest.TestCase):
             self.assertTrue(abs(time_difference-acquisition_delay) < max_time_tolerance,
                             "The acquisition time difference is larger than the minimum tolerance.")
 
-    def test_NImagePositioner(self):
+    def test_StaticPositioner(self):
         n_images = 10
-        positioner = NImagePositioner(n_images)
+        positioner = StaticPositioner(n_images)
         positioner_generator = positioner.get_generator()
 
         image_index = []

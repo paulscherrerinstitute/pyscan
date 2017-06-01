@@ -5,7 +5,7 @@ from threading import Thread
 
 from bsread.sender import Sender
 
-from pyscan import SimpleDataProcessor, config, NImagePositioner, scan_settings
+from pyscan import SimpleDataProcessor, config, StaticPositioner, scan_settings
 from pyscan.config import max_time_tolerance
 from pyscan.positioner.time import TimePositioner
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, cached_initial_values
@@ -206,7 +206,7 @@ class ScanTests(unittest.TestCase):
         config.bs_connection_mode = "pull"
 
         n_images = 10
-        positioner = NImagePositioner(n_images)
+        positioner = StaticPositioner(n_images)
         readables = ["bs://CAMERA1:X"]
 
         # Count how many messages passed.

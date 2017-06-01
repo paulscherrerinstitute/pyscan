@@ -3,7 +3,7 @@ import unittest
 # BEGIN EPICS MOCK.
 import sys
 
-from pyscan import epics_pv, NImagePositioner, scan
+from pyscan import epics_pv, StaticPositioner, scan
 from pyscan.utils import DictionaryDataProcessor
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, fixed_values
 
@@ -30,7 +30,7 @@ class DataProcessorsTest(unittest.TestCase):
 
     def test_DictionaryDataProcessor(self):
         n_images = 10
-        positioner = NImagePositioner(n_images)
+        positioner = StaticPositioner(n_images)
         readables = [epics_pv("PYSCAN:TEST:OBS1"),
                      epics_pv("PYSCAN:TEST:OBS2"),
                      epics_pv("PYSCAN:TEST:OBS3")]

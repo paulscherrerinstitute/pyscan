@@ -101,6 +101,18 @@ def bs_monitor(name, value, tolerance=None):
 
 def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=None, settling_time=None,
                   progress_callback=None, bs_read_filter=None):
+    """
+    Set the scan settings.
+    :param measurement_interval: Default 0. Interval between each measurement, in case n_measurements is more than 1.
+    :param n_measurements: Default 1. How many measurements to make at each position.
+    :param write_timeout: How much time to wait in seconds for set_and_match operations on epics PVs.
+    :param settling_time: How much time to wait in seconds after the motors have reached the desired destination.
+    :param progress_callback: Function to call after each scan step is completed. 
+                              Signature: def callback(current_position, total_positions)
+    :param bs_read_filter: Filter to apply to the bs read receive function, to filter incoming messages.
+                              Signature: def callback(message)
+    :return: Scan settings named tuple.
+    """
     if not measurement_interval or measurement_interval < 0:
         measurement_interval = config.scan_default_measurement_interval
 
@@ -124,14 +136,14 @@ def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=
                          bs_read_filter)
 
 
-def convert_input(input):
+def convert_input(input_parameters):
     """
     Convert any type of readable into appropriate named tuples.
-    :param input: Readables input from the user.
+    :param input_parameters: Readables input from the user.
     :return: Readables converted into named tuples.
     """
     converted_readables = []
-    for readable in input:
+    for readable in input_parameters:
         # Readable already of correct type.
         if isinstance(readable, (EPICS_PV, BS_PROPERTY)):
             converted_readables.append(readable)

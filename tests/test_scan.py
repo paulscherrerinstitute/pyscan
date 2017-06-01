@@ -5,7 +5,7 @@ from threading import Thread
 
 from bsread.sender import Sender
 
-from pyscan import SimpleDataProcessor, config, NImagePositioner
+from pyscan import SimpleDataProcessor, config, NImagePositioner, scan_settings
 from pyscan.config import max_time_tolerance
 from pyscan.positioner.time import TimePositioner
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, cached_initial_values
@@ -201,3 +201,30 @@ class ScanTests(unittest.TestCase):
                             "Not all acquisitions are equal.")
 
         self.assertEqual(positions, actual_positions, "Does not work for writables.")
+
+    def test_bs_read_filter(self):
+        config.bs_connection_mode = "pull"
+
+        n_images = 10
+        positioner = NImagePositioner(n_images)
+        readables = ["bs://CAMERA1:X"]
+
+        # Count how many messages passed.
+        def mock_filter(message):
+            if message:
+                nonlocal filter_pass
+                filter_pass += 1
+            return True
+
+        filter_pass = 0
+
+        settings = scan_settings(bs_read_filter=mock_filter)
+
+        # settings = scan_settings(bs_read_filter=mock_filter)
+        result = scan(positioner=positioner, readables=readables, settings=settings)
+
+        # The length should still be the same - the filter just throws away messages we do not want.
+        self.assertEqual(len(result), n_images)
+
+        self.assertTrue(filter_pass >= n_images, "The filter passed less then the received messages.")
+        # TODO: Some more sophisticated filter tests.

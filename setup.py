@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='pyscan',
-    version="2.1.3",
+    version="2.1.4",
     description="PyScan is a python class that performs a scan for single or multiple given knobs.",
     author='Paul Scherrer Institute',
     requires=["numpy", 'pcaspy'],

@@ -23,7 +23,7 @@ def scan(positioner, readables, writables=None, monitors=None, before_read=None,
     finalization = convert_to_list(finalization) or []
     settings = settings or scan_settings()
 
-    bs_reader = _initialize_bs_dal(readables, monitors)
+    bs_reader = _initialize_bs_dal(readables, monitors, settings.bs_read_filter)
     epics_writer, epics_pv_reader, epics_monitor_reader = _initialize_epics_dal(writables,
                                                                                 readables,
                                                                                 monitors,
@@ -134,12 +134,13 @@ def _initialize_epics_dal(writables, readables, monitors, settings):
 
     return epics_writer, epics_pv_reader, epics_monitor_reader
 
-def _initialize_bs_dal(readables, monitors):
+
+def _initialize_bs_dal(readables, monitors, filter_function):
     bs_readables = [x.identifier for x in filter(lambda x: isinstance(x, BS_PROPERTY), readables)]
     bs_monitors = [x.identifier for x in filter(lambda x: isinstance(x, BS_MONITOR), monitors)]
 
     bs_reader = None
     if bs_readables or bs_monitors:
-        bs_reader = BS_READER(properties=bs_readables, monitor_properties=bs_monitors)
+        bs_reader = BS_READER(properties=bs_readables, monitor_properties=bs_monitors, filter_function=filter_function)
 
     return bs_reader

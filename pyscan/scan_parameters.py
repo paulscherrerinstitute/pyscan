@@ -2,7 +2,7 @@ from collections import namedtuple
 
 from pyscan import config
 
-EPICS_PV = namedtuple("EPICS_PV", ["pv_name", "readback_pv_name", "tolerance", "readback_pv_value"])
+EPICS_PV = namedtuple("EPICS_PV", ["identifier", "pv_name", "readback_pv_name", "tolerance", "readback_pv_value"])
 EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "action", "tolerance"])
 BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "property"])
 BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "property", "value", "action", "tolerance"])
@@ -18,8 +18,9 @@ def epics_pv(pv_name, readback_pv_name=None, tolerance=None, readback_pv_value=N
     :param tolerance: Tolerance if the PV is writable.
     :param readback_pv_value: If the readback_pv_value is set, the readback is compared against this instead of 
     comparing it to the setpoint.
-    :return: Tuple of (pv_name, pv_readback, tolerance)
+    :return: Tuple of (identifier, pv_name, pv_readback, tolerance)
     """
+    identifier = pv_name
 
     if not pv_name:
         raise ValueError("pv_name not specified.")
@@ -30,7 +31,7 @@ def epics_pv(pv_name, readback_pv_name=None, tolerance=None, readback_pv_value=N
     if not tolerance or tolerance < config.max_float_tolerance:
         tolerance = config.max_float_tolerance
 
-    return EPICS_PV(pv_name, readback_pv_name, tolerance, readback_pv_value)
+    return EPICS_PV(identifier, pv_name, readback_pv_name, tolerance, readback_pv_value)
 
 
 def epics_monitor(pv_name, value, action=None, tolerance=None):

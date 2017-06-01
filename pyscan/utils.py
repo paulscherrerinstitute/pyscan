@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from time import sleep
 
 from epics.pv import PV
@@ -146,3 +147,22 @@ class SimpleDataProcessor(object):
 
     def get_positions(self):
         return self.positions
+
+
+class DictionaryDataProcessor(SimpleDataProcessor):
+    """
+    Save the positions and the received data for each position in a dictionary.
+    """
+    def __init__(self, readables):
+        """
+        Readables specified in the scan.
+        :param readables: Same readables that were passed to the scan function.
+        """
+        super(DictionaryDataProcessor, self).__init__()
+        self.readable_ids = [x.identifier for x in readables]
+
+    def process(self, position, data):
+        self.positions.append(position)
+        # Create a dictionary with the results.
+        values = OrderedDict(zip(self.readable_ids, data))
+        self.data.append(values)

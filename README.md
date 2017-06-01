@@ -693,7 +693,7 @@ port = api_client.get_stream_address()  # port is port of the REST api
 config.bs_default_host = "localhost"
 config.bs_default_port = int(re.sub(".*:","", port))
 
-positioner = NImagePositioner(5)  # Read 5 images
+positioner = StaticPositioner(5)  # Read 5 images
 readables = [bs_property("x_axis"), bs_property('y_axis')]
 
 value = scan(positioner, readables, data_processor=SimpleDataProcessor())

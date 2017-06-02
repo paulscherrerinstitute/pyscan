@@ -16,7 +16,7 @@ scan_default_n_measurements = 1
 # Default interval between multiple measurements in a single position. Taken into account when n_measurements > 1.
 scan_default_measurement_interval = 0
 # Interval to sleep while the scan is paused.
-scan_pause_sleep_interval = 1
+scan_pause_sleep_interval = 0.1
 # Maximum number of retries to read the channels to get valid data.
 scan_acquisition_retry_limit = 3
 # Delay between acquisition retries.

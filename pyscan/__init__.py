@@ -2,6 +2,7 @@
 from .scan import *
 from .scan_parameters import *
 from .scan_actions import *
+from .scanner import *
 
 # Import DALs
 from .dal.epics_dal import *

@@ -177,7 +177,9 @@ class Scanner(object):
             if self.finalization_executor:
                 self.finalization_executor(self)
 
-            self._status = STATUS_FINISHED
+            # If the scan was aborted we do not change the status to finished.
+            if self._status != STATUS_ABORTED:
+                self._status = STATUS_FINISHED
 
         return self.data_processor.get_data()
 

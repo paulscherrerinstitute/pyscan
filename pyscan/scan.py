@@ -13,6 +13,16 @@ ACTION_EXECUTOR = ActionExecutor
 
 def scan(positioner, readables, writables=None, monitors=None, before_read=None, after_read=None, initialization=None,
          finalization=None, settings=None, data_processor=None):
+    # Initialize the scanner instance.
+    scanner_instance = scanner(positioner, readables, writables, monitors, before_read, after_read, initialization,
+                               finalization, settings, data_processor)
+
+    return scanner_instance.discrete_scan()
+
+
+def scanner(positioner, readables, writables=None, monitors=None, before_read=None, after_read=None,
+            initialization=None, finalization=None, settings=None, data_processor=None):
+
     # Allow a list or a single value to be passed. Initialize None values.
     writables = convert_input(convert_to_list(writables) or [])
     readables = convert_input(convert_to_list(readables) or [])
@@ -102,11 +112,10 @@ def scan(positioner, readables, writables=None, monitors=None, before_read=None,
                       after_executor=after_executor, initialization_executor=initialization_executor,
                       finalization_executor=finalization_executor, data_validator=validate_data, settings=settings)
 
-    return scanner.discrete_scan()
+    return scanner
 
 
 def _initialize_epics_dal(writables, readables, monitors, settings):
-
     epics_writer = None
     if writables:
         # We support only epics_pv writables.

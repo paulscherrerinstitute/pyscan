@@ -4,6 +4,12 @@ from time import sleep
 from pyscan import config
 from pyscan.scan_parameters import scan_settings
 
+STATUS_INITIALIZED = "INITIALIZED"
+STATUS_RUNNING = "RUNNING"
+STATUS_FINISHED = "FINISHED"
+STATUS_PAUSED = "PAUSED"
+STATUS_ABORTED = "ABORTED"
+
 
 class Scanner(object):
     """
@@ -37,6 +43,8 @@ class Scanner(object):
         self._user_abort_scan_flag = False
         self._user_pause_scan_flag = False
 
+        self._status = STATUS_INITIALIZED
+
     def abort_scan(self):
         """
         Abort the scan after the next measurement.
@@ -48,6 +56,9 @@ class Scanner(object):
         Pause the scan after the next measurement.
         """
         self._user_pause_scan_flag = True
+
+    def get_status(self):
+        return self._status
 
     def resume_scan(self):
         """
@@ -62,13 +73,20 @@ class Scanner(object):
         """
         # Check if the abort flag is set.
         if self._user_abort_scan_flag:
+            self._status = STATUS_ABORTED
             raise Exception("User aborted scan.")
 
         # If the scan is in pause, wait until it is resumed or the user aborts the scan.
-        while self._user_pause_scan_flag:
-            if self._user_abort_scan_flag:
-                raise Exception("User aborted scan in pause.")
-            sleep(config.scan_pause_sleep_interval)
+        if self._user_pause_scan_flag:
+            self._status = STATUS_PAUSED
+
+            while self._user_pause_scan_flag:
+                if self._user_abort_scan_flag:
+                    self._status = STATUS_ABORTED
+                    raise Exception("User aborted scan in pause.")
+                sleep(config.scan_pause_sleep_interval)
+            # Once the pause flag is cleared, the scanning continues.
+            self._status = STATUS_RUNNING
 
     def _perform_single_read(self, current_position):
         """
@@ -119,6 +137,8 @@ class Scanner(object):
         Perform a discrete scan - set a position, read, continue. Return value at the end.
         """
         try:
+            self._status = STATUS_RUNNING
+
             # Get how many positions we have in total.
             n_of_positions = sum(1 for _ in self.positioner.get_generator())
             # Report the 0% completed.
@@ -156,6 +176,8 @@ class Scanner(object):
             # Clean up after yourself.
             if self.finalization_executor:
                 self.finalization_executor(self)
+
+            self._status = STATUS_FINISHED
 
         return self.data_processor.get_data()
 

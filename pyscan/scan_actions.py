@@ -1,5 +1,5 @@
 from collections import namedtuple
-from pyscan import config
+from pyscan import config, convert_input
 from pyscan.scan import EPICS_WRITER, EPICS_READER
 from pyscan.scan_parameters import epics_pv
 from pyscan.utils import convert_to_list
@@ -39,7 +39,7 @@ def action_restore(writables):
     Restore the initial state of the writable PVs.
     :return: Empty tuple, to be replaced with the initial values.
     """
-    writables = convert_to_list(writables)
+    writables = convert_input(convert_to_list(writables))
     pv_names = [pv.pv_name for pv in writables]
     readback_pv_names = [pv.readback_pv_name for pv in writables]
     tolerances = [pv.tolerance for pv in writables]

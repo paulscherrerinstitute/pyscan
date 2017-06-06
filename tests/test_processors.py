@@ -1,10 +1,10 @@
 import unittest
 
-# BEGIN EPICS MOCK.
-import sys
-
 from pyscan import epics_pv, StaticPositioner, scan, SimpleDataProcessor
 from pyscan.utils import DictionaryDataProcessor
+
+# BEGIN EPICS MOCK.
+import sys
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, fixed_values
 
 scan_module = sys.modules["pyscan.scan"]

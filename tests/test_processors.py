@@ -3,7 +3,7 @@ import unittest
 # BEGIN EPICS MOCK.
 import sys
 
-from pyscan import epics_pv, StaticPositioner, scan
+from pyscan import epics_pv, StaticPositioner, scan, SimpleDataProcessor
 from pyscan.utils import DictionaryDataProcessor
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, fixed_values
 
@@ -48,3 +48,28 @@ class DataProcessorsTest(unittest.TestCase):
             self.assertEqual(result[index]["PYSCAN:TEST:OBS1"], index, "Unexpected result for OBS1.")
             self.assertEqual(result[index]["PYSCAN:TEST:OBS2"], index+1, "Unexpected result for OBS2.")
             self.assertEqual(result[index]["PYSCAN:TEST:OBS3"], index+2, "Unexpected result for OBS3.")
+
+    def test_data_and_position_references(self):
+        n_images = 10
+        positioner = StaticPositioner(n_images)
+        readables = [epics_pv("PYSCAN:TEST:OBS1"),
+                     epics_pv("PYSCAN:TEST:OBS2"),
+                     epics_pv("PYSCAN:TEST:OBS3")]
+
+        # Shift each OBS by 1, so we can resolve them when comparing results.
+        fixed_values["PYSCAN:TEST:OBS1"] = iter(range(0, n_images))
+        fixed_values["PYSCAN:TEST:OBS2"] = iter(range(1, n_images + 1))
+        fixed_values["PYSCAN:TEST:OBS3"] = iter(range(2, n_images + 2))
+
+        positions = []
+        data = []
+        data_processor = SimpleDataProcessor(positions, data)
+
+        def after_read():
+            nonlocal current_number_of_items
+            self.assertEqual(len(positions), len(data), "The number of positions and data is out of sync.")
+            self.assertEqual(len(data), current_number_of_items + 1, "More than 1 data point was taken.")
+            current_number_of_items += 1
+        current_number_of_items = 0
+
+        scan(positioner=positioner, readables=readables, data_processor=data_processor, after_read=after_read)

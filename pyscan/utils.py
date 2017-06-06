@@ -135,8 +135,13 @@ class SimpleDataProcessor(object):
     """
 
     def __init__(self, positions=None, data=None):
-        self.positions = positions or []
-        self.data = data or []
+        """
+        Initialize the simple data processor.
+        :param positions: List to store the visited positions. Default: internal list.
+        :param data: List to store the data at each position. Default: internal list.
+        """
+        self.positions = positions if positions is not None else []
+        self.data = data if data is not None else []
 
     def process(self, position, data):
         self.positions.append(position)

@@ -134,9 +134,9 @@ class SimpleDataProcessor(object):
     Save the position and the received data at this position.
     """
 
-    def __init__(self):
-        self.positions = []
-        self.data = []
+    def __init__(self, positions=None, data=None):
+        self.positions = positions or []
+        self.data = data or []
 
     def process(self, position, data):
         self.positions.append(position)
@@ -153,12 +153,12 @@ class DictionaryDataProcessor(SimpleDataProcessor):
     """
     Save the positions and the received data for each position in a dictionary.
     """
-    def __init__(self, readables):
+    def __init__(self, readables, positions=None, data=None):
         """
         Readables specified in the scan.
         :param readables: Same readables that were passed to the scan function.
         """
-        super(DictionaryDataProcessor, self).__init__()
+        super(DictionaryDataProcessor, self).__init__(positions=positions, data=data)
         self.readable_ids = [x.identifier for x in readables]
 
     def process(self, position, data):

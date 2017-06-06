@@ -143,29 +143,33 @@ def convert_input(input_parameters):
     :return: Readables converted into named tuples.
     """
     converted_readables = []
-    for readable in input_parameters:
+    for input in input_parameters:
         # Readable already of correct type.
-        if isinstance(readable, (EPICS_PV, BS_PROPERTY)):
-            converted_readables.append(readable)
+        if isinstance(input, (EPICS_PV, BS_PROPERTY)):
+            converted_readables.append(input)
         # We need to convert it.
-        elif isinstance(readable, str):
-            if "://" in readable:
+        elif isinstance(input, str):
+            # Check if the string is valid.
+            if not input:
+                raise ValueError("Input cannot be an empty string.")
+
+            if "://" in input:
                 # Epics PV!
-                if readable.lower().startswith("ca://"):
-                    converted_readables.append(epics_pv(readable[5:]))
+                if input.lower().startswith("ca://"):
+                    converted_readables.append(epics_pv(input[5:]))
                 # bs_read property.
-                elif readable.lower().startswith("bs://"):
-                    converted_readables.append(bs_property(readable[5:]))
+                elif input.lower().startswith("bs://"):
+                    converted_readables.append(bs_property(input[5:]))
                 # A new protocol we don't know about?
                 else:
                     raise ValueError("Readable %s uses an unexpected protocol. "
-                                     "'ca://' and 'bs://' are supported." % readable)
+                                     "'ca://' and 'bs://' are supported." % input)
             # No protocol specified, default is epics.
             else:
-                converted_readables.append(epics_pv(readable))
+                converted_readables.append(epics_pv(input))
 
         # Supported named tuples or string, we cannot interpret the rest.
         else:
-            raise ValueError("Readable of unexpected type %s. %s" % (type(readable), readable))
+            raise ValueError("Input of unexpected type %s. Value: '%s'." % (type(input), input))
 
     return converted_readables

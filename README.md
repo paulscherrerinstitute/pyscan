@@ -701,6 +701,16 @@ value = scan(positioner, readables, data_processor=SimpleDataProcessor())
 print(value[0][0])  # Get first value of first readable
 ```
 
+## Get bs_read data.
+```python
+from pyscan import *
+# Get 10 images.
+positioner = StaticPositioner(10)
+# Get CAMERA1 X and Y property.
+readables = ["bs://CAMERA1:X", "bs://CAMERA1:Y"]
+result = scan(positioner, readables)
+```
+
 <a id="other_interfaces"></a>
 # Other interfaces
 **TBD**

@@ -228,3 +228,16 @@ class ScanTests(unittest.TestCase):
 
         self.assertTrue(filter_pass >= n_images, "The filter passed less then the received messages.")
         # TODO: Some more sophisticated filter tests.
+
+    def test_bs_read(self):
+        # DO NOT INCLUDE IN README - default.
+        config.bs_connection_mode = "pull"
+
+        n_images = 10
+        # Get 10 images.
+        positioner = StaticPositioner(n_images)
+        # Get CAMERA1 X and Y property.
+        readables = ["bs://CAMERA1:X", "bs://CAMERA1:Y"]
+        result = scan(positioner, readables)
+
+        self.assertEqual(len(result), n_images)

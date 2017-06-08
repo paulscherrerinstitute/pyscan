@@ -26,6 +26,7 @@
     8. [Scan result](#scan_results)
 4. [Library configuration](#configuration)
 5. [Common use cases](#common_use_cases)
+    1. [Scanning images from CAM](#scanning_images_from_cam)
 6. [Other interfaces](#other_interfaces)
     1. [pshell](#pshell)
     2. [Old pyScan](#old_pyscan)
@@ -674,6 +675,8 @@ can be configured using the [Scan settings](#scan_settings).
 
 <a id="common_use_cases"></a>
 # Common use cases
+
+<a id="scanning_images_from_cam"></a>
 ## Scanning Images From Cam
 
 ```python
@@ -696,19 +699,9 @@ config.bs_default_port = int(re.sub(".*:","", port))
 positioner = StaticPositioner(5)  # Read 5 images
 readables = [bs_property("x_axis"), bs_property('y_axis')]
 
-value = scan(positioner, readables, data_processor=SimpleDataProcessor())
+value = scan(positioner, readables)
 
 print(value[0][0])  # Get first value of first readable
-```
-
-## Get bs_read data.
-```python
-from pyscan import *
-# Get 10 images.
-positioner = StaticPositioner(10)
-# Get CAMERA1 X and Y property.
-readables = ["bs://CAMERA1:X", "bs://CAMERA1:Y"]
-result = scan(positioner, readables)
 ```
 
 <a id="other_interfaces"></a>

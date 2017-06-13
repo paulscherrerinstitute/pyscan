@@ -470,9 +470,15 @@ from pyscan import *
 value1 = epics_pv("PYSCAN:TEST:OBS1")
 value2 = bs_property("CAMERA1:OBS2")
 value3 = epics_pv("PYSCAN:TEST:OBS3")
-
-readables = [value1, value2, value3]
+# bs properties with default value 'None'. See notes on the bottom.
+value4 = bs_property("CAMERA1:OBS4", None)
+readables = [value1, value2, value3, value4]
 ```
+**Default values**
+In some cases, not all bs read properties are present in each stream message. In this case, the default behaviour is 
+to raise an Exception with the missing property. This behaviour can be changed using the *default\_value* 
+parameter of bs_property. If specified, when values are missing the stream, the default value is used. The same 
+logic applies to bs_monitor.
 
 <a id="monitors"></a>
 ## Monitors
@@ -487,8 +493,10 @@ from pyscan import *
 monitor1 = epics_monitor("PYSCAN:TEST:VALID1", 10)
 # Acquired data is valid when 4 < "CAMERA1:VALID1" < 6
 monitor2 = bs_monitor("CAMERA1:VALID1", 5, tolerance=1)
+# bs monitor with default value. See notes at the bottom of this chapter.
+monitor3 = bs_monitor("CAMERA1:VALID2", 5, default_value="5")
 
-monitors = [monitor1, monitor2]
+monitors = [monitor1, monitor2, monitor3]
 ```
 
 When any of the monitors fail (the monitor value not match the specified one), the **scan is aborted**.
@@ -499,6 +507,12 @@ It is important to note:
 the value is requested. This is to ensure the most recent possible value is available to the monitor.
 - bsread monitors match the pulse id of the acquisition data pulse id. This guarantees that the monitor matches
 the pulse of the data acquisition.
+
+**Default values**
+In some cases, not all bs read properties are present in each stream message. In this case, the default behaviour is 
+to raise an Exception with the missing property. This behaviour can be changed using the *default\_value* 
+parameter of bs_monitor. If specified, when values are missing the stream, the default value is used. The same 
+logic applies to bs_property.
 
 <a id="init_and_fin"></a>
 ## Initialization and Finalization
@@ -697,7 +711,8 @@ config.bs_default_host = "localhost"
 config.bs_default_port = int(re.sub(".*:","", port))
 
 positioner = StaticPositioner(5)  # Read 5 images
-readables = [bs_property("x_axis"), bs_property('y_axis')]
+# Read x_axis and y_axis from bs stream -> in case the data is missing in a bs stream message, use None as default.
+readables = [bs_property("x_axis", None), bs_property('y_axis', None)]
 
 value = scan(positioner, readables)
 

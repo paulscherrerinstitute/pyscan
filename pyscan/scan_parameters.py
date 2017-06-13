@@ -9,6 +9,8 @@ BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "property", "value", "actio
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
                                              "write_timeout", "settling_time", "progress_callback", "bs_read_filter"])
 
+# Used to determine if a parameter was passed or the default value is used.
+_default_value_placeholder = object()
 
 def epics_pv(pv_name, readback_pv_name=None, tolerance=None, readback_pv_value=None):
     """
@@ -61,7 +63,7 @@ def epics_monitor(pv_name, value, action=None, tolerance=None):
     return EPICS_MONITOR(identifier, pv_name, value, action, tolerance)
 
 
-def bs_property(name, default_value=Exception):
+def bs_property(name, default_value=_default_value_placeholder):
     """
     Construct a tuple for bs read property representation.
     :param name: Complete property name.
@@ -73,10 +75,14 @@ def bs_property(name, default_value=Exception):
     if not name:
         raise ValueError("name not specified.")
 
+    # We need this to allow the user to change the config at runtime.
+    if default_value is _default_value_placeholder:
+        default_value = config.bs_default_missing_property_value
+
     return BS_PROPERTY(identifier, name, default_value)
 
 
-def bs_monitor(name, value, tolerance=None, default_value=Exception):
+def bs_monitor(name, value, tolerance=None, default_value=_default_value_placeholder):
     """
     Construct a tuple for bs monitor property representation.
     :param name: Complete property name.
@@ -98,6 +104,10 @@ def bs_monitor(name, value, tolerance=None, default_value=Exception):
 
     # We do not support other actions for BS monitors.
     action = "Abort"
+
+    # We need this to allow the user to change the config at runtime.
+    if default_value is _default_value_placeholder:
+        default_value = config.bs_default_missing_property_value
 
     return BS_MONITOR(identifier, name, value, action, tolerance, default_value)
 

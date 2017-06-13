@@ -252,6 +252,26 @@ class ScanTests(unittest.TestCase):
         with self.assertRaisesRegex(Exception, "Property 'invalid' missing in bs stream."):
             scan(positioner, readables)
 
+    def test_bs_read_config_default_value(self):
+        # DO NOT INCLUDE IN README - default.
+        config.bs_connection_mode = "pull"
+
+        # Get 10 images.
+        n_images = 3
+        positioner = StaticPositioner(n_images)
+        readables = ["bs://CAMERA1:INVALID"]
+
+        with self.assertRaisesRegex(Exception, "Property 'CAMERA1:INVALID' missing in bs stream."):
+            scan(positioner, readables)
+
+        default_value = 42
+        config.bs_default_missing_property_value = default_value
+        result = scan(positioner, readables)
+
+        self.assertEqual(len(result), n_images)
+        self.assertTrue(all(x[0] == default_value for x in result), "Default value from properties not working.")
+
+
 
 
 

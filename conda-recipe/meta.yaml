@@ -1,6 +1,6 @@
 package:
     name: pyscan
-    version: 2.1.11
+    version: 2.1.12
 
 build:
   number: 0

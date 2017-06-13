@@ -12,17 +12,17 @@ class ReadGroupInterface(object):
     Provide a beam synchronous acquisition for PV data.
     """
 
-    def __init__(self, properties, monitor_properties=None, host=None, port=None, filter_function=None):
+    def __init__(self, properties, monitors=None, host=None, port=None, filter_function=None):
         """
         Create the bsread group read interface.
         :param properties: List of PVs to read for processing.
-        :param monitor_properties: List of PVs to read as monitors.
+        :param monitors: List of PVs to read as monitors.
         :param filter_function: Filter the BS stream with a custom function.
         """
         self.host = host
         self.port = port
         self.properties = convert_to_list(properties)
-        self.monitor_properties = convert_to_list(monitor_properties)
+        self.monitors = convert_to_list(monitors)
         self.filter = filter_function
 
         self._message_cache = None
@@ -44,7 +44,8 @@ class ReadGroupInterface(object):
                                  receive_timeout=config.bs_receive_timeout,
                                  mode=mode)
         else:
-            self.stream = Source(channels=self.properties + self.monitor_properties,
+            channels = [x.identifier for x in self.properties] + [x.identifier for x in self.monitors]
+            self.stream = Source(channels=channels,
                                  queue_size=config.bs_queue_size,
                                  receive_timeout=config.bs_receive_timeout,
                                  mode=mode)
@@ -76,18 +77,36 @@ class ReadGroupInterface(object):
         else:
             return message_sec > current_sec
 
-    def _read_pvs_from_cache(self, pvs_to_read):
+    @staticmethod
+    def _get_missing_property_default(property_definition):
         """
-        Read the requested PVs from the cache.
-        :param pvs_to_read: List of PVs to read.
+        In case a bs read value is missing, either return the default value or raise an Exception.
+        :param property_definition:
+        :return:
+        """
+        # Exception is defined, raise it.
+        if Exception == property_definition.default_value:
+            raise property_definition.default_value("Property '%s' missing in bs stream."
+                                                    % property_definition.identifier)
+        # Else just return the default value.
+        else:
+            return property_definition.default_value
+
+    def _read_pvs_from_cache(self, properties):
+        """
+        Read the requested properties from the cache.
+        :param properties: List of properties to read.
         :return: List with PV values.
         """
         if not self._message_cache:
-            raise ValueError("Message cache is empty, cannot read PVs %s." % pvs_to_read)
+            raise ValueError("Message cache is empty, cannot read PVs %s." % properties)
 
         pv_values = []
-        for pv_name in pvs_to_read:
-            value = self._message_cache.data.data[pv_name].value
+        for property_name, property_definition in ((x.identifier, x) for x in properties):
+            if property_name in self._message_cache.data.data:
+                value = self._message_cache.data.data[property_name].value
+            else:
+                value = self._get_missing_property_default(property_definition)
 
             # TODO: Check if the python conversion works in every case?
             # BS read always return numpy, and we always convert it to Python.
@@ -101,7 +120,7 @@ class ReadGroupInterface(object):
         :return: List of values for read pvs. Note: Monitor PVs are excluded.
         """
         read_timestamp = time()
-        while time()-read_timestamp < config.bs_read_timeout:
+        while time() - read_timestamp < config.bs_read_timeout:
             message = self.stream.receive(filter=self.filter)
             if self.is_message_after_timestamp(message, read_timestamp):
                 self._message_cache = message
@@ -115,7 +134,7 @@ class ReadGroupInterface(object):
         Returns the monitors associated with the last read command.
         :return: List of monitor values.
         """
-        return self._read_pvs_from_cache(self.monitor_properties)
+        return self._read_pvs_from_cache(self.monitors)
 
     def close(self):
         """

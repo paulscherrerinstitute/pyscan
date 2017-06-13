@@ -229,15 +229,28 @@ class ScanTests(unittest.TestCase):
         self.assertTrue(filter_pass >= n_images, "The filter passed less then the received messages.")
         # TODO: Some more sophisticated filter tests.
 
-    def test_bs_read(self):
+    def test_bs_read_default_values(self):
         # DO NOT INCLUDE IN README - default.
         config.bs_connection_mode = "pull"
 
         n_images = 10
         # Get 10 images.
         positioner = StaticPositioner(n_images)
-        # Get CAMERA1 X and Y property.
-        readables = ["bs://CAMERA1:X", "bs://CAMERA1:Y"]
+        # Get CAMERA1 X, Y property, and 2 invalid properites with default values.
+        default_invalid2_value = -999
+        readables = ["bs://CAMERA1:X", "bs://CAMERA1:Y", bs_property("invalid", None), bs_property("invalid2", -999)]
         result = scan(positioner, readables)
 
         self.assertEqual(len(result), n_images)
+        self.assertTrue(all(x[2] is None for x in result), "Default property value not as expected.")
+        self.assertTrue(all(x[3] == default_invalid2_value for x in result), "Default property value not as expected.")
+
+        # A missing bs_property without default value should rise an exception.
+        readables = ["bs://CAMERA1:X", "bs://CAMERA1:Y", bs_property("invalid")]
+
+        with self.assertRaisesRegex(Exception, "Property 'invalid' missing in bs stream."):
+            scan(positioner, readables)
+
+
+
+

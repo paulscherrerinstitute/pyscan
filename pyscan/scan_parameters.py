@@ -4,8 +4,8 @@ from pyscan import config
 
 EPICS_PV = namedtuple("EPICS_PV", ["identifier", "pv_name", "readback_pv_name", "tolerance", "readback_pv_value"])
 EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "action", "tolerance"])
-BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "property"])
-BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "property", "value", "action", "tolerance"])
+BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "property", "default_value"])
+BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "property", "value", "action", "tolerance", "default_value"])
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
                                              "write_timeout", "settling_time", "progress_callback", "bs_read_filter"])
 
@@ -61,26 +61,29 @@ def epics_monitor(pv_name, value, action=None, tolerance=None):
     return EPICS_MONITOR(identifier, pv_name, value, action, tolerance)
 
 
-def bs_property(name):
+def bs_property(name, default_value=Exception):
     """
     Construct a tuple for bs read property representation.
     :param name: Complete property name.
+    :param default_value: The default value that is assigned to the property if it is missing.
+    :return:  Tuple of ("identifier", "property", "default_value")
     """
     identifier = name
 
     if not name:
         raise ValueError("name not specified.")
 
-    return BS_PROPERTY(identifier, name)
+    return BS_PROPERTY(identifier, name, default_value)
 
 
-def bs_monitor(name, value, tolerance=None):
+def bs_monitor(name, value, tolerance=None, default_value=Exception):
     """
     Construct a tuple for bs monitor property representation.
     :param name: Complete property name.
     :param value: Expected value.
     :param tolerance: Tolerance within which the monitor needs to be.
-    :return:  Tuple of ("property", "value", "action", "tolerance")
+    :param default_value: Default value of a monitor, if not present in the bs stream.
+    :return:  Tuple of ("identifier", "property", "value", "action", "tolerance", "default_value")
     """
     identifier = name
 
@@ -96,7 +99,7 @@ def bs_monitor(name, value, tolerance=None):
     # We do not support other actions for BS monitors.
     action = "Abort"
 
-    return BS_MONITOR(identifier, name, value, action, tolerance)
+    return BS_MONITOR(identifier, name, value, action, tolerance, default_value)
 
 
 def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=None, settling_time=None,

@@ -145,11 +145,11 @@ def _initialize_epics_dal(writables, readables, monitors, settings):
 
 
 def _initialize_bs_dal(readables, monitors, filter_function):
-    bs_readables = [x.identifier for x in filter(lambda x: isinstance(x, BS_PROPERTY), readables)]
-    bs_monitors = [x.identifier for x in filter(lambda x: isinstance(x, BS_MONITOR), monitors)]
+    bs_readables = [x for x in filter(lambda x: isinstance(x, BS_PROPERTY), readables)]
+    bs_monitors = [x for x in filter(lambda x: isinstance(x, BS_MONITOR), monitors)]
 
     bs_reader = None
     if bs_readables or bs_monitors:
-        bs_reader = BS_READER(properties=bs_readables, monitor_properties=bs_monitors, filter_function=filter_function)
+        bs_reader = BS_READER(properties=bs_readables, monitors=bs_monitors, filter_function=filter_function)
 
     return bs_reader

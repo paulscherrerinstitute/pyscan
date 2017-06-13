@@ -39,7 +39,7 @@ bs_default_host = "localhost"
 bs_default_port = 9999
 # Default bs connection port.
 bs_connection_mode = "sub"
-# Default property value for bs properties missing in stream.
+# Default property value for bs properties missing in stream. Exception means to raise an Exception when this happens.
 bs_default_missing_property_value = Exception
 
 ###########################

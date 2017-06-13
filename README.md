@@ -480,6 +480,13 @@ to raise an Exception with the missing property. This behaviour can be changed u
 parameter of bs_property. If specified, when values are missing the stream, the default value is used. The same 
 logic applies to bs_monitor.
 
+You can change the default behaviour for all bs_read properties by changing the config:
+```python
+from pyscan import config
+# Instead of raising an exception, the default value for missing bs read properties is None.
+config.bs_default_missing_property_value = None
+```
+
 <a id="monitors"></a>
 ## Monitors
 This are variables you monitor after each data acquisition to be sure that they have a certain values. A typical
@@ -513,6 +520,13 @@ In some cases, not all bs read properties are present in each stream message. In
 to raise an Exception with the missing property. This behaviour can be changed using the *default\_value* 
 parameter of bs_monitor. If specified, when values are missing the stream, the default value is used. The same 
 logic applies to bs_property.
+
+You can change the default behaviour for all bs_read properties by changing the config:
+```python
+from pyscan import config
+# Instead of raising an exception, the default value for missing bs read properties is None.
+config.bs_default_missing_property_value = None
+```
 
 <a id="init_and_fin"></a>
 ## Initialization and Finalization

@@ -238,7 +238,8 @@ class ScanTests(unittest.TestCase):
         positioner = StaticPositioner(n_images)
         # Get CAMERA1 X, Y property, and 2 invalid properites with default values.
         default_invalid2_value = -999
-        readables = ["bs://CAMERA1:X", "bs://CAMERA1:Y", bs_property("invalid", None), bs_property("invalid2", -999)]
+        readables = ["bs://CAMERA1:X", "bs://CAMERA1:Y",
+                     bs_property("invalid", None), bs_property("invalid2", default_invalid2_value)]
         result = scan(positioner, readables)
 
         self.assertEqual(len(result), n_images)

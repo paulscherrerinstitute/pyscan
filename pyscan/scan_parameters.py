@@ -8,9 +8,33 @@ BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "property", "default_valu
 BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "property", "value", "action", "tolerance", "default_value"])
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
                                              "write_timeout", "settling_time", "progress_callback", "bs_read_filter"])
+FUNCTION_VALUE = namedtuple("FUNCTION_VALUE", ["identifier", "call_function", "action"])
 
 # Used to determine if a parameter was passed or the default value is used.
 _default_value_placeholder = object()
+
+
+def function_value(call_function, name=None, action=None):
+    """
+    Construct a tuple for function representation.
+    :param call_function: Function to invoke.
+    :param name: Name to assign to this function.
+    :param action: In case it is a monitor, what to do then the return value is False.
+    :return: Tuple of ("identifier", "call_function", "action")
+    """
+    # If the name is not specified, use a counter to set the function name.
+    if not name:
+        name = "function_%d" % function_value.function_count
+        function_value.function_count += 1
+    identifier = name
+
+    # The default action is Abort - used for monitors.
+    if not action:
+        action = "Abort"
+
+    return FUNCTION_VALUE(identifier, call_function, action)
+function_value.function_count = 0
+
 
 def epics_pv(pv_name, readback_pv_name=None, tolerance=None, readback_pv_value=None):
     """
@@ -155,11 +179,11 @@ def convert_input(input_parameters):
     :param input_parameters: Readables input from the user.
     :return: Readables converted into named tuples.
     """
-    converted_readables = []
+    converted_inputs = []
     for input in input_parameters:
         # Readable already of correct type.
-        if isinstance(input, (EPICS_PV, BS_PROPERTY)):
-            converted_readables.append(input)
+        if isinstance(input, (EPICS_PV, BS_PROPERTY, FUNCTION_VALUE)):
+            converted_inputs.append(input)
         # We need to convert it.
         elif isinstance(input, str):
             # Check if the string is valid.
@@ -169,20 +193,22 @@ def convert_input(input_parameters):
             if "://" in input:
                 # Epics PV!
                 if input.lower().startswith("ca://"):
-                    converted_readables.append(epics_pv(input[5:]))
+                    converted_inputs.append(epics_pv(input[5:]))
                 # bs_read property.
                 elif input.lower().startswith("bs://"):
-                    converted_readables.append(bs_property(input[5:]))
+                    converted_inputs.append(bs_property(input[5:]))
                 # A new protocol we don't know about?
                 else:
                     raise ValueError("Readable %s uses an unexpected protocol. "
                                      "'ca://' and 'bs://' are supported." % input)
             # No protocol specified, default is epics.
             else:
-                converted_readables.append(epics_pv(input))
+                converted_inputs.append(epics_pv(input))
 
+        elif callable(input):
+            converted_inputs.append(function_value(input))
         # Supported named tuples or string, we cannot interpret the rest.
         else:
             raise ValueError("Input of unexpected type %s. Value: '%s'." % (type(input), input))
 
-    return converted_readables
+    return converted_inputs

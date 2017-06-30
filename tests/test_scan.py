@@ -1,13 +1,15 @@
 import sys
 import time
 import unittest
+from collections import OrderedDict
 from threading import Thread
 
 from bsread.sender import Sender
 
-from pyscan import SimpleDataProcessor, config, StaticPositioner, scan_settings
+from pyscan import SimpleDataProcessor, config, StaticPositioner, scan_settings, function_value
 from pyscan.config import max_time_tolerance
 from pyscan.positioner.time import TimePositioner
+from pyscan.utils import DictionaryDataProcessor
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, cached_initial_values
 
 # BEGIN EPICS MOCK.
@@ -46,6 +48,8 @@ def start_sender():
         time.sleep(0.05)
 
     generator.close()
+
+
 bs_sending = True
 
 
@@ -133,7 +137,7 @@ class ScanTests(unittest.TestCase):
 
         def progress(current_position, max_position):
             current_index.append(current_position)
-            current_percentage.append(100 * (current_position/max_position))
+            current_percentage.append(100 * (current_position / max_position))
 
             nonlocal total_positions
             total_positions = max_position
@@ -168,7 +172,7 @@ class ScanTests(unittest.TestCase):
 
         for index in range(n_intervals - 1):
             time_difference = acquisition_times[index + 1] - acquisition_times[index]
-            self.assertTrue(abs(time_difference-time_interval) < max_time_tolerance,
+            self.assertTrue(abs(time_difference - time_interval) < max_time_tolerance,
                             "The acquisition time difference is larger than the minimum tolerance.")
 
     def test_convert_readables(self):
@@ -191,6 +195,7 @@ class ScanTests(unittest.TestCase):
         def collect_positions():
             actual_positions.append([pv_cache["PYSCAN:TEST:MOTOR1:SET"][0].value,
                                      pv_cache["PYSCAN:TEST:MOTOR2:SET"][0].value])
+
         actual_positions = []
 
         result = scan(positioner=positioner, readables=readables, writables=writables, after_read=collect_positions)
@@ -232,6 +237,7 @@ class ScanTests(unittest.TestCase):
     def test_bs_read_default_values(self):
         # DO NOT INCLUDE IN README - default.
         config.bs_connection_mode = "pull"
+        config.bs_default_missing_property_value = Exception
 
         n_images = 10
         # Get 10 images.
@@ -271,7 +277,102 @@ class ScanTests(unittest.TestCase):
         self.assertEqual(len(result), n_images)
         self.assertTrue(all(x[0] == default_value for x in result), "Default value from properties not working.")
 
+    def test_readables_function_value(self):
+        # Initialize the function counter to prevent test interferences.
+        function_value.function_count = 0
 
+        def simple_counter():
+            nonlocal counter
+            counter += 1
+            return counter
 
+        counter = 0
 
+        n_images = 2
+        readables = [simple_counter, simple_counter]
+        positioner = StaticPositioner(n_images)
 
+        result = scan(positioner, readables)
+        self.assertEqual(result, [[1, 2], [3, 4]], "Result not as expected")
+
+        def double_counter():
+            nonlocal counter
+            counter += 1
+            return [counter, counter]
+
+        counter = 0
+
+        readables = [function_value(double_counter, "double_trouble"), simple_counter, simple_counter]
+        data_processor = DictionaryDataProcessor(readables)
+        result = scan(positioner, readables, data_processor=data_processor)
+
+        expected_result = [OrderedDict([('double_trouble', [1, 1]), ('function_2', 2), ('function_3', 3)]),
+                           OrderedDict([('double_trouble', [4, 4]), ('function_2', 5), ('function_3', 6)])]
+
+        self.assertEqual(result, expected_result, "Result not as expected.")
+
+        readables = [simple_counter, "ca://PYSCAN:TEST:OBS1", double_counter, "ca://PYSCAN:TEST:OBS2"]
+        data_processor = DictionaryDataProcessor(readables)
+
+        result = scan(positioner, readables, data_processor=data_processor)
+        expected_result = [OrderedDict([('function_6', 7),
+                                        ('PYSCAN:TEST:OBS1', 1),
+                                        ('function_7', [8, 8]),
+                                        ('PYSCAN:TEST:OBS2', 'PYSCAN:TEST:OBS2')]),
+
+                           OrderedDict([('function_6', 9),
+                                        ('PYSCAN:TEST:OBS1', 1),
+                                        ('function_7', [10, 10]),
+                                        ('PYSCAN:TEST:OBS2', 'PYSCAN:TEST:OBS2')])]
+
+        self.assertEqual(result, expected_result, "Result not as expected.")
+
+    def test_writeable_function_value(self):
+        def nop():
+            return 0
+
+        def write(position):
+            positions.append(position)
+        positions = []
+
+        # Get 10 images.
+        readables = [nop]
+        expected_positions = [1, 2, 3, 4, 5]
+        positioner = VectorPositioner(expected_positions)
+        writables = write
+
+        scan(positioner, readables=readables, writables=writables)
+        self.assertEqual(positions, expected_positions, "Expected positions not equal.")
+
+        def write2(position):
+            positions2.append(position)
+        positions2 = []
+
+        positions.clear()
+        expected_positions = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+        writables = ["something1", write, "something2", write2]
+        positioner = VectorPositioner(expected_positions)
+
+        scan(positioner, readables=readables, writables=writables)
+
+        self.assertEqual(positions, [x[1] for x in expected_positions], "Values not as expected.")
+        self.assertEqual(positions2, [x[3] for x in expected_positions], "Values not as expected")
+
+    def test_monitor_function_value(self):
+
+        def pass_monitor():
+            return True
+
+        n_images = 2
+        readables = ["something1"]
+        positioner = StaticPositioner(n_images)
+        monitors = pass_monitor
+        scan(positioner, readables, monitors=monitors)
+
+        def fail_monitor():
+            return False
+
+        monitors = fail_monitor
+
+        with self.assertRaisesRegex(ValueError, "Function monitor function_monitor_"):
+            scan(positioner, readables, monitors=monitors)

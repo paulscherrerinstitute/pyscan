@@ -36,6 +36,7 @@ def function_monitor(call_function, name=None, action=None):
     """
     Construct a tuple for monitor function representation.
     :param call_function: Function to invoke.
+    :param name: Name to assign to this function.
     :param action: What to do then the return value is False. ('Abort' and 'WaitAndAbort' supporteds)
     :return: Tuple of ("identifier", "call_function", "action")
     """

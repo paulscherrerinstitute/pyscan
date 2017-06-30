@@ -2,7 +2,7 @@ from pyscan.dal import epics_dal, bsread_dal, function_dal
 from pyscan.dal.function_dal import FunctionProxy
 from pyscan.scanner import Scanner
 from pyscan.scan_parameters import EPICS_PV, EPICS_MONITOR, BS_PROPERTY, BS_MONITOR, scan_settings, convert_input, \
-    FUNCTION_VALUE
+    FUNCTION_VALUE, FUNCTION_MONITOR, convert_monitor
 from pyscan.utils import convert_to_list, SimpleDataProcessor, ActionExecutor, compare_channel_value
 
 # Instances to use.
@@ -29,7 +29,7 @@ def scanner(positioner, readables, writables=None, monitors=None, before_read=No
     # Allow a list or a single value to be passed. Initialize None values.
     writables = convert_input(convert_to_list(writables) or [])
     readables = convert_input(convert_to_list(readables) or [])
-    monitors = convert_to_list(monitors) or []
+    monitors = convert_monitor(convert_to_list(monitors) or [])
     before_read = convert_to_list(before_read) or []
     after_read = convert_to_list(after_read) or []
     initialization = convert_to_list(initialization) or []
@@ -102,13 +102,13 @@ def scanner(positioner, readables, writables=None, monitors=None, before_read=No
                 value = next(bs_values)
             elif source == EPICS_MONITOR:
                 value = next(epics_values)
-            elif source == FUNCTION_VALUE:
+            elif source == FUNCTION_MONITOR:
                 value = next(function_values)
             else:
-                raise ValueError("Unknown type of readable %s used." % source)
+                raise ValueError("Unknown type of monitor %s used." % source)
 
             # Function monitors are self contained.
-            if source == FUNCTION_VALUE:
+            if source == FUNCTION_MONITOR:
                 if not value:
                     raise ValueError("Function monitor %s returned False." % monitors[index].identifier)
             else:
@@ -193,6 +193,6 @@ def _initialize_bs_dal(readables, monitors, filter_function):
 def _initialize_function_dal(writables, readables, monitors):
     function_writer = FunctionProxy([x for x in writables if isinstance(x, FUNCTION_VALUE)])
     function_reader = FunctionProxy([x for x in readables if isinstance(x, FUNCTION_VALUE)])
-    function_monitor = FunctionProxy([x for x in monitors if isinstance(x, FUNCTION_VALUE)])
+    function_monitor = FunctionProxy([x for x in monitors if isinstance(x, FUNCTION_MONITOR)])
 
     return function_writer, function_reader, function_monitor

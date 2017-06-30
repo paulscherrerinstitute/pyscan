@@ -8,19 +8,19 @@ BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "property", "default_valu
 BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "property", "value", "action", "tolerance", "default_value"])
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
                                              "write_timeout", "settling_time", "progress_callback", "bs_read_filter"])
-FUNCTION_VALUE = namedtuple("FUNCTION_VALUE", ["identifier", "call_function", "action"])
+FUNCTION_VALUE = namedtuple("FUNCTION_VALUE", ["identifier", "call_function"])
+FUNCTION_MONITOR = namedtuple("FUNCTION_MONITOR", ["identifier", "call_function", "action"])
 
 # Used to determine if a parameter was passed or the default value is used.
 _default_value_placeholder = object()
 
 
-def function_value(call_function, name=None, action=None):
+def function_value(call_function, name=None):
     """
     Construct a tuple for function representation.
     :param call_function: Function to invoke.
     :param name: Name to assign to this function.
-    :param action: In case it is a monitor, what to do then the return value is False.
-    :return: Tuple of ("identifier", "call_function", "action")
+    :return: Tuple of ("identifier", "call_function")
     """
     # If the name is not specified, use a counter to set the function name.
     if not name:
@@ -28,12 +28,29 @@ def function_value(call_function, name=None, action=None):
         function_value.function_count += 1
     identifier = name
 
+    return FUNCTION_VALUE(identifier, call_function)
+function_value.function_count = 0
+
+
+def function_monitor(call_function, name=None, action=None):
+    """
+    Construct a tuple for monitor function representation.
+    :param call_function: Function to invoke.
+    :param action: What to do then the return value is False. ('Abort' and 'WaitAndAbort' supporteds)
+    :return: Tuple of ("identifier", "call_function", "action")
+    """
+    # If the name is not specified, use a counter to set the function name.
+    if not name:
+        name = "function_monitor_%d" % function_monitor.function_count
+        function_monitor.function_count += 1
+    identifier = name
+
     # The default action is Abort - used for monitors.
     if not action:
         action = "Abort"
 
-    return FUNCTION_VALUE(identifier, call_function, action)
-function_value.function_count = 0
+    return FUNCTION_MONITOR(identifier, call_function, action)
+function_monitor.function_count = 0
 
 
 def epics_pv(pv_name, readback_pv_name=None, tolerance=None, readback_pv_value=None):
@@ -175,13 +192,13 @@ def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=
 
 def convert_input(input_parameters):
     """
-    Convert any type of readable into appropriate named tuples.
-    :param input_parameters: Readables input from the user.
-    :return: Readables converted into named tuples.
+    Convert any type of input parameter into appropriate named tuples.
+    :param input_parameters: Parameter input from the user.
+    :return: Inputs converted into named tuples.
     """
     converted_inputs = []
     for input in input_parameters:
-        # Readable already of correct type.
+        # Input already of correct type.
         if isinstance(input, (EPICS_PV, BS_PROPERTY, FUNCTION_VALUE)):
             converted_inputs.append(input)
         # We need to convert it.
@@ -210,5 +227,27 @@ def convert_input(input_parameters):
         # Supported named tuples or string, we cannot interpret the rest.
         else:
             raise ValueError("Input of unexpected type %s. Value: '%s'." % (type(input), input))
+
+    return converted_inputs
+
+
+def convert_monitor(input_monitors):
+    """
+    Convert any type type of monitor input parameter into appropriate named tuples.
+    :param input_monitors: Monitor input from the used.
+    :return: Input monitors converted into named tuples.
+    """
+
+    converted_inputs = []
+    for input in input_monitors:
+        # Input already of correct type.
+        if isinstance(input, (EPICS_MONITOR, BS_MONITOR, FUNCTION_MONITOR)):
+            converted_inputs.append(input)
+        # Function call.
+        elif callable(input):
+            converted_inputs.append(function_monitor(input))
+        # Unknown.
+        else:
+            raise ValueError("Monitor of unexpected type %s. Value: '%s'." % (type(input), input))
 
     return converted_inputs

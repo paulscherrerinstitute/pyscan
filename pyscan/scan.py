@@ -158,9 +158,9 @@ def _initialize_epics_dal(writables, readables, monitors, settings):
         epics_writables = [x for x in writables if isinstance(x, EPICS_PV)]
         if epics_writables:
             # Instantiate the PVs to move the motors.
-            epics_writer = EPICS_WRITER(pv_names=[pv.pv_name for pv in writables],
-                                        readback_pv_names=[pv.readback_pv_name for pv in writables],
-                                        tolerances=[pv.tolerance for pv in writables],
+            epics_writer = EPICS_WRITER(pv_names=[pv.pv_name for pv in epics_writables],
+                                        readback_pv_names=[pv.readback_pv_name for pv in epics_writables],
+                                        tolerances=[pv.tolerance for pv in epics_writables],
                                         timeout=settings.write_timeout)
 
     epics_readables_pv_names = [x.pv_name for x in filter(lambda x: isinstance(x, EPICS_PV), readables)]

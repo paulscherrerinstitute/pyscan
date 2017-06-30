@@ -4,6 +4,7 @@ from time import sleep
 from epics.pv import PV
 
 from pyscan import config
+from pyscan.scan_parameters import convert_input
 
 
 def compare_channel_value(current_value, expected_value, tolerance=0.0):
@@ -164,6 +165,8 @@ class DictionaryDataProcessor(SimpleDataProcessor):
         :param readables: Same readables that were passed to the scan function.
         """
         super(DictionaryDataProcessor, self).__init__(positions=positions, data=data)
+
+        readables = convert_input(readables)
         self.readable_ids = [x.identifier for x in readables]
 
     def process(self, position, data):

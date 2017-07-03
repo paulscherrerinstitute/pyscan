@@ -30,7 +30,7 @@ cached_initial_values["PYSCAN:TEST:OBS1"] = 1
 
 from pyscan.scan import scan
 from pyscan.positioner.vector import VectorPositioner
-from pyscan.scan_parameters import epics_pv, bs_property, epics_monitor, bs_monitor, scan_settings
+from pyscan.scan_parameters import epics_pv, bs_property, epics_condition, bs_condition, scan_settings
 from pyscan.scan_actions import action_set_epics_pv, action_restore
 from tests.helpers.mock_epics_dal import pv_cache
 
@@ -68,8 +68,8 @@ class ScanTests(unittest.TestCase):
 
         self.sender_thread.join()
 
-    def test_monitors(self):
-        # TODO: Test if the monitors belong to the same output as the values.
+    def test_conditions(self):
+        # TODO: Test if the conditions belong to the same output as the values.
         pass
 
     def test_actions(self):
@@ -111,15 +111,15 @@ class ScanTests(unittest.TestCase):
                      bs_property("CAMERA1:Y"),
                      epics_pv("PYSCAN:TEST:OBS1")]
 
-        monitors = [epics_monitor("PYSCAN:TEST:VALID1", 10),
-                    bs_monitor("CAMERA1:VALID", 10)]
+        conditions = [epics_condition("PYSCAN:TEST:VALID1", 10),
+                    bs_condition("CAMERA1:VALID", 10)]
 
         initialization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 1, "PYSCAN:TEST:PRE1:GET")]
 
         finalization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 0, "PYSCAN:TEST:PRE1:GET"),
                         action_restore(writables)]
 
-        result = scan(positioner=positioner, readables=readables, writables=writables, monitors=monitors,
+        result = scan(positioner=positioner, readables=readables, writables=writables, conditions=conditions,
                       initialization=initialization, finalization=finalization,
                       settings=scan_settings(measurement_interval=0.25,
                                              n_measurements=1))
@@ -358,21 +358,21 @@ class ScanTests(unittest.TestCase):
         self.assertEqual(positions, [x[1] for x in expected_positions], "Values not as expected.")
         self.assertEqual(positions2, [x[3] for x in expected_positions], "Values not as expected")
 
-    def test_monitor_function_value(self):
+    def test_condition_function_value(self):
 
-        def pass_monitor():
+        def pass_condition():
             return True
 
         n_images = 2
         readables = ["something1"]
         positioner = StaticPositioner(n_images)
-        monitors = pass_monitor
-        scan(positioner, readables, monitors=monitors)
+        conditions = pass_condition
+        scan(positioner, readables, conditions=conditions)
 
-        def fail_monitor():
+        def fail_condition():
             return False
 
-        monitors = fail_monitor
+        conditions = fail_condition
 
-        with self.assertRaisesRegex(ValueError, "Function monitor function_monitor_"):
-            scan(positioner, readables, monitors=monitors)
+        with self.assertRaisesRegex(ValueError, "Function condition function_condition_"):
+            scan(positioner, readables, conditions=conditions)

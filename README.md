@@ -19,7 +19,7 @@
         5. [Time positioner](#time_positioner)
     2. [Writables](#writables)
     3. [Readables](#readables)
-    4. [Monitors](#monitors)
+    4. [Conditions](#conditions)
     5. [Initialization and Finalization](#init_and_fin)
     6. [Before and after read](#before_and_after)
     7. [Scan settings](#scan_settings)
@@ -59,7 +59,7 @@ readables = [epics_pv("PYSCAN:TEST:OBS1")]
 writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET")]
 
 # At each read of "PYSCAN:TEST:OBS1", check if "PYSCAN:TEST:VALID1" == 10
-monitors = [epics_monitor("PYSCAN:TEST:VALID1", 10)]
+conditions = [epics_condition("PYSCAN:TEST:VALID1", 10)]
 
 # Before the scan starts, set "PYSCAN:TEST:PRE1:SET" to 1.
 initialization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 1, "PYSCAN:TEST:PRE1:GET")]
@@ -74,7 +74,7 @@ settings = scan_settings(measurement_interval=0.1, n_measurements=4)
 result = scan(positioner=positioner,
               readables=readables,
               writables=writables,
-              monitors=monitors,
+              conditions=conditions,
               initialization=initialization,
               finalization=finalization,
               settings=settings)
@@ -113,11 +113,11 @@ Which variables to read at each position.
 - **epics_pv**: Read an epics process variable.
 - **bs_property**: Read a bsread property.
 
-### Monitors
+### Conditions
 Which values to check after each data acquisition. Useful to verify if the acquired data is valid.
 
-- **epics_monitor**: Verify that an epics PV has a certain value.
-- **bs_monitor**: Verify that a bsread property has a certain value.
+- **epics_condition**: Verify that an epics PV has a certain value.
+- **bs_condition**: Verify that a bsread property has a certain value.
 
 ### Actions
 Action can be executed for initialization, finalization, before and after each data acquisition.
@@ -195,7 +195,7 @@ In the following chapters, each component will be explained in more details:
 - **Positioner**: Generates positions, according to the input values, on which to place the writables.
 - **Readables**: PVs or BS read properties to read at each position.
 - **Writables**: PVs (motors, in most cases) to move according to the positioner values.
-- **Monitors**: PVs or BS read properties used to validate the readables at each position.
+- **Conditions**: PVs or BS read properties used to validate the readables at each position.
 - **Initialization**: Actions to execute before the scan.
 - **Finalization**: Actions to execute after the scan is completed or when the scan is aborted.
 - **Scan settings**: Settings of the scan and acquisition of data.
@@ -540,7 +540,7 @@ readables = [value1, value2, value3, value4, value5]
 In some cases, not all bs read properties are present in each stream message. In this case, the default behaviour is 
 to raise an Exception with the missing property. This behaviour can be changed using the *default\_value* 
 parameter of bs_property. If specified, when values are missing the stream, the default value is used. The same 
-logic applies to bs_monitor.
+logic applies to bs_condition.
 
 You can change the default behaviour for all bs_read properties by changing the config:
 ```python
@@ -565,52 +565,54 @@ def get_random():
 readables = [epics_value, bs_property, get_random]
 ```
 
-<a id="monitors"></a>
-## Monitors
+<a id="conditions"></a>
+## Conditions
 This are variables you monitor after each data acquisition to be sure that they have a certain values. A typical
-example would be to verify if the beam repetition rate is in the desired range. The library supports both
-PV monitors and bsread properties.
+example would be to verify if the beam repetition rate is in the desired range. The library supports 
+PVs, bsread properties, and function conditions.
 
-Monitors can be created by invoking **epics\_monitor** for PV monitors, and **bs\_monitor** for bsread monitors.
-Function monitors call be created by invoking **function_monitor**, or simply passing the monitor function directly.
+Conditions can be created by invoking **epics\_condition** for PV condition, and **bs\_condition** for 
+bsread conditions. 
+Function conditions can be created by invoking **function_condition**, or simply passing the condition function 
+directly.
 ```python
 from pyscan import *
 # Acquired data is valid when "PYSCAN:TEST:VALID1" == 10
-monitor1 = epics_monitor("PYSCAN:TEST:VALID1", 10)
+condition1 = epics_condition("PYSCAN:TEST:VALID1", 10)
 # Acquired data is valid when 4 < "CAMERA1:VALID1" < 6
-monitor2 = bs_monitor("CAMERA1:VALID1", 5, tolerance=1)
-# bs monitor with default value. See notes at the bottom of this chapter.
-monitor3 = bs_monitor("CAMERA1:VALID2", 5, default_value="5")
+condition2 = bs_condition("CAMERA1:VALID1", 5, tolerance=1)
+# bs condition with default value. See notes at the bottom of this chapter.
+condition3 = bs_condition("CAMERA1:VALID2", 5, default_value="5")
 
-# Function monitors need to return a boolean to signal if the scan can continue or not.
+# Function conditions need to return a boolean to signal if the scan can continue or not.
 def i_always_fail():
     return False
 
-monitor4 = function_monitor(i_always_fail)
+condition4 = function_condition(i_always_fail)
 
-# In this case, the monitor is not defined with the function_monitor call, so the monitor action is ABORT (default).
+# In this case, the condition is not defined with the function_condition call, so the condition action is ABORT (default).
 def i_always_work():
     return True
 
-monitors = [monitor1, monitor2, monitor3, monitor4, i_always_work]
+conditions = [condition1, condition2, condition3, condition4, i_always_work]
 ```
 
-When any of the monitors fail (the monitor value not match the specified one, or the function monitor returns False), 
-the scan is aborted or the data acquisition is done again once the monitor becomes valid (based on the 
-specified monitor action).
+When any of the condition fail (the condition value not match the specified one, or the function condition returns 
+False), the scan is aborted or the data acquisition is done again once the condition becomes valid (based on the 
+specified condition action).
 
 It is important to note:
 
-- Monitors (contrary to what the name suggests) do not use the epics monitoring feature, but do a caget every time
-the value is requested. This is to ensure the most recent possible value is available to the monitor.
-- bsread monitors match the pulse id of the acquisition data pulse id. This guarantees that the monitor matches
+- Conditions do not use the epics monitoring feature, but do a caget every time
+the value is requested. This is to ensure the most recent possible value is available to the condition.
+- bsread conditions match the pulse id of the acquisition data pulse id. This guarantees that the condition matches
 the pulse of the data acquisition.
-- function monitors have to return True (continue scan) or False (stop scan).
+- function conditions have to return True (continue scan) or False (stop scan).
 
 **Default values**
 In some cases, not all bs read properties are present in each stream message. In this case, the default behaviour is 
 to raise an Exception with the missing property. This behaviour can be changed using the *default\_value* 
-parameter of bs_monitor. If specified, when values are missing the stream, the default value is used. The same 
+parameter of bs_condition. If specified, when values are missing the stream, the default value is used. The same 
 logic applies to bs_property.
 
 You can change the default behaviour for all bs_read properties by changing the config:

@@ -12,17 +12,17 @@ class ReadGroupInterface(object):
     Provide a beam synchronous acquisition for PV data.
     """
 
-    def __init__(self, properties, monitors=None, host=None, port=None, filter_function=None):
+    def __init__(self, properties, conditions=None, host=None, port=None, filter_function=None):
         """
         Create the bsread group read interface.
         :param properties: List of PVs to read for processing.
-        :param monitors: List of PVs to read as monitors.
+        :param conditions: List of PVs to read as conditions.
         :param filter_function: Filter the BS stream with a custom function.
         """
         self.host = host
         self.port = port
         self.properties = convert_to_list(properties)
-        self.monitors = convert_to_list(monitors)
+        self.conditions = convert_to_list(conditions)
         self.filter = filter_function
 
         self._message_cache = None
@@ -44,7 +44,7 @@ class ReadGroupInterface(object):
                                  receive_timeout=config.bs_receive_timeout,
                                  mode=mode)
         else:
-            channels = [x.identifier for x in self.properties] + [x.identifier for x in self.monitors]
+            channels = [x.identifier for x in self.properties] + [x.identifier for x in self.conditions]
             self.stream = Source(channels=channels,
                                  queue_size=config.bs_queue_size,
                                  receive_timeout=config.bs_receive_timeout,
@@ -117,7 +117,7 @@ class ReadGroupInterface(object):
     def read(self):
         """
         Reads the PV values from BSread. It uses the first PVs data sampled after the invocation of this method.
-        :return: List of values for read pvs. Note: Monitor PVs are excluded.
+        :return: List of values for read pvs. Note: Condition PVs are excluded.
         """
         read_timestamp = time()
         while time() - read_timestamp < config.bs_read_timeout:
@@ -129,12 +129,12 @@ class ReadGroupInterface(object):
         else:
             raise Exception("Read timeout exceeded for BS read stream. Could not find the desired package in time.")
 
-    def read_cached_monitors(self):
+    def read_cached_conditions(self):
         """
-        Returns the monitors associated with the last read command.
-        :return: List of monitor values.
+        Returns the conditions associated with the last read command.
+        :return: List of condition values.
         """
-        return self._read_pvs_from_cache(self.monitors)
+        return self._read_pvs_from_cache(self.conditions)
 
     def close(self):
         """

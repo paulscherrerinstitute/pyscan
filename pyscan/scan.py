@@ -1,8 +1,8 @@
 from pyscan.dal import epics_dal, bsread_dal, function_dal
 from pyscan.dal.function_dal import FunctionProxy
 from pyscan.scanner import Scanner
-from pyscan.scan_parameters import EPICS_PV, EPICS_MONITOR, BS_PROPERTY, BS_MONITOR, scan_settings, convert_input, \
-    FUNCTION_VALUE, FUNCTION_MONITOR, convert_monitor
+from pyscan.scan_parameters import EPICS_PV, EPICS_CONDITION, BS_PROPERTY, BS_CONDITION, scan_settings, convert_input, \
+    FUNCTION_VALUE, FUNCTION_CONDITION, convert_conditions
 from pyscan.utils import convert_to_list, SimpleDataProcessor, ActionExecutor, compare_channel_value
 
 # Instances to use.
@@ -14,36 +14,35 @@ DATA_PROCESSOR = SimpleDataProcessor
 ACTION_EXECUTOR = ActionExecutor
 
 
-def scan(positioner, readables, writables=None, monitors=None, before_read=None, after_read=None, initialization=None,
+def scan(positioner, readables, writables=None, conditions=None, before_read=None, after_read=None, initialization=None,
          finalization=None, settings=None, data_processor=None):
     # Initialize the scanner instance.
-    scanner_instance = scanner(positioner, readables, writables, monitors, before_read, after_read, initialization,
+    scanner_instance = scanner(positioner, readables, writables, conditions, before_read, after_read, initialization,
                                finalization, settings, data_processor)
 
     return scanner_instance.discrete_scan()
 
 
-def scanner(positioner, readables, writables=None, monitors=None, before_read=None, after_read=None,
+def scanner(positioner, readables, writables=None, conditions=None, before_read=None, after_read=None,
             initialization=None, finalization=None, settings=None, data_processor=None):
-
     # Allow a list or a single value to be passed. Initialize None values.
     writables = convert_input(convert_to_list(writables) or [])
     readables = convert_input(convert_to_list(readables) or [])
-    monitors = convert_monitor(convert_to_list(monitors) or [])
+    conditions = convert_conditions(convert_to_list(conditions) or [])
     before_read = convert_to_list(before_read) or []
     after_read = convert_to_list(after_read) or []
     initialization = convert_to_list(initialization) or []
     finalization = convert_to_list(finalization) or []
     settings = settings or scan_settings()
 
-    bs_reader = _initialize_bs_dal(readables, monitors, settings.bs_read_filter)
-    epics_writer, epics_pv_reader, epics_monitor_reader = _initialize_epics_dal(writables,
-                                                                                readables,
-                                                                                monitors,
-                                                                                settings)
-    function_writer, function_reader, function_monitor = _initialize_function_dal(writables,
+    bs_reader = _initialize_bs_dal(readables, conditions, settings.bs_read_filter)
+    epics_writer, epics_pv_reader, epics_condition_reader = _initialize_epics_dal(writables,
                                                                                   readables,
-                                                                                  monitors)
+                                                                                  conditions,
+                                                                                  settings)
+    function_writer, function_reader, function_condition = _initialize_function_dal(writables,
+                                                                                    readables,
+                                                                                    conditions)
 
     writables_order = [type(writable) for writable in writables]
 
@@ -89,35 +88,35 @@ def scanner(positioner, readables, writables=None, monitors=None, before_read=No
         return result
 
     # Order of value sources, needed to reconstruct the correct order of the result.
-    monitor_order = [type(monitor) for monitor in monitors]
+    conditions_order = [type(condition) for condition in conditions]
 
     # Validate function needs to validate both BS, PV, and function proxy data.
     def validate_data(current_position, data):
-        bs_values = iter(bs_reader.read_cached_monitors() if bs_reader else [])
-        epics_values = iter(epics_monitor_reader.read() if epics_monitor_reader else [])
-        function_values = iter(function_monitor.read() if function_monitor else [])
+        bs_values = iter(bs_reader.read_cached_conditions() if bs_reader else [])
+        epics_values = iter(epics_condition_reader.read() if epics_condition_reader else [])
+        function_values = iter(function_condition.read() if function_condition else [])
 
-        for index, source in enumerate(monitor_order):
-            if source == BS_MONITOR:
+        for index, source in enumerate(conditions_order):
+            if source == BS_CONDITION:
                 value = next(bs_values)
-            elif source == EPICS_MONITOR:
+            elif source == EPICS_CONDITION:
                 value = next(epics_values)
-            elif source == FUNCTION_MONITOR:
+            elif source == FUNCTION_CONDITION:
                 value = next(function_values)
             else:
-                raise ValueError("Unknown type of monitor %s used." % source)
+                raise ValueError("Unknown type of condition %s used." % source)
 
-            # Function monitors are self contained.
-            if source == FUNCTION_MONITOR:
+            # Function conditions are self contained.
+            if source == FUNCTION_CONDITION:
                 if not value:
-                    raise ValueError("Function monitor %s returned False." % monitors[index].identifier)
+                    raise ValueError("Function condition %s returned False." % conditions[index].identifier)
             else:
-                expected_value = monitors[index].value
-                tolerance = monitors[index].tolerance
+                expected_value = conditions[index].value
+                tolerance = conditions[index].tolerance
 
                 if not compare_channel_value(value, expected_value, tolerance):
-                    raise ValueError("Monitor %s, expected value %s, actual value %s, tolerance %s." %
-                                     (monitors[index].identifier, expected_value, value, tolerance))
+                    raise ValueError("Condition %s, expected value %s, actual value %s, tolerance %s." %
+                                     (conditions[index].identifier, expected_value, value, tolerance))
 
         return True
 
@@ -152,7 +151,7 @@ def scanner(positioner, readables, writables=None, monitors=None, before_read=No
     return scanner
 
 
-def _initialize_epics_dal(writables, readables, monitors, settings):
+def _initialize_epics_dal(writables, readables, conditions, settings):
     epics_writer = None
     if writables:
         epics_writables = [x for x in writables if isinstance(x, EPICS_PV)]
@@ -164,35 +163,35 @@ def _initialize_epics_dal(writables, readables, monitors, settings):
                                         timeout=settings.write_timeout)
 
     epics_readables_pv_names = [x.pv_name for x in filter(lambda x: isinstance(x, EPICS_PV), readables)]
-    epics_monitors_pv_names = [x.pv_name for x in filter(lambda x: isinstance(x, EPICS_MONITOR), monitors)]
+    epics_conditions_pv_names = [x.pv_name for x in filter(lambda x: isinstance(x, EPICS_CONDITION), conditions)]
 
     # Reading epics PV values.
     epics_pv_reader = None
     if epics_readables_pv_names:
         epics_pv_reader = EPICS_READER(pv_names=epics_readables_pv_names)
 
-    # Reading epics monitor values.
-    epics_monitor_reader = None
-    if epics_monitors_pv_names:
-        epics_monitor_reader = EPICS_READER(pv_names=epics_monitors_pv_names)
+    # Reading epics condition values.
+    epics_condition_reader = None
+    if epics_conditions_pv_names:
+        epics_condition_reader = EPICS_READER(pv_names=epics_conditions_pv_names)
 
-    return epics_writer, epics_pv_reader, epics_monitor_reader
+    return epics_writer, epics_pv_reader, epics_condition_reader
 
 
-def _initialize_bs_dal(readables, monitors, filter_function):
+def _initialize_bs_dal(readables, conditions, filter_function):
     bs_readables = [x for x in filter(lambda x: isinstance(x, BS_PROPERTY), readables)]
-    bs_monitors = [x for x in filter(lambda x: isinstance(x, BS_MONITOR), monitors)]
+    bs_conditions = [x for x in filter(lambda x: isinstance(x, BS_CONDITION), conditions)]
 
     bs_reader = None
-    if bs_readables or bs_monitors:
-        bs_reader = BS_READER(properties=bs_readables, monitors=bs_monitors, filter_function=filter_function)
+    if bs_readables or bs_conditions:
+        bs_reader = BS_READER(properties=bs_readables, conditions=bs_conditions, filter_function=filter_function)
 
     return bs_reader
 
 
-def _initialize_function_dal(writables, readables, monitors):
+def _initialize_function_dal(writables, readables, conditions):
     function_writer = FunctionProxy([x for x in writables if isinstance(x, FUNCTION_VALUE)])
     function_reader = FunctionProxy([x for x in readables if isinstance(x, FUNCTION_VALUE)])
-    function_monitor = FunctionProxy([x for x in monitors if isinstance(x, FUNCTION_MONITOR)])
+    function_condition = FunctionProxy([x for x in conditions if isinstance(x, FUNCTION_CONDITION)])
 
-    return function_writer, function_reader, function_monitor
+    return function_writer, function_reader, function_condition

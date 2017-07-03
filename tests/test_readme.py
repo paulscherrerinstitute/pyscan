@@ -41,7 +41,7 @@ class Readme(unittest.TestCase):
         writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET")]
 
         # At each read of "PYSCAN:TEST:OBS1", check if "PYSCAN:TEST:VALID1" == 10
-        monitors = [epics_monitor("PYSCAN:TEST:VALID1", 10)]
+        conditions = [epics_condition("PYSCAN:TEST:VALID1", 10)]
 
         # Before the scan starts, set "PYSCAN:TEST:PRE1:SET" to 1.
         initialization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 1, "PYSCAN:TEST:PRE1:GET")]
@@ -56,7 +56,7 @@ class Readme(unittest.TestCase):
         scan(positioner=positioner,
              readables=readables,
              writables=writables,
-             monitors=monitors,
+             conditions=conditions,
              initialization=initialization,
              finalization=finalization,
              settings=settings)

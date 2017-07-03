@@ -422,7 +422,7 @@ class PyScan(unittest.TestCase):
         # self.assertEqual(test_SimpleScan_second_Observable, result["Observable"],
         #                  "Observable format does not match")
 
-    def test_Monitors(self):
+    def test_Conditions(self):
 
         indict1, indict2 = self.get_ScanLine_indices()
         # Only the number of measurements on the last dimension can influence the result.

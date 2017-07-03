@@ -3,13 +3,13 @@ from collections import namedtuple
 from pyscan import config
 
 EPICS_PV = namedtuple("EPICS_PV", ["identifier", "pv_name", "readback_pv_name", "tolerance", "readback_pv_value"])
-EPICS_MONITOR = namedtuple("EPICS_MONITOR", ["identifier", "pv_name", "value", "action", "tolerance"])
+EPICS_CONDITION = namedtuple("EPICS_CONDITION", ["identifier", "pv_name", "value", "action", "tolerance"])
 BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "property", "default_value"])
-BS_MONITOR = namedtuple("BS_MONITOR", ["identifier", "property", "value", "action", "tolerance", "default_value"])
+BS_CONDITION = namedtuple("BS_CONDITION", ["identifier", "property", "value", "action", "tolerance", "default_value"])
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
                                              "write_timeout", "settling_time", "progress_callback", "bs_read_filter"])
 FUNCTION_VALUE = namedtuple("FUNCTION_VALUE", ["identifier", "call_function"])
-FUNCTION_MONITOR = namedtuple("FUNCTION_MONITOR", ["identifier", "call_function", "action"])
+FUNCTION_CONDITION = namedtuple("FUNCTION_CONDITION", ["identifier", "call_function", "action"])
 
 # Used to determine if a parameter was passed or the default value is used.
 _default_value_placeholder = object()
@@ -32,9 +32,9 @@ def function_value(call_function, name=None):
 function_value.function_count = 0
 
 
-def function_monitor(call_function, name=None, action=None):
+def function_condition(call_function, name=None, action=None):
     """
-    Construct a tuple for monitor function representation.
+    Construct a tuple for condition checking function representation.
     :param call_function: Function to invoke.
     :param name: Name to assign to this function.
     :param action: What to do then the return value is False. ('Abort' and 'WaitAndAbort' supporteds)
@@ -42,16 +42,16 @@ def function_monitor(call_function, name=None, action=None):
     """
     # If the name is not specified, use a counter to set the function name.
     if not name:
-        name = "function_monitor_%d" % function_monitor.function_count
-        function_monitor.function_count += 1
+        name = "function_condition_%d" % function_condition.function_count
+        function_condition.function_count += 1
     identifier = name
 
-    # The default action is Abort - used for monitors.
+    # The default action is Abort - used for conditions.
     if not action:
         action = "Abort"
 
-    return FUNCTION_MONITOR(identifier, call_function, action)
-function_monitor.function_count = 0
+    return FUNCTION_CONDITION(identifier, call_function, action)
+function_condition.function_count = 0
 
 
 def epics_pv(pv_name, readback_pv_name=None, tolerance=None, readback_pv_value=None):
@@ -78,13 +78,13 @@ def epics_pv(pv_name, readback_pv_name=None, tolerance=None, readback_pv_value=N
     return EPICS_PV(identifier, pv_name, readback_pv_name, tolerance, readback_pv_value)
 
 
-def epics_monitor(pv_name, value, action=None, tolerance=None):
+def epics_condition(pv_name, value, action=None, tolerance=None):
     """
-    Construct a tuple for an epics monitor representation.
+    Construct a tuple for an epics condition representation.
     :param pv_name: Name of the PV to monitor.
     :param value: Value we expect the PV to be in.
-    :param action: What to do when the monitor fails ('Abort' and 'WaitAndAbort' supporteds)
-    :param tolerance: Tolerance within which the monitor needs to be.
+    :param action: What to do when the condition fails ('Abort' and 'WaitAndAbort' supporteds)
+    :param tolerance: Tolerance within which the condition needs to be.
     :return: Tuple of ("pv_name", "value", "action", "tolerance", "timeout")
     """
     identifier = pv_name
@@ -102,7 +102,7 @@ def epics_monitor(pv_name, value, action=None, tolerance=None):
     if not tolerance or tolerance < config.max_float_tolerance:
         tolerance = config.max_float_tolerance
 
-    return EPICS_MONITOR(identifier, pv_name, value, action, tolerance)
+    return EPICS_CONDITION(identifier, pv_name, value, action, tolerance)
 
 
 def bs_property(name, default_value=_default_value_placeholder):
@@ -124,13 +124,13 @@ def bs_property(name, default_value=_default_value_placeholder):
     return BS_PROPERTY(identifier, name, default_value)
 
 
-def bs_monitor(name, value, tolerance=None, default_value=_default_value_placeholder):
+def bs_condition(name, value, tolerance=None, default_value=_default_value_placeholder):
     """
-    Construct a tuple for bs monitor property representation.
+    Construct a tuple for bs condition property representation.
     :param name: Complete property name.
     :param value: Expected value.
-    :param tolerance: Tolerance within which the monitor needs to be.
-    :param default_value: Default value of a monitor, if not present in the bs stream.
+    :param tolerance: Tolerance within which the condition needs to be.
+    :param default_value: Default value of a condition, if not present in the bs stream.
     :return:  Tuple of ("identifier", "property", "value", "action", "tolerance", "default_value")
     """
     identifier = name
@@ -144,14 +144,14 @@ def bs_monitor(name, value, tolerance=None, default_value=_default_value_placeho
     if not tolerance or tolerance < config.max_float_tolerance:
         tolerance = config.max_float_tolerance
 
-    # We do not support other actions for BS monitors.
+    # We do not support other actions for BS conditions.
     action = "Abort"
 
     # We need this to allow the user to change the config at runtime.
     if default_value is _default_value_placeholder:
         default_value = config.bs_default_missing_property_value
 
-    return BS_MONITOR(identifier, name, value, action, tolerance, default_value)
+    return BS_CONDITION(identifier, name, value, action, tolerance, default_value)
 
 
 def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=None, settling_time=None,
@@ -232,23 +232,23 @@ def convert_input(input_parameters):
     return converted_inputs
 
 
-def convert_monitor(input_monitors):
+def convert_conditions(input_conditions):
     """
-    Convert any type type of monitor input parameter into appropriate named tuples.
-    :param input_monitors: Monitor input from the used.
-    :return: Input monitors converted into named tuples.
+    Convert any type type of condition input parameter into appropriate named tuples.
+    :param input_conditions: Condition input from the used.
+    :return: Input conditions converted into named tuples.
     """
 
     converted_inputs = []
-    for input in input_monitors:
+    for input in input_conditions:
         # Input already of correct type.
-        if isinstance(input, (EPICS_MONITOR, BS_MONITOR, FUNCTION_MONITOR)):
+        if isinstance(input, (EPICS_CONDITION, BS_CONDITION, FUNCTION_CONDITION)):
             converted_inputs.append(input)
         # Function call.
         elif callable(input):
-            converted_inputs.append(function_monitor(input))
+            converted_inputs.append(function_condition(input))
         # Unknown.
         else:
-            raise ValueError("Monitor of unexpected type %s. Value: '%s'." % (type(input), input))
+            raise ValueError("Condition of unexpected type %s. Value: '%s'." % (type(input), input))
 
     return converted_inputs

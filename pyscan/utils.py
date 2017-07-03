@@ -1,3 +1,4 @@
+import inspect
 from collections import OrderedDict
 from time import sleep
 
@@ -125,9 +126,12 @@ class ActionExecutor(object):
         """
         self.actions = convert_to_list(actions)
 
-    def execute(self, context):
+    def execute(self, position):
         for action in self.actions:
-            action()
+            if "position" in inspect.signature(action).parameters:
+                action(position)
+            else:
+                action()
 
 
 class SimpleDataProcessor(object):

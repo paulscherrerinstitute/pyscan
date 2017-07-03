@@ -16,26 +16,31 @@ class Scanner(object):
     Perform discrete and continues scans.
     """
 
-    def __init__(self, positioner, data_processor, reader, writer=None, before_executor=None, after_executor=None,
-                 initialization_executor=None, finalization_executor=None, data_validator=None, settings=None):
+    def __init__(self, positioner, data_processor, reader, writer=None, before_measurement_executor=None,
+                 after_measurement_executor=None, initialization_executor=None, finalization_executor=None,
+                 data_validator=None, settings=None, before_move_executor=None, after_move_executor=None):
         """
         Initialize scanner.
         :param positioner: Positioner should provide a generator to get the positions to move to.
         :param writer: Object that implements the write(position) method and sets the positions.
         :param data_processor: How to store and handle the data.
         :param reader: Object that implements the read() method to return data to the data_processor.
-        :param before_executor: Callbacks executor that executed before measurements.
-        :param after_executor: Callbacks executor that executed after measurements.
+        :param before_measurement_executor: Callbacks executor that executed before measurements.
+        :param after_measurement_executor: Callbacks executor that executed after measurements.
+        :param before_move_executor: Callbacks executor that executes before each move.
+        :param after_move_executor: Callbacks executor that executes after each move.
         """
         self.positioner = positioner
         self.writer = writer
         self.data_processor = data_processor
         self.reader = reader
-        self.before_executor = before_executor
-        self.after_executor = after_executor
+        self.before_measurement_executor = before_measurement_executor
+        self.after_measurement_executor = after_measurement_executor
         self.initialization_executor = initialization_executor
         self.finalization_executor = finalization_executor
         self.settings = settings or scan_settings()
+        self.before_move_executor = before_move_executor
+        self.after_move_executor = after_move_executor
 
         # If no data validator is provided, data is always valid.
         self.data_validator = data_validator or (lambda position, data: True)
@@ -149,6 +154,10 @@ class Scanner(object):
                 self.initialization_executor(self)
 
             for position_index, next_positions in zip(count(1), self.positioner.get_generator()):
+                # Execute before moving to the next position.
+                if self.before_move_executor:
+                    self.before_move_executor(next_positions)
+
                 # Position yourself before reading.
                 if self.writer:
                     self.writer(next_positions)
@@ -156,16 +165,20 @@ class Scanner(object):
                 # Settling time, wait after positions has been reached.
                 sleep(self.settings.settling_time)
 
+                # Execute the after move executor.
+                if self.after_move_executor:
+                    self.after_move_executor(next_positions)
+
                 # Pre reading callbacks.
-                if self.before_executor:
-                    self.before_executor(self)
+                if self.before_measurement_executor:
+                    self.before_measurement_executor(next_positions)
 
                 # Read and process the data in the current position.
                 position_data = self._read_and_process_data(next_positions)
 
                 # Post reading callbacks.
-                if self.after_executor:
-                    self.after_executor(self)
+                if self.after_measurement_executor:
+                    self.after_measurement_executor(next_positions)
 
                 # Report about the progress.
                 self.settings.progress_callback(position_index, n_of_positions)

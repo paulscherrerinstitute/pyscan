@@ -15,22 +15,25 @@ ACTION_EXECUTOR = ActionExecutor
 
 
 def scan(positioner, readables, writables=None, conditions=None, before_read=None, after_read=None, initialization=None,
-         finalization=None, settings=None, data_processor=None):
+         finalization=None, settings=None, data_processor=None, before_move=None, after_move=None):
     # Initialize the scanner instance.
     scanner_instance = scanner(positioner, readables, writables, conditions, before_read, after_read, initialization,
-                               finalization, settings, data_processor)
+                               finalization, settings, data_processor, before_move, after_move)
 
     return scanner_instance.discrete_scan()
 
 
 def scanner(positioner, readables, writables=None, conditions=None, before_read=None, after_read=None,
-            initialization=None, finalization=None, settings=None, data_processor=None):
+            initialization=None, finalization=None, settings=None, data_processor=None,
+            before_move=None, after_move=None):
     # Allow a list or a single value to be passed. Initialize None values.
     writables = convert_input(convert_to_list(writables) or [])
     readables = convert_input(convert_to_list(readables) or [])
     conditions = convert_conditions(convert_to_list(conditions) or [])
     before_read = convert_to_list(before_read) or []
     after_read = convert_to_list(after_read) or []
+    before_move = convert_to_list(before_move) or []
+    after_move = convert_to_list(after_move) or []
     initialization = convert_to_list(initialization) or []
     finalization = convert_to_list(finalization) or []
     settings = settings or scan_settings()
@@ -124,14 +127,24 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
         data_processor = DATA_PROCESSOR()
 
     # Before acquisition hook.
-    before_executor = None
+    before_measurement_executor = None
     if before_read:
-        before_executor = ACTION_EXECUTOR(before_read).execute
+        before_measurement_executor = ACTION_EXECUTOR(before_read).execute
 
     # After acquisition hook.
-    after_executor = None
+    after_measurement_executor = None
     if after_read:
-        after_executor = ACTION_EXECUTOR(after_read).execute
+        after_measurement_executor = ACTION_EXECUTOR(after_read).execute
+
+    # Executor before each move.
+    before_move_executor = None
+    if before_move:
+        before_move_executor = ACTION_EXECUTOR(before_move).execute
+
+    # Executor after each move.
+    after_move_executor = None
+    if after_move:
+        after_move_executor = ACTION_EXECUTOR(after_move).execute
 
     # Initialization (before move to first position) hook.
     initialization_executor = None
@@ -144,9 +157,11 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
         finalization_executor = ACTION_EXECUTOR(finalization).execute
 
     scanner = Scanner(positioner=positioner, data_processor=data_processor, reader=read_data,
-                      writer=write_data, before_executor=before_executor,
-                      after_executor=after_executor, initialization_executor=initialization_executor,
-                      finalization_executor=finalization_executor, data_validator=validate_data, settings=settings)
+                      writer=write_data, before_measurement_executor=before_measurement_executor,
+                      after_measurement_executor=after_measurement_executor,
+                      initialization_executor=initialization_executor,
+                      finalization_executor=finalization_executor, data_validator=validate_data, settings=settings,
+                      before_move_executor=before_move_executor, after_move_executor=after_move_executor)
 
     return scanner
 

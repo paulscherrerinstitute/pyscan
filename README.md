@@ -21,7 +21,7 @@
     3. [Readables](#readables)
     4. [Conditions](#conditions)
     5. [Initialization and Finalization](#init_and_fin)
-    6. [Before and after read](#before_and_after)
+    6. [Before and after executor](#before_and_after)
     7. [Scan settings](#scan_settings)
     8. [Scan result](#scan_results)
 4. [Library configuration](#configuration)
@@ -661,7 +661,10 @@ that must be set in a specific order.
 variables.
 
 <a id="before_and_after"></a>
-## Before and after read
+## Before and after executors
+The before and after move action are executed before each move and after the motors have moved and the settling time 
+for the motors has passed.
+
 The before and after read action are execute before each measurement (after the writables moved), and right
 after the measurements are finished. This actions can be used for user notifications, various verifications or
 data storage preparations (for example setting a measurement header etc.).

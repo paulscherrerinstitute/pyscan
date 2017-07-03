@@ -376,3 +376,23 @@ class ScanTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "Function condition function_condition_"):
             scan(positioner, readables, conditions=conditions)
+
+    def test_before_after_move_executor(self):
+
+        def void_read():
+            return 1
+
+        def void_write(position):
+            positions.append(position)
+        positions = []
+
+        def before_move(position):
+            self.assertTrue(position not in positions, "Positions already visited.")
+
+        def after_move(position):
+            self.assertTrue(position in positions, "Position not yet visited.")
+
+        positioner = VectorPositioner([1, 2, 3, 4, 5, 6])
+
+        scan(readables=void_read, writables=void_write, positioner=positioner,
+             before_move=before_move, after_move=after_move)

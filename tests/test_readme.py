@@ -162,3 +162,32 @@ class Readme(unittest.TestCase):
 
         # The result is still wrapped in 2 lists. The reason is described in the note below.
         result == [[x1]]
+
+    def test_custom_data_sources(self):
+        # Provide a function for reading a custom source.
+        def read_custom_source():
+            nonlocal counter
+            counter += 1
+            print("Reading custom counter %d" % counter)
+            return counter
+        counter = 0
+
+        # Provide a function for moving a custom motor.
+        def write_custom_motor(position):
+            print("Moving motor to position %s" % position)
+
+        # Provide a function to verify a custom condition.
+        def verify_custom_condition():
+            print("Confirming..")
+            return True
+
+        n_images = 5
+        positioner = StaticPositioner(n_images=n_images)
+        readables = read_custom_source
+        writables = write_custom_motor
+        conditions = verify_custom_condition
+
+        result = scan(positioner, readables, writables, conditions)
+
+        expected_result = [[1], [2], [3], [4], [5]]
+        self.assertEqual(result, expected_result, "Result not as expected")

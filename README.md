@@ -27,6 +27,7 @@
 4. [Library configuration](#configuration)
 5. [Common use cases](#common_use_cases)
     1. [Scanning images from CAM](#scanning_images_from_cam)
+    2. [Scanning with custom data sources](#scanning_custom_sources)
 6. [Other interfaces](#other_interfaces)
     1. [pshell](#pshell)
     2. [Old pyScan](#old_pyscan)
@@ -828,6 +829,42 @@ readables = [bs_property("x_axis", None), bs_property('y_axis', None)]
 value = scan(positioner, readables)
 
 print(value[0][0])  # Get first value of first readable
+```
+
+<a id="scanning_custom_sources"></a>
+## Scanning with custom data sources
+In addition to using the provided EPICS and BS DAL, you can provide your own data sources for readables, writables and 
+coditions. In this case, you need to pass the method for retrieving, writing or checking the data yourself. This 
+makes it also easy to mock (for testing purposes for example) hardware that currently does not exist.
+
+```python
+from pyscan import *
+
+# Provide a function for reading a custom source.
+def read_custom_source():
+    nonlocal counter
+    counter += 1
+    print("Reading custom counter %d" % counter)
+    return counter
+counter = 0
+
+# Provide a function for moving a custom motor.
+def write_custom_motor(position):
+    print("Moving motor to position %s" % position)
+
+# Provide a function to verify a custom condition.
+def verify_custom_condition():
+    print("Confirming..")
+    return True
+
+n_images = 5
+positioner = StaticPositioner(n_images=n_images)
+readables = read_custom_source
+writables = write_custom_motor
+conditions = verify_custom_condition
+
+# result == [[1], [2], [3], [4], [5]]
+result = scan(positioner, readables, writables, conditions)
 ```
 
 <a id="other_interfaces"></a>

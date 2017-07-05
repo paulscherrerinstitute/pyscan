@@ -4,35 +4,35 @@
 **pyscan** is a Python scanning library for Channel Access and beam synchronous (SwissFEL) data.
 
 # Table of content
-1. [Overview](#overview)
-    1. [Sample scan](#sample_scan)
-    2. [Introduction](#introduction)
-2. [Install](#install)
-    1. [Conda setup](#conda_setup)
-    2. [Local build](#local_build)
-3. [Usage](#usage)
-    1. [Positioners](#positioners)
-        1. [Vector and Line positioner](#vector_and_line_positioner)
-        2. [Area positioner](#area_positioner)
-        3. [Serial positioner](#serial_positioner)
-        4. [Compound positioner](#compound_positioner)
-        5. [Time positioner](#time_positioner)
-    2. [Writables](#writables)
-    3. [Readables](#readables)
-    4. [Conditions](#conditions)
-    5. [Initialization and Finalization](#init_and_fin)
-    6. [Before and after executor](#before_and_after)
-    7. [Scan settings](#scan_settings)
-    8. [Scan result](#scan_results)
-4. [Library configuration](#configuration)
-5. [Common use cases](#common_use_cases)
-    1. [Scanning images from CAM](#scanning_images_from_cam)
-    2. [Scanning with custom data sources](#scanning_custom_sources)
-6. [Other interfaces](#other_interfaces)
-    1. [pshell](#pshell)
-    2. [Old pyScan](#old_pyscan)
+1. [Overview](#c_overview)
+    1. [Sample scan](#c_sample_scan)
+    2. [Introduction](#c_introduction)
+2. [Install](#c_install)
+    1. [Conda setup](#c_conda_setup)
+    2. [Local build](#c_local_build)
+3. [Usage](#c_usage)
+    1. [Positioners](#c_positioners)
+        1. [Vector and Line positioner](#c_vector_and_line_positioner)
+        2. [Area positioner](#c_area_positioner)
+        3. [Serial positioner](#c_serial_positioner)
+        4. [Compound positioner](#c_compound_positioner)
+        5. [Time positioner](#c_time_positioner)
+    2. [Writables](#c_writables)
+    3. [Readables](#c_readables)
+    4. [Conditions](#c_conditions)
+    5. [Initialization and Finalization](#c_init_and_fin)
+    6. [Before and after executor](#c_before_and_after)
+    7. [Scan settings](#c_scan_settings)
+    8. [Scan result](#c_scan_results)
+4. [Library configuration](#c_configuration)
+5. [Common use cases](#c_common_use_cases)
+    1. [Scanning images from CAM](#c_scanning_images_from_cam)
+    2. [Scanning with custom data sources](#c_scanning_custom_sources)
+6. [Other interfaces](#c_other_interfaces)
+    1. [pshell](#c_pshell)
+    2. [Old pyScan](#c_old_pyscan)
 
-<a id="overview"></a>
+<a id="c_overview"></a>
 # Overview
 There are multiple interfaces available, but new features are available only on
 the new interface, therefore using the new interface is strongly recommended. The other interfaces were developed
@@ -40,7 +40,7 @@ to facilitate the migration to and integration of pyscan. Only the new interface
 in this document. For information on how to use the other interfaces, consult their original manual. A few examples
 are however available at the end of this document, under the [Other interfaces](#other_interfaces) chapter.
 
-<a id="sample_scan"></a>
+<a id="c_sample_scan"></a>
 ## Sample scan
 
 A sample scan, that uses the most common pyscan features, can be done by running:
@@ -81,7 +81,7 @@ result = scan(positioner=positioner,
               settings=settings)
 ```
 
-<a id="introduction"></a>
+<a id="c_introduction"></a>
 ## Introduction
 In this chapter we summarize the various objects described in detail in this document. To access the objects
 documentation directly, you can consult the source code or simply execute, for example:
@@ -107,18 +107,21 @@ position.
 Which variables - motors in most cases - to write the values from the positioners.
 
 - **epics_pv**: Write to epics process variable.
+- **function_value**: Write to function you provide.
 
 ### Readables
 Which variables to read at each position.
 
 - **epics_pv**: Read an epics process variable.
 - **bs_property**: Read a bsread property.
+- **function_value**: Read from a function you provide.
 
 ### Conditions
 Which values to check after each data acquisition. Useful to verify if the acquired data is valid.
 
 - **epics_condition**: Verify that an epics PV has a certain value.
 - **bs_condition**: Verify that a bsread property has a certain value.
+- **function_condition**: Verify that a function you provide returns True.
 
 ### Actions
 Action can be executed for initialization, finalization, before and after each data acquisition.
@@ -143,10 +146,10 @@ Setup the various scan parameters.
 
 - **scan\_settings**: All available parameters to set.
 
-<a id="install"></a>
+<a id="c_install"></a>
 # Install
 
-<a id="conda_setup"></a>
+<a id="c_conda_setup"></a>
 ## Conda setup
 If you use conda, you can create an environment with the pyscan library by running:
 
@@ -156,7 +159,7 @@ conda create -c paulscherrerinstitute --name <env_name> pyscan
 
 After that you can just source you newly created environment and start using the library.
 
-<a id="local_build"></a>
+<a id="c_local_build"></a>
 ## Local build
 You can build the library by running the setup script in the root folder of the project:
 
@@ -186,7 +189,7 @@ your conda config:
 conda config --add channels paulscherrerinstitute
 ```
 
-<a id="usage"></a>
+<a id="c_usage"></a>
 # Usage
 
 **Note**: All the examples in this README can also be found in the **tests/test_readme.py** file.
@@ -204,7 +207,7 @@ In the following chapters, each component will be explained in more details:
 
 For common use cases, see the chapter at the end of this document.
 
-<a id="positioners"></a>
+<a id="c_positioners"></a>
 ## Positioners
 Positioners generate positions based on the input data received and the type of positioner selected. In case a
 complex scan is required, more positioners can be chained together. Alternatively, the user can generate the list of
@@ -222,7 +225,7 @@ returning other motors at their initial position
 It is recommended to start your scanning with the **Vector positioner**, as it is the most simple to use,
 and in most cases it is powerful enough.
 
-<a id="vector_and_line_positioner"></a>
+<a id="c_vector_and_line_positioner"></a>
 ### Vector and Line positioner
 This 2 positioners are the most common ones and they are interchangable. A Line positioner is just a different
 way of defining a vector positioner. In the example below, we will show how this 2 positioners work.
@@ -265,7 +268,7 @@ It is important to note:
 In case you specify the step size, **(end-start) / step_size** must be the same for all axis - because all axis are
 moved at the same time, the number of steps for each axis must be the same.
 
-<a id="area_positioner"></a>
+<a id="c_area_positioner"></a>
 ### Area positioner
 The Area positioner is a multi dimensional variation of the LinePositioner. Instead of moving all axis at the same time,
 it moves one axis at the time, covering all positions that can be reached by combing the given axis. With a 2 axis scan,
@@ -313,7 +316,7 @@ the faster changing one.
 of integers. This is due to the fact that the AreaPositioner can have a different number of steps for different axis,
 while LinePositioner cannot. The same logic holds true for the step_size.
 
-<a id="serial_positioner"></a>
+<a id="c_serial_positioner"></a>
 ### Serial positioner
 A serial positioners moves one axis at the time, returning the previously moved axis back to its original position.
 
@@ -347,7 +350,7 @@ The positions generated from the positioner above can be visualized as:
 **Warning**: Unlike other positioners, in the Serial positioner the first dimension is the one that changes first.
 In the example above, this means that X gets iterated over first, and then Y.
 
-<a id="compound_positioner"></a>
+<a id="c_compound_positioner"></a>
 ### Compound positioner
 A compound positioner allows you to combine multiple positioners together. This allows you to generate more complex
 motions without having to generate all the positions up front and passing them to the VectorPositioner.
@@ -398,7 +401,7 @@ the faster changing one.
 positions provided by each positioners in the same order that they were specified when constructing the
 CompoundPositioner.
 
-<a id="time_positioner"></a>
+<a id="c_time_positioner"></a>
 ### Time positioner
 This positioner is different from the others in the sense that it does not generate positions for the motors,
 but time intervals at which to sample the readables. It is useful for acquisitions that recquire a time based
@@ -417,7 +420,7 @@ readables = [epics_pv("PYSCAN:TEST:OBS1")]
 result = scan(positioner=time_positioner, readables=readables)
 ```
 
-<a id="writables"></a>
+<a id="c_writables"></a>
 ## Writables
 Writables are PVs that are used to move the motors. The positions generated by the positioner are passed to the
 writables. The position values are written to the writables with the **set_and_match** logic (discussed below).
@@ -505,7 +508,7 @@ In this case the default values will be used:
 - **readback\_pv\_value**: Same as the setpoint.
 - **tolerance**: As specified in **pyscan.config.max\_float\_tolerance** for float values.
 
-<a id="readables"></a>
+<a id="c_readables"></a>
 ## Readables
 This are variables you read at every scan position. The result of the read is saved as a list entry in the output.
 You can have as many readables as you like, but at least 1 is mandatory (a scan without readables does not make much
@@ -566,7 +569,7 @@ def get_random():
 readables = [epics_value, bs_property, get_random]
 ```
 
-<a id="conditions"></a>
+<a id="c_conditions"></a>
 ## Conditions
 This are variables you monitor after each data acquisition to be sure that they have a certain values. A typical
 example would be to verify if the beam repetition rate is in the desired range. The library supports 
@@ -623,7 +626,7 @@ from pyscan import config
 config.bs_default_missing_property_value = None
 ```
 
-<a id="init_and_fin"></a>
+<a id="c_init_and_fin"></a>
 ## Initialization and Finalization
 The initialization and finalization actions are executed, respectively, before the first writables move and after the
 last data acquisition. The finalization actions are always executed, also in case of scan abort. This methods are
@@ -661,7 +664,7 @@ that must be set in a specific order.
 - Methods you provide must have no call arguments, they can however be closures if you need access to function external
 variables.
 
-<a id="before_and_after"></a>
+<a id="c_before_and_after"></a>
 ## Before and after executors
 The before and after move action are executed before each move and after the motors have moved and the settling time 
 for the motors has passed.
@@ -673,7 +676,7 @@ data storage preparations (for example setting a measurement header etc.).
 Apart from the execution points, the same actions and behaviours described in the
 [Initialization and Finalization](#init_and_fin) chapter apply. Consult that chapter for more information on usage.
 
-<a id="scan_settings"></a>
+<a id="c_scan_settings"></a>
 ## Scan settings
 Settings allow to specify the scan parameters. They provide already some defaults which should work for the most
 common scans. The available settings are:
@@ -720,7 +723,7 @@ example_settings_3 = scan_settings(progress_callback=scan_progress)
 a long running one - in case you need to, for example, do an UI update, you should provide the appropriate threading
 model yourself. Your callback function will in fact be blocking the scan until it completes.
 
-<a id="scan_results"></a>
+<a id="c_scan_results"></a>
 ## Scan result
 The scan results are given as a flat list, with each value position corresponding to the positions
 defined in the readables. In case of multiple measurements, they are grouped together inside another list.
@@ -776,7 +779,7 @@ because external, processing code, can always rely on the fact that there will b
 matter what the readables are. For the same reason, in a scan with a single readable, single position,
 and 1 measurement, the output will still be wrapped in 2 lists: **\[\[measurement_result\]\]**
 
-<a id="configuration"></a>
+<a id="c_configuration"></a>
 # Library configuration
 Common library settings can be set in the **pyscan/config.py** module, either at run time or when deployed. Runtime
 changes are preferable, since they do not affect other users.
@@ -799,10 +802,10 @@ help(config)
 **Warning**: Only in rare cases, if at all, this settings should be changed. Most strictly scan related parameters
 can be configured using the [Scan settings](#scan_settings).
 
-<a id="common_use_cases"></a>
+<a id="c_common_use_cases"></a>
 # Common use cases
 
-<a id="scanning_images_from_cam"></a>
+<a id="c_scanning_images_from_cam"></a>
 ## Scanning Images From Cam
 
 ```python
@@ -831,7 +834,7 @@ value = scan(positioner, readables)
 print(value[0][0])  # Get first value of first readable
 ```
 
-<a id="scanning_custom_sources"></a>
+<a id="c_scanning_custom_sources"></a>
 ## Scanning with custom data sources
 In addition to using the provided EPICS and BS DAL, you can provide your own data sources for readables, writables and 
 coditions. In this case, you need to pass the method for retrieving, writing or checking the data yourself. This 
@@ -867,14 +870,14 @@ conditions = verify_custom_condition
 result = scan(positioner, readables, writables, conditions)
 ```
 
-<a id="other_interfaces"></a>
+<a id="c_other_interfaces"></a>
 # Other interfaces
 **TBD**
 
-<a id="pshell"></a>
+<a id="c_pshell"></a>
 ## pshell
 **TBD**
 
-<a id="old_pyscan"></a>
+<a id="c_old_pyscan"></a>
 ## pyScan
 **TBD**

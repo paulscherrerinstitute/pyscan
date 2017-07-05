@@ -191,3 +191,19 @@ class Readme(unittest.TestCase):
 
         expected_result = [[1], [2], [3], [4], [5]]
         self.assertEqual(result, expected_result, "Result not as expected")
+
+    def test_minimal_scan(self):
+        # Collect 10 data points.
+        positioner = StaticPositioner(n_images=5)
+
+        # The function will count from 1 to 5 (it will be invoked 5 times, because n_images == 5).
+        def data_provider():
+            data_provider.counter += 1
+            return data_provider.counter
+
+        data_provider.counter = 0
+
+        # result == [[1], [2], [3], [4], [5]]
+        result = scan(positioner, data_provider)
+
+        self.assertEqual(result, [[1], [2], [3], [4], [5]], "Result not as expected.")

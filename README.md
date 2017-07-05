@@ -5,8 +5,9 @@
 
 # Table of content
 1. [Overview](#c_overview)
-    1. [Sample scan](#c_sample_scan)
-    2. [Introduction](#c_introduction)
+    1. [Minimal working example](#c_minimal_working_example)
+    2. [Sample scan](#c_sample_scan)
+    3. [Introduction](#c_introduction)
 2. [Install](#c_install)
     1. [Conda setup](#c_conda_setup)
     2. [Local build](#c_local_build)
@@ -39,6 +40,26 @@ the new interface, therefore using the new interface is strongly recommended. Th
 to facilitate the migration to and integration of pyscan. Only the new interface will be presented
 in this document. For information on how to use the other interfaces, consult their original manual. A few examples
 are however available at the end of this document, under the [Other interfaces](#other_interfaces) chapter.
+
+<a id="c_minimal_working_example"></a>
+## Minimal working example
+The following is the minimal working example you can run on your machine with only pyscan installed.
+
+```python
+from pyscan import *
+
+# Collect 10 data points.
+positioner = StaticPositioner(n_images=5)
+
+# The function will count from 1 to 5 (it will be invoked 5 times, because n_images == 5).
+def data_provider():
+    data_provider.counter += 1
+    return data_provider.counter
+data_provider.counter = 0
+    
+# result == [[1], [2], [3], [4], [5]]
+result = scan(positioner, data_provider)
+```
 
 <a id="c_sample_scan"></a>
 ## Sample scan

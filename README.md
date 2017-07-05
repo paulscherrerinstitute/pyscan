@@ -48,7 +48,7 @@ The following is the minimal working example you can run on your machine with on
 ```python
 from pyscan import *
 
-# Collect 10 data points.
+# Collect 5 data points.
 positioner = StaticPositioner(n_images=5)
 
 # The function will count from 1 to 5 (it will be invoked 5 times, because n_images == 5).

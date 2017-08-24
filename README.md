@@ -27,7 +27,7 @@
     8. [Scan result](#c_scan_results)
 4. [Library configuration](#c_configuration)
 5. [Common use cases](#c_common_use_cases)
-    1. [Scanning camera images from cam_server](#c_scanning_images_from_cam)
+    1. [Scanning camera images from cam_server with camera_name](#c_scanning_images_from_cam)
     2. [Scanning with custom data sources](#c_scanning_custom_sources)
 6. [Other interfaces](#c_other_interfaces)
     1. [pshell](#c_pshell)
@@ -827,7 +827,7 @@ can be configured using the [Scan settings](#scan_settings).
 # Common use cases
 
 <a id="c_scanning_images_from_cam"></a>
-## Scanning camera images from cam_server
+## Scanning camera images from cam_server with camera_name
 
 ```python
 from pyscan import *

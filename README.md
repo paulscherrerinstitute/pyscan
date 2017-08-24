@@ -27,7 +27,7 @@
     8. [Scan result](#c_scan_results)
 4. [Library configuration](#c_configuration)
 5. [Common use cases](#c_common_use_cases)
-    1. [Scanning images from CAM](#c_scanning_images_from_cam)
+    1. [Scanning camera images from cam_server](#c_scanning_images_from_cam)
     2. [Scanning with custom data sources](#c_scanning_custom_sources)
 6. [Other interfaces](#c_other_interfaces)
     1. [pshell](#c_pshell)
@@ -827,24 +827,32 @@ can be configured using the [Scan settings](#scan_settings).
 # Common use cases
 
 <a id="c_scanning_images_from_cam"></a>
-## Scanning Images From Cam
+## Scanning camera images from cam_server
 
 ```python
 from pyscan import *
-import re
 
 # Disable logging
 import logging
 logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
 
 # Get current stream of local cam instance
-from cam import api
-api_client = api.get_client("http://localhost:10000")
-port = api_client.get_first_stream_address()  # port is port of the REST api
+from cam_server import PipelineClient
+from cam_server.utils import get_host_port_from_stream_address
+
+# Get the pipeline client instance.
+pipeline_client = PipelineClient("http://sf-daqsync-01:8889/")
+
+# Camera name to connect to.
+camera_name = "simulation"
+
+# Get the camera stream host and port.
+_, stream_address = pipeline_client.create_instance_from_config({"camera_name": camera_name})
+stream_host, stream_port = get_host_port_from_stream_address(stream_address)
 
 # Configure bsread
-config.bs_default_host = "localhost"
-config.bs_default_port = int(re.sub(".*:","", port))
+config.bs_default_host = stream_host
+config.bs_default_port = stream_port
 
 positioner = StaticPositioner(5)  # Read 5 images
 # Read x_axis and y_axis from bs stream -> in case the data is missing in a bs stream message, use None as default.

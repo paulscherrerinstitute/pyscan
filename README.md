@@ -841,7 +841,7 @@ from cam_server import PipelineClient
 from cam_server.utils import get_host_port_from_stream_address
 
 # Get the pipeline client instance.
-pipeline_client = PipelineClient("http://sf-daqsync-01:8889/")
+pipeline_client = PipelineClient()
 
 # Camera name to connect to.
 camera_name = "simulation"

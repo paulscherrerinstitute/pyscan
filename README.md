@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/paulscherrerinstitute/pyscan.svg?branch=master)](https://travis-ci.org/paulscherrerinstitute/pyscan)
 [![Build status](https://ci.appveyor.com/api/projects/status/9oq871y9281iw19y?svg=true)](https://ci.appveyor.com/project/simongregorebner/pyscan)
 
-**pyscan** is a Python scanning library for Channel Access and beam synchronous (SwissFEL) data.
+**pyscan** is a Pyinstantiatedg library for Channel Access and beam synchronous (SwissFEL) data.
 
 # Table of content
 1. [Overview](#c_overview)
@@ -25,6 +25,7 @@
     6. [Before and after executor](#c_before_and_after)
     7. [Scan settings](#c_scan_settings)
     8. [Scan result](#c_scan_results)
+        1. [Custom format of scan results](#c_custom_format_scan_results)
 4. [Library configuration](#c_configuration)
 5. [Common use cases](#c_common_use_cases)
     1. [Scanning camera images from cam_server with camera_name](#c_scanning_images_from_cam)
@@ -799,6 +800,76 @@ result == [[x1]]
 because external, processing code, can always rely on the fact that there will be an iterable object available, no
 matter what the readables are. For the same reason, in a scan with a single readable, single position,
 and 1 measurement, the output will still be wrapped in 2 lists: **\[\[measurement_result\]\]**
+
+<a id="c_custom_format_scan_results"></a>
+### Custom format of scan results
+A custom format can be specified using the **data\_processor** property of the scan function. The default data 
+processor (described above) is called **SimpleDataProcessor**. In addition, a DictionaryDataProcessor is 
+provided with the library.
+
+The DictionaryDataProcessor stores the readables in a dictionary for each position. Example:
+
+```python
+# Each position in the result list corresponds to the scan position.
+result = [{"PV1": 1, "PV2": 2}, 
+          {"PV1": 1.1, "PV2": 1.2}]
+```
+
+To change the scan result format:
+```python
+from pyscan import *
+from pyscan.utils import DictionaryDataProcessor
+
+# Read 3 times.
+positioner = StaticPositioner(3)  
+
+# Read 2 epics PVs
+readables = [epics_pv("PYSCAN:TEST:OBS1"), epics_pv("PYSCAN:TEST:OBS2")]
+
+# Specify a different data processor.
+data_processor = DictionaryDataProcessor(readables)
+
+# Pass the data processor the scan method.
+value = scan(positioner, readables, data_processor=data_processor)
+
+# Print the OBS1 and OBS2 values in the first position.
+print(value[0]["PYSCAN:TEST:OBS1"], value[0]["PYSCAN:TEST:OBS2"])
+```
+
+#### Implementing a custom scan result format
+A custom format can be implemented by creating your own data processor class. You class needs to implement:
+
+- Function **process(self, position, data)**: Receives the position and the data associated with this position. This 
+method will be called once per position.
+- Function **get\_data(self)**: Called once, at the end of the scan, to provide the result in the desired format.
+
+As an example, lets see how **SimpleDataProcessor** is implemented:
+
+```python
+class SimpleDataProcessor(object):
+    """
+    Save the position and the received data at this position.
+    """
+
+    def __init__(self, positions=None, data=None):
+        """
+        Initialize the simple data processor.
+        :param positions: List to store the visited positions. Default: internal list.
+        :param data: List to store the data at each position. Default: internal list.
+        """
+        self.positions = positions if positions is not None else []
+        self.data = data if data is not None else []
+
+    def process(self, position, data):
+        self.positions.append(position)
+        self.data.append(data)
+
+    def get_data(self):
+        return self.data
+
+    def get_positions(self):
+        return self.positions
+```
 
 <a id="c_configuration"></a>
 # Library configuration

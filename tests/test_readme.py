@@ -207,3 +207,26 @@ class Readme(unittest.TestCase):
         result = scan(positioner, data_provider)
 
         self.assertEqual(result, [[1], [2], [3], [4], [5]], "Result not as expected.")
+
+    def test_custom_output_format(self):
+        from pyscan.utils import DictionaryDataProcessor
+
+        # Read 3 times.
+        positioner = StaticPositioner(3)
+
+        # Read 2 epics PVs
+        readables = [epics_pv("PYSCAN:TEST:OBS1"), epics_pv("PYSCAN:TEST:OBS2")]
+
+        # Specify a different data processor.
+        data_processor = DictionaryDataProcessor(readables)
+
+        # Pass the data processor the scan method.
+        value = scan(positioner, readables, data_processor=data_processor)
+
+        # Print the OBS1 and OBS2 values in the first position.
+        print(value[0]["PYSCAN:TEST:OBS1"], value[0]["PYSCAN:TEST:OBS2"])
+
+        self.assertEqual(len(value), 3)
+        self.assertTrue(all("PYSCAN:TEST:OBS1" in x for x in value))
+        self.assertTrue(all("PYSCAN:TEST:OBS2" in x for x in value))
+

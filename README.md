@@ -27,6 +27,7 @@
     8. [Scan result](#c_scan_results)
         1. [Custom format of scan results](#c_custom_format_scan_results)
 4. [Library configuration](#c_configuration)
+    1. [Default values for bsread stream](#c_default_values_bsread_stream)
 5. [Common use cases](#c_common_use_cases)
     1. [Scanning camera images from cam_server with camera_name](#c_scanning_images_from_cam)
     2. [Scanning with custom data sources](#c_scanning_custom_sources)
@@ -893,6 +894,41 @@ help(config)
 
 **Warning**: Only in rare cases, if at all, this settings should be changed. Most strictly scan related parameters
 can be configured using the [Scan settings](#scan_settings).
+
+<a id="c_default_values_bsread_stream"></a>
+## Default values for bsread stream
+Config attribute: **bs\_default\_missing\_property\_value**
+
+Sometimes, not all requested data is present in the bsread stream. This can happen due to different acquisition rates,
+hardware failures etc.
+
+In case a property is missing in the stream, and you requested the property to be acquired, you have 2 possibilities:
+
+- Raise an exception (default behavior) - the scan will be interrupted with the explanation what happened.
+- Provide a place holder value - when the value is not present in the stream, the place holder value is used to mark this.
+
+Lets say for example that in the case when a value in the bsread stream is missing, we don't want to raise an exception,
+but continue with the scan and store **None** in the place of the missing value. You can set a config variable to 
+change the default behaviour, but you can also specify the behaviour for each bs_property individually.
+
+```python
+from pyscan import *
+from pyscan import config
+# Change the global default. In case of missing bsread attribute, None will be stored.
+config.bs_default_missing_property_value = None
+
+# In this case, if x_axis is not present, the default missing property value from the config will be used - None.
+readable_1 = bs_property("x_axis")
+
+# If the image is missing from the stream, the scan cannot continue, and an Exception will be raised.
+readable_2 = bs_property("image", Exception)
+
+# If the energy is missing, -1 will be used as a place holder value.
+readable_3 = bs_property("energy", -1)
+```
+
+By combining the default config setting and passing individual default values to bs_property you can get the desired 
+behaviour at scan time.
 
 <a id="c_common_use_cases"></a>
 # Common use cases

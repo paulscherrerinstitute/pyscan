@@ -905,7 +905,8 @@ hardware failures etc.
 In case a property is missing in the stream, and you requested the property to be acquired, you have 2 possibilities:
 
 - Raise an exception (default behavior) - the scan will be interrupted with the explanation what happened.
-- Provide a place holder value - when the value is not present in the stream, the place holder value is used to mark this.
+- Provide a place holder value - when the value is not present in the stream, the place holder value is used to mark 
+this in the scan results.
 
 Lets say for example that in the case when a value in the bsread stream is missing, we don't want to raise an exception,
 but continue with the scan and store **None** in the place of the missing value. You can set a config variable to 
@@ -914,10 +915,11 @@ change the default behaviour, but you can also specify the behaviour for each bs
 ```python
 from pyscan import *
 from pyscan import config
-# Change the global default. In case of missing bsread attribute, None will be stored.
+
+# Change the global default. In case of missing bsread attribute, None is stored.
 config.bs_default_missing_property_value = None
 
-# In this case, if x_axis is not present, the default missing property value from the config will be used - None.
+# In this case, if x_axis is not present, bs_default_missing_property_value will be used.
 readable_1 = bs_property("x_axis")
 
 # If the image is missing from the stream, the scan cannot continue, and an Exception will be raised.

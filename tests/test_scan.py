@@ -100,6 +100,8 @@ class ScanTests(unittest.TestCase):
 
     def test_mixed_sources(self):
         config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
 
         positions = [[1, 1], [2, 2], [3, 3], [4, 4]]
         positioner = VectorPositioner(positions)
@@ -177,6 +179,8 @@ class ScanTests(unittest.TestCase):
 
     def test_convert_readables(self):
         config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
 
         positions = [[0, 10], [1, 11], [2, 12], [2, 13]]
         positioner = VectorPositioner(positions)
@@ -209,6 +213,8 @@ class ScanTests(unittest.TestCase):
 
     def test_bs_read_filter(self):
         config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
 
         n_images = 10
         positioner = StaticPositioner(n_images)
@@ -237,6 +243,8 @@ class ScanTests(unittest.TestCase):
     def test_bs_read_default_values(self):
         # DO NOT INCLUDE IN README - default.
         config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
         config.bs_default_missing_property_value = Exception
 
         n_images = 10
@@ -261,6 +269,8 @@ class ScanTests(unittest.TestCase):
     def test_bs_read_config_default_value(self):
         # DO NOT INCLUDE IN README - default.
         config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
 
         # Get 10 images.
         n_images = 3

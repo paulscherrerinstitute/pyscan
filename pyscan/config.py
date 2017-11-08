@@ -34,9 +34,9 @@ bs_read_timeout = 5
 bs_receive_timeout = 1
 
 # Default bs_read connection address.
-bs_default_host = "localhost"
+bs_default_host = None
 # Default bs_read connection port.
-bs_default_port = 9999
+bs_default_port = None
 # Default bs connection port.
 bs_connection_mode = "sub"
 # Default property value for bs properties missing in stream. Exception means to raise an Exception when this happens.

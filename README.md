@@ -28,9 +28,10 @@
         1. [Custom format of scan results](#c_custom_format_scan_results)
 4. [Library configuration](#c_configuration)
     1. [Default values for bsread stream](#c_default_values_bsread_stream)
-5. [Common use cases](#c_common_use_cases)
+5. [Examples](#c_examples)
     1. [Scanning camera images from cam_server with camera_name](#c_scanning_images_from_cam)
     2. [Scanning with custom data sources](#c_scanning_custom_sources)
+    3. [Scanning channels from the dispatching layer](#c_scanning_dispatching_layer)
 6. [Other interfaces](#c_other_interfaces)
     1. [pshell](#c_pshell)
     2. [Old pyScan](#c_old_pyscan)
@@ -932,8 +933,8 @@ readable_3 = bs_property("energy", -1)
 By combining the default config setting and passing individual default values to bs_property you can get the desired 
 behaviour at scan time.
 
-<a id="c_common_use_cases"></a>
-# Common use cases
+<a id="c_examples"></a>
+# Examples
 
 <a id="c_scanning_images_from_cam"></a>
 ## Scanning camera images from cam_server with camera_name
@@ -1007,6 +1008,26 @@ conditions = verify_custom_condition
 # result == [[1], [2], [3], [4], [5]]
 result = scan(positioner, readables, writables, conditions)
 ```
+
+<a id="c_scanning_dispatching_layer"></a>
+## Scanning channels from the dispatching layer
+The default bsread data source is the dispatching layer. In the following example, we will do a simple scan of 
+3 bsread messages.
+
+```python
+from pyscan import *
+
+# Take 5 images.
+positioner = StaticPositioner(n_images=3)
+
+readables = [bs_property("S10CB01-DBPM220:X1"),
+             bs_property("S10CB01-DBPM220:Y1")]
+
+# result == [[X1-0, Y1-0], [X1-1, Y1-1], [X1-2, Y1-2]]
+result = scan(positioner=positioner, readables=readables)
+```
+
+
 
 <a id="c_other_interfaces"></a>
 # Other interfaces

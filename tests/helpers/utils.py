@@ -32,7 +32,7 @@ class TestReader(object):
         self.data_source = data_source
         self.iter = iter(self.data_source)
 
-    def read(self):
+    def read(self, current_position_index):
         """
         Return the next element from the data_source list.
         :return: 

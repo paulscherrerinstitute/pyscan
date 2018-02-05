@@ -1,3 +1,5 @@
+import logging
+
 from pyscan.dal import epics_dal, bsread_dal, function_dal
 from pyscan.dal.function_dal import FunctionProxy
 from pyscan.scanner import Scanner
@@ -12,6 +14,8 @@ BS_READER = bsread_dal.ReadGroupInterface
 FUNCTION_PROXY = function_dal.FunctionProxy
 DATA_PROCESSOR = SimpleDataProcessor
 ACTION_EXECUTOR = ActionExecutor
+
+_logger = logging.getLogger(__name__)
 
 
 def scan(positioner, readables, writables=None, conditions=None, before_read=None, after_read=None, initialization=None,
@@ -65,10 +69,12 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
     readables_order = [type(readable) for readable in readables]
 
     # Read function needs to merge BS, PV, and function proxy data.
-    def read_data():
-        bs_values = iter(bs_reader.read() if bs_reader else [])
-        epics_values = iter(epics_pv_reader.read() if epics_pv_reader else [])
-        function_values = iter(function_reader.read() if function_reader else [])
+    def read_data(current_position_index):
+        _logger.debug("Reading data for position index %s." % current_position_index)
+
+        bs_values = iter(bs_reader.read(current_position_index) if bs_reader else [])
+        epics_values = iter(epics_pv_reader.read(current_position_index) if epics_pv_reader else [])
+        function_values = iter(function_reader.read(current_position_index) if function_reader else [])
 
         # Interleave the values correctly.
         result = []
@@ -94,10 +100,12 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
     conditions_order = [type(condition) for condition in conditions]
 
     # Validate function needs to validate both BS, PV, and function proxy data.
-    def validate_data(current_position, data):
+    def validate_data(current_position_index, data):
+        _logger.debug("Reading data for position index %s." % current_position_index)
+
         bs_values = iter(bs_reader.read_cached_conditions() if bs_reader else [])
-        epics_values = iter(epics_condition_reader.read() if epics_condition_reader else [])
-        function_values = iter(function_condition.read() if function_condition else [])
+        epics_values = iter(epics_condition_reader.read(current_position_index) if epics_condition_reader else [])
+        function_values = iter(function_condition.read(current_position_index) if function_condition else [])
 
         for index, source in enumerate(conditions_order):
             if source == BS_CONDITION:

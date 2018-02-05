@@ -93,19 +93,19 @@ class Scanner(object):
             # Once the pause flag is cleared, the scanning continues.
             self._status = STATUS_RUNNING
 
-    def _perform_single_read(self, current_position):
+    def _perform_single_read(self, current_position_index):
         """
         Read a single result from the channel.
-        :param current_position: Current position, passed to the validator.
+        :param current_position_index: Current position, passed to the validator.
         :return: Single result (all channels).
         """
         n_current_acquisition = 0
         # Collect data until acquired data is valid or retry limit reached.
         while n_current_acquisition < config.scan_acquisition_retry_limit:
-            single_measurement = self.reader()
+            single_measurement = self.reader(current_position_index)
 
             # If the data is valid, break out of the loop.
-            if self.data_validator(current_position, single_measurement):
+            if self.data_validator(current_position_index, single_measurement):
                 return single_measurement
 
             n_current_acquisition += 1
@@ -113,7 +113,7 @@ class Scanner(object):
         # Could not read the data within the retry limit.
         else:
             raise Exception("Number of maximum read attempts (%d) exceeded. Cannot read valid data at position %s."
-                            % (config.scan_acquisition_retry_limit, current_position))
+                            % (config.scan_acquisition_retry_limit, current_position_index))
 
     def _read_and_process_data(self, current_position):
         """

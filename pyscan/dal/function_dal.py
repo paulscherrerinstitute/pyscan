@@ -12,14 +12,20 @@ class FunctionProxy(object):
         """
         self.functions = convert_to_list(functions)
 
-    def read(self):
+    def read(self, current_position_index=None):
         """
         Read the results from all the provided functions.
         :return: Read results.
         """
         results = []
         for func in self.functions:
-            results.append(func.call_function())
+            # The function either accepts the current position index, or nothing.
+            try:
+                result = func.call_function()
+            except TypeError:
+                result = func.call_function(current_position_index)
+
+            results.append(result)
 
         return results
 

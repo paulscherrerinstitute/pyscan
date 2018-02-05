@@ -181,9 +181,10 @@ class ReadGroupInterface(object):
         self.pv_names = convert_to_list(pv_names)
         self.pvs = [self.connect(pv_name) for pv_name in self.pv_names]
 
-    def read(self):
+    def read(self, current_position_index=None):
         """
         Read PVs one by one.
+        :param current_position_index: Index of the current scan.
         :return: Result
         """
         result = []

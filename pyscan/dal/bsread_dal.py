@@ -114,7 +114,7 @@ class ReadGroupInterface(object):
 
         return pv_values
 
-    def read(self):
+    def read(self, current_position_index=None):
         """
         Reads the PV values from BSread. It uses the first PVs data sampled after the invocation of this method.
         :return: List of values for read pvs. Note: Condition PVs are excluded.

@@ -50,3 +50,9 @@ bs_default_missing_property_value = Exception
 epics_default_set_and_match_timeout = 3
 # After all motors have reached their destination (set_and_match), extra time to wait.
 epics_default_settling_time = 0
+
+############################
+# PShell DAL configuration #
+############################
+pshell_default_server_url = "http://sf-daq-mgmt:8090"
+pshell_default_scan_in_background = False

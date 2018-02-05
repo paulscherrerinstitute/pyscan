@@ -6,7 +6,7 @@ setup(
     version="2.3.1",
     description="PyScan is a python class that performs a scan for single or multiple given knobs.",
     author='Paul Scherrer Institute',
-    requires=["numpy", 'pcaspy'],
+    requires=["numpy", 'pcaspy', 'requests'],
     packages=['pyscan',
               "pyscan.dal",
               "pyscan.positioner",

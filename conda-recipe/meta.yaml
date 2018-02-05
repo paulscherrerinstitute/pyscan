@@ -16,6 +16,7 @@ requirements:
         - numpy
         - pyepics
         - bsread
+        - requests
 
 test:
   source_files:

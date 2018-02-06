@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/paulscherrerinstitute/pyscan.svg?branch=master)](https://travis-ci.org/paulscherrerinstitute/pyscan)
 [![Build status](https://ci.appveyor.com/api/projects/status/9oq871y9281iw19y?svg=true)](https://ci.appveyor.com/project/simongregorebner/pyscan)
 
-**pyscan** is a Pyinstantiatedg library for Channel Access and beam synchronous (SwissFEL) data.
+**pyscan** is a scanning library for Channel Access and beam synchronous (SwissFEL) data.
 
 # Table of content
 1. [Overview](#c_overview)

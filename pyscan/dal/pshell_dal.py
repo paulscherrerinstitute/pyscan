@@ -27,8 +27,20 @@ class PShellFunction(object):
         self.multiple_parameters = multiple_parameters
         self.return_values = return_values
 
-    def read_raw_data(self, data_path):
-        raw_data_bytes = self._load_scan_data(data_path)
+    @staticmethod
+    def _load_raw_data(server_url, data_path):
+        load_data_url = server_url + SERVER_URL_PATHS["data"] + "/" + data_path
+
+        raw_data = requests.get(url=load_data_url, stream=True).raw.read()
+
+        return raw_data
+
+    @classmethod
+    def read_raw_data(cls, data_path, server_url=None):
+        if server_url is None:
+            server_url = config.pshell_default_server_url
+
+        raw_data_bytes = cls._load_raw_data(server_url, data_path)
 
         offset = 0
 
@@ -104,10 +116,3 @@ class PShellFunction(object):
             raise Exception(result.text)
 
         return result.text
-
-    def _load_scan_data(self, data_path):
-        load_data_url = self.server_url + SERVER_URL_PATHS["data"] + "/" + data_path
-
-        raw_data = requests.get(url=load_data_url, stream=True).raw.read()
-
-        return raw_data

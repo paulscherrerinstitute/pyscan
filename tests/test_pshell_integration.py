@@ -52,3 +52,14 @@ class PshellIntegration(unittest.TestCase):
             for step_index in range(n_steps):
                 result[position_index][0][step_index][0] == float(10)
 
+    def test_pshell_get_raw_data(self):
+        raw_path = "/afs/psi.ch/intranet/SF/data/2018/02/06/20180206_172458_WireScanMock.h5|x_0001/w_pos"
+        result_len = 10
+
+        result = MockPShellFunction.read_raw_data(raw_path)
+        self.assertTrue("data" in result)
+        self.assertTrue(result_len, len(result["data"]))
+
+        for index in range(result_len):
+            self.assertEqual(result["data"][index], float(index))
+

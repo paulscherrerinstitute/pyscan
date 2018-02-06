@@ -1,7 +1,7 @@
 import json
 from collections import OrderedDict
 import requests
-
+from bsread.data.helpers import get_channel_reader
 from pyscan import config
 
 SERVER_URL_PATHS = {
@@ -65,10 +65,10 @@ class PShellFunction(object):
             raw_channel_data = read_chunk()
             raw_channel_timestamp = read_chunk()
 
-            name = channel["name"]
-            shape = channel["shape"]
+            channel_name = channel["name"]
+            channel_value_reader = get_channel_reader(channel)
 
-            result_data[name] = raw_channel_data
+            result_data[channel_name] = channel_value_reader(raw_channel_data)
 
         return result_data
 

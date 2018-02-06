@@ -7,6 +7,7 @@ from .scanner import *
 # Import DALs
 from .dal.epics_dal import *
 from .dal.bsread_dal import *
+from .dal.pshell_dal import *
 
 # Import positioners.
 from .positioner.line import *

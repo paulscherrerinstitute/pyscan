@@ -233,25 +233,30 @@ class Readme(unittest.TestCase):
     def test_PShell_wire_scanners(self):
         from tests.helpers.mock_pshell_function import MockPShellFunction as PShellFunction
 
-        # prefix = "S30CB09-DWSC440"
-        # scan_type = 'X1'    # Other possible values: ['Y1', 'X2', 'Y2', 'Set1', 'Set2']
-        # scan_range = [-200, 200, -200, 200]
-        # cycles = 2
-        # velocity = 200
-        # bpms = [BPMs]
-        # blms = [BLMs]
-        # bkgrd = 10
-        # plt = None
-        # save_raw = False
-        #
-        # script_name = ""
-        # parameters = [prefix, scan_type, scan_range, cycles, velocity, bpms, blms, bkgrd, None, save_raw]
-        #
-        # pshell = PShellFunction(script_name=script_name, parameters=parameters)
-        #
-        # # 5 steps scan.
-        # positioner = StaticPositioner(n_images=5)
-        # readables = function_value(pshell.read)
-        #
-        # result = scan(positioner=positioner, readables=readables)
+        prefix = "S30CB09-DWSC440"
+        scan_type = 'X1'
+        scan_range = [-200, 200, -200, 200]
+        cycles = 3
+        velocity = 200
+        bpms = []
+        blms = ["BLM1"]
+        bkgrd = 10
+        plt = None
+        save_raw = False
+
+        script_name = "test/WireScanMock.py"
+        parameters = [prefix, scan_type, scan_range, cycles, velocity, bpms, blms, bkgrd, None, save_raw]
+
+        pshell = PShellFunction(script_name=script_name, parameters=parameters)
+
+        # 5 steps scan.
+        n_positions = 5
+        positioner = StaticPositioner(n_images=n_positions)
+        readables = function_value(pshell.read)
+
+        result = scan(positioner=positioner, readables=readables)
+
+        self.assertEqual(n_positions, len(result))
+        # Scan position 0, readable 0, pass 0 should have all 6 scan return attributes.
+        self.assertEqual(6, len(result[0][0][0]))
 

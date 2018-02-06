@@ -1036,23 +1036,24 @@ This is the general example on how to read scan results executed on PShell serve
 from pyscan import *
 
 prefix = "S30CB09-DWSC440"
-scan_type = 'X1'    # Other possible values: ['Y1', 'X2', 'Y2', 'Set1', 'Set2']
+scan_type = 'X1'
 scan_range = [-200, 200, -200, 200]
-cycles = 2
+cycles = 3
 velocity = 200
-bpms = [BPMs]
-blms = [BLMs]
+bpms = []
+blms = ["BLM1"]
 bkgrd = 10
 plt = None
 save_raw = False
 
-script_name = ""
+script_name = "test/WireScanMock.py"
 parameters = [prefix, scan_type, scan_range, cycles, velocity, bpms, blms, bkgrd, None, save_raw]
 
 pshell = PShellFunction(script_name=script_name, parameters=parameters)
 
 # 5 steps scan.
-positioner = StaticPositioner(n_images=5)
+n_positions = 5
+positioner = StaticPositioner(n_images=n_positions)
 readables = function_value(pshell.read)
 
 result = scan(positioner=positioner, readables=readables)

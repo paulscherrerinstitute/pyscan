@@ -67,8 +67,8 @@ class PShellFunction(object):
 
             channel_name = channel["name"]
             # Default encoding is small, other valid value is 'big'.
-            channel["encoding"] = ">" if channel.get("encoding", "big") else "<"
-            
+            channel["encoding"] = "<" if channel.get("encoding", "little") else ">"
+
             channel_value_reader = get_channel_reader(channel)
 
             result_data[channel_name] = channel_value_reader(raw_channel_data)

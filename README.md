@@ -1056,11 +1056,11 @@ n_positions = 5
 positioner = StaticPositioner(n_images=n_positions)
 readables = function_value(pshell.read)
 
+# Each cycle returns: cycles = [rms_com_1, rms_sigma_1, gauss_mean_1, gauss_sigma_1, link_to_raw_x_1, link_to_raw_y_1]
+# Result format: [[[cycles]], ...]
+# Example: [[[[10.0, 20.0, 50.0, 60.0, '..._WireScanMock.h5|x_0001/w_pos', '..._WireScanMock.h5|x_0001/blm1'],...]
 result = scan(positioner=positioner, readables=readables)
 ```
-
-
-
 
 <a id="c_other_interfaces"></a>
 # Other interfaces

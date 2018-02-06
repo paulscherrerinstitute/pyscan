@@ -66,6 +66,9 @@ class PShellFunction(object):
             raw_channel_timestamp = read_chunk()
 
             channel_name = channel["name"]
+            # Default encoding is small, other valid value is 'big'.
+            channel["encoding"] = ">" if channel.get("encoding", "big") else "<"
+            
             channel_value_reader = get_channel_reader(channel)
 
             result_data[channel_name] = channel_value_reader(raw_channel_data)

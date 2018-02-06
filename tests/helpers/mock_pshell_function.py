@@ -2,8 +2,9 @@ from pyscan.dal.pshell_dal import PShellFunction
 
 
 class MockPShellFunction(PShellFunction):
-    def __init__(self, script_name, parameters, server_url=None, scan_in_background=None):
-        super(MockPShellFunction, self).__init__(script_name, parameters, server_url, scan_in_background)
+    def __init__(self, script_name, parameters, server_url=None, scan_in_background=None, multiple_parameters=False):
+        super(MockPShellFunction, self).__init__(script_name, parameters, server_url,
+                                                 scan_in_background, multiple_parameters)
 
     def _execute_scan(self, execution_parameters):
         # Example data from the test scan.

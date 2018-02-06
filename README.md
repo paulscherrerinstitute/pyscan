@@ -32,6 +32,7 @@
     1. [Scanning camera images from cam_server with camera_name](#c_scanning_images_from_cam)
     2. [Scanning with custom data sources](#c_scanning_custom_sources)
     3. [Scanning channels from the dispatching layer](#c_scanning_dispatching_layer)
+    4. [Scanning wire scanner with PShell function](#c_scanning_wire_scanner)
 6. [Other interfaces](#c_other_interfaces)
     1. [pshell](#c_pshell)
     2. [Old pyScan](#c_old_pyscan)
@@ -1026,6 +1027,37 @@ readables = [bs_property("S10CB01-DBPM220:X1"),
 # result == [[X1-0, Y1-0], [X1-1, Y1-1], [X1-2, Y1-2]]
 result = scan(positioner=positioner, readables=readables)
 ```
+
+<a id="c_scanning_wire_scanner"></a>
+## Scanning wire scanner with PShell function
+This is the general example on how to read scan results executed on PShell server.
+
+```python
+from pyscan import *
+
+prefix = "S30CB09-DWSC440"
+scan_type = 'X1'    # Other possible values: ['Y1', 'X2', 'Y2', 'Set1', 'Set2']
+scan_range = [-200, 200, -200, 200]
+cycles = 2
+velocity = 200
+bpms = [BPMs]
+blms = [BLMs]
+bkgrd = 10
+plt = None
+save_raw = False
+
+script_name = ""
+parameters = [prefix, scan_type, scan_range, cycles, velocity, bpms, blms, bkgrd, None, save_raw]
+
+pshell = PShellFunction(script_name=script_name, parameters=parameters)
+
+# 5 steps scan.
+positioner = StaticPositioner(n_images=5)
+readables = function_value(pshell.read)
+
+result = scan(positioner=positioner, readables=readables)
+```
+
 
 
 

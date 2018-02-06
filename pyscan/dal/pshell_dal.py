@@ -12,7 +12,7 @@ SERVER_URL_PATHS = {
 
 class PShellFunction(object):
 
-    def __init__(self, script_name, parameters, server_url=None, scan_in_background=None):
+    def __init__(self, script_name, parameters, server_url=None, scan_in_background=None, multiple_parameters=False):
         if server_url is None:
             server_url = config.pshell_default_server_url
 
@@ -23,6 +23,7 @@ class PShellFunction(object):
         self.parameters = parameters
         self.server_url = server_url.rstrip("/")
         self.scan_in_background = scan_in_background
+        self.multiple_parameters = multiple_parameters
 
     def read(self, current_position_index=None):
         parameters = self.get_scan_parameters(current_position_index)
@@ -77,8 +78,15 @@ class PShellFunction(object):
 
     def get_scan_parameters(self, current_position_index):
 
-        if isinstance(self.parameters, (list, tuple)):
-            return self.parameters[current_position_index]
+        if self.multiple_parameters:
+            try:
+                position_parameters = self.parameters[current_position_index]
+            except IndexError:
+                raise ValueError("Cannot find parameters for position index %s. Parameters: " %
+                                 (current_position_index, self.parameters))
+
+            return position_parameters
+
         else:
             return self.parameters
 

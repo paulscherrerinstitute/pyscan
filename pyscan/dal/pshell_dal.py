@@ -12,7 +12,8 @@ SERVER_URL_PATHS = {
 
 class PShellFunction(object):
 
-    def __init__(self, script_name, parameters, server_url=None, scan_in_background=None, multiple_parameters=False):
+    def __init__(self, script_name, parameters, server_url=None, scan_in_background=None, multiple_parameters=False,
+                 return_values=None):
         if server_url is None:
             server_url = config.pshell_default_server_url
 
@@ -24,17 +25,9 @@ class PShellFunction(object):
         self.server_url = server_url.rstrip("/")
         self.scan_in_background = scan_in_background
         self.multiple_parameters = multiple_parameters
+        self.return_values = return_values
 
-    def read(self, current_position_index=None):
-        parameters = self.get_scan_parameters(current_position_index)
-
-        run_request = {"script": self.script_name,
-                       "pars": parameters,
-                       "background": self.scan_in_background}
-
-        raw_scan_response_text = self._execute_scan(run_request)
-        _, data_path = json.loads(raw_scan_response_text)
-
+    def read_raw_data(self, data_path):
         raw_data_bytes = self._load_scan_data(data_path)
 
         offset = 0
@@ -75,6 +68,18 @@ class PShellFunction(object):
             result_data[channel_name] = channel_value_reader(raw_channel_data)
 
         return result_data
+
+    def read(self, current_position_index=None):
+        parameters = self.get_scan_parameters(current_position_index)
+
+        run_request = {"script": self.script_name,
+                       "pars": parameters,
+                       "background": self.scan_in_background}
+
+        raw_scan_result = self._execute_scan(run_request)
+        scan_result = json.loads(raw_scan_result)
+
+        return scan_result
 
     def get_scan_parameters(self, current_position_index):
 

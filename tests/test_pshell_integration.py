@@ -9,34 +9,34 @@ class PshellIntegration(unittest.TestCase):
 
     def test_pshell_function(self):
 
-        n_steps = 5
+        n_steps = 3
 
-        pshell_test = MockPShellFunction(script_name="test/DataLink.py",
-                                         parameters={"scan_start": 0,
-                                                     "scan_stop": 10,
-                                                     "scan_steps": n_steps},
-                                         scan_in_background=False)
+        # Actual parameters do not matter - the response if fixed.
+        pshell_test = MockPShellFunction(script_name="",
+                                         parameters={})
 
         result = pshell_test.read()
 
-        self.assertIsNotNone(pshell_test.read())
+        self.assertIsNotNone(result)
 
-        self.assertTrue(isinstance(result, dict))
+        self.assertTrue(isinstance(result, list))
 
-        self.assertEqual(n_steps + 1, len(result["data"]))
+        self.assertEqual(n_steps, len(result))
 
-        for index in range(n_steps + 1):
-            result["data"][index] == float(index)
+        self.assertEqual(len(result[0]), 6)
+
+        for index in range(n_steps):
+            result[index][0] == float(10)
+            result[index][1] == float(20)
+            result[index][2] == float(50)
+            result[index][3] == float(60)
 
     def test_pshell_function_in_scan(self):
 
-        n_steps = 5
+        n_steps = 3
 
-        pshell_test = MockPShellFunction(script_name="test/DataLink.py",
-                                         parameters={"scan_start": 0,
-                                                     "scan_stop": 10,
-                                                     "scan_steps": n_steps},
-                                         scan_in_background=False)
+        pshell_test = MockPShellFunction(script_name="",
+                                         parameters={})
 
         n_positions = 5
 
@@ -49,6 +49,6 @@ class PshellIntegration(unittest.TestCase):
         self.assertEqual(n_positions, len(result))
 
         for position_index in range(n_positions):
-            for value_index in range(n_steps + 1):
-                result[position_index][0]["data"][value_index] == float(value_index)
+            for step_index in range(n_steps):
+                result[position_index][0][step_index][0] == float(10)
 

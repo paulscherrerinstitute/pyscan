@@ -8,13 +8,14 @@ class MockPShellFunction(PShellFunction):
 
     def _execute_scan(self, execution_parameters):
         # Example data from the test scan.
-        return '[2,"2018/02/06/20180206_122248_DataLink.h5 | scan 1/Sensor"]'
+        return '[[10.0,20.0,50.0,60.0,"/afs/psi.ch/intranet/SF/data/2018/02/06/20180206_' \
+               '170413_WireScanMock.h5|x_0001/w_pos","/afs/psi.ch/intranet/SF/data/2018/02/' \
+               '06/20180206_170413_WireScanMock.h5|x_0001/blm1"],[10.0,20.0,50.0,60.0,"/' \
+               'afs/psi.ch/intranet/SF/data/2018/02/06/20180206_170413_WireScanMock.h5|x' \
+               '_0002/w_pos","/afs/psi.ch/intranet/SF/data/2018/02/06/20180206_170413_W' \
+               'ireScanMock.h5|x_0002/blm1"],[10.0,20.0,50.0,60.0,"/afs/psi.ch/intranet' \
+               '/SF/data/2018/02/06/20180206_170413_WireScanMock.h5|x_0003/w_pos","/afs' \
+               '/psi.ch/intranet/SF/data/2018/02/06/20180206_170413_WireScanMock.h5|x_0003/blm1"]]'
 
     def _load_scan_data(self, data_path):
-        # Example data from the test scan.
-        return b'\x00\x00\x00\x87{"htype":"bsr_m-1.1","hash":"85877517a3f81ebcf617b657b87a5a5",' \
-               b'"global_timestamp":{"sec":1929316,"ns":80742626},"dh_compression":"none"}\x00\x00\x00>' \
-               b'{"htype":"bsr_d-1.1","channels":[{"name":"data","shape":[6]}]}\x00\x00\x000\x00\x00\x00\x00\x00' \
-               b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00' \
-               b'\x08@\x00\x00\x00\x00\x00\x00\x10@\x00\x00\x00\x00\x00\x00\x14@\x00\x00\x00\x10v\x94yZ\x00\x00' \
-               b'\x00\x00\xc0\xfav#\x00\x00\x00\x00'
+        return None

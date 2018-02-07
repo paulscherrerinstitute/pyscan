@@ -1050,7 +1050,8 @@ plt = None
 save_raw = False
 
 script_name = "Diagnostics/WireScan.py"
-parameters = [wire_scanner, scan_type, scan_range, n_cycles, velocity, bpms, blms, n_backgrounds, plt, save_raw]
+parameters = [wire_scanner, scan_type, scan_range, n_cycles, velocity, bpms, blms, n_backgrounds, 
+              plt, save_raw]
 
 pshell = PShellFunction(script_name=script_name, parameters=parameters)
 
@@ -1060,10 +1061,11 @@ positioner = StaticPositioner(n_images=n_positions)
 readables = function_value(pshell.read)
 
 # Result format: [[[cycles]], ...]
-# Example: [[[10.0, 20.0, 50.0, 60.0, '..._WireScanMock.h5|x_0001/w_pos', '..._WireScanMock.h5|x_0001/blm1']]]
+# Example: [[[10.0, 20.0, 50.0, 60.0, '...h5|x_0001/w_pos', '...h5|x_0001/blm1']]]
 result = scan(positioner=positioner, readables=readables)
 
-# Each cycle returns: cycles = [rms_com_1, rms_sigma_1, gauss_mean_1, gauss_sigma_1, link_to_raw_x_1, link_to_raw_y_1]
+# Each cycle returns: cycles = [rms_com_1, rms_sigma_1, gauss_mean_1, gauss_sigma_1, 
+#                               link_to_raw_x_1, link_to_raw_y_1]
 ```
 
 <a id="c_other_interfaces"></a>

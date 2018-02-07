@@ -1029,37 +1029,41 @@ result = scan(positioner=positioner, readables=readables)
 ```
 
 <a id="c_scanning_wire_scanner"></a>
-## Scanning wire scanner with PShell function
+## Scanning wire scanners with PShell function
 This is the general example on how to read scan results executed on PShell server.
 
 ```python
 from pyscan import *
 
-prefix = "S30CB09-DWSC440"
+wire_scanner = "S30CB09-DWSC440"
 scan_type = 'X1'
-scan_range = [-200, 200, -200, 200]
-cycles = 3
+# The last two values are zero because we are using one wire (scan_type).
+scan_range = [-2000, 800, 0, 0]
+n_cycles = 3
+# In um/s
 velocity = 200
 bpms = []
-blms = ["BLM1"]
-bkgrd = 10
+blms = ["S10DI01-DBLM045"]
+n_backgrounds = 10
+# This two parameter has to always be the same for the wire scan.
 plt = None
 save_raw = False
 
-script_name = "test/WireScanMock.py"
-parameters = [prefix, scan_type, scan_range, cycles, velocity, bpms, blms, bkgrd, None, save_raw]
+script_name = "Diagnostics/WireScan.py"
+parameters = [wire_scanner, scan_type, scan_range, n_cycles, velocity, bpms, blms, n_backgrounds, plt, save_raw]
 
 pshell = PShellFunction(script_name=script_name, parameters=parameters)
 
-# 5 steps scan.
-n_positions = 5
+# 1 steps scan. Just do 1 wire scan.
+n_positions = 1
 positioner = StaticPositioner(n_images=n_positions)
 readables = function_value(pshell.read)
 
-# Each cycle returns: cycles = [rms_com_1, rms_sigma_1, gauss_mean_1, gauss_sigma_1, link_to_raw_x_1, link_to_raw_y_1]
 # Result format: [[[cycles]], ...]
-# Example: [[[[10.0, 20.0, 50.0, 60.0, '..._WireScanMock.h5|x_0001/w_pos', '..._WireScanMock.h5|x_0001/blm1'],...]
+# Example: [[[10.0, 20.0, 50.0, 60.0, '..._WireScanMock.h5|x_0001/w_pos', '..._WireScanMock.h5|x_0001/blm1']]]
 result = scan(positioner=positioner, readables=readables)
+
+# Each cycle returns: cycles = [rms_com_1, rms_sigma_1, gauss_mean_1, gauss_sigma_1, link_to_raw_x_1, link_to_raw_y_1]
 ```
 
 <a id="c_other_interfaces"></a>

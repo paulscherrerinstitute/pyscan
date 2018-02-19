@@ -126,10 +126,16 @@ class ActionExecutor(object):
         """
         self.actions = convert_to_list(actions)
 
-    def execute(self, position):
+    def execute(self, position, position_data=None):
         for action in self.actions:
-            if "position" in inspect.signature(action).parameters:
+            n_parameters = len(inspect.signature(action).parameters)
+
+            if n_parameters == 2:
+                action(position, position_data)
+
+            elif n_parameters == 1:
                 action(position)
+
             else:
                 action()
 

@@ -25,7 +25,7 @@ class Scan(object):
         after_executor = self.get_action_executor("In-loopPostAction")
 
         # Wrap the post action executor to update the number of completed scans.
-        def progress_after_executor(scanner_instance):
+        def progress_after_executor(scanner_instance, data):
             # Execute other post actions.
             after_executor(scanner_instance)
 

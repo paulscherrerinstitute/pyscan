@@ -406,3 +406,33 @@ class ScanTests(unittest.TestCase):
 
         scan(readables=void_read, writables=void_write, positioner=positioner,
              before_move=before_move, after_move=after_move)
+
+    def test_after_measurement_executor(self):
+
+        counter = -1
+
+        def void_read():
+            nonlocal counter
+            counter += 1
+            return counter
+
+        def void_write(position):
+            positions.append(position)
+        positions = []
+
+        def after_read_0():
+            self.assertTrue(len(positions) > 0)
+
+        def after_read_1(position):
+            self.assertEqual(position, positions[-1])
+
+        def after_read_2(position, position_data):
+            self.assertEqual(position, positions[-1])
+            # Data value is equal to the position index.
+            self.assertEqual(position_data[0], positions[-1])
+
+        positioner = VectorPositioner([0, 1, 2, 3, 4, 5])
+
+        after_read = [after_read_0, after_read_1, after_read_2]
+
+        scan(readables=void_read, writables=void_write, positioner=positioner, after_read=after_read)

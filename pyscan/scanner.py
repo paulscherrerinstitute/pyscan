@@ -178,7 +178,7 @@ class Scanner(object):
 
                 # Post reading callbacks.
                 if self.after_measurement_executor:
-                    self.after_measurement_executor(next_positions)
+                    self.after_measurement_executor(next_positions, position_data)
 
                 # Report about the progress.
                 self.settings.progress_callback(position_index, n_of_positions)

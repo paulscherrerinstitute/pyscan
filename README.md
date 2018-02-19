@@ -33,6 +33,8 @@
     2. [Scanning with custom data sources](#c_scanning_custom_sources)
     3. [Scanning channels from the dispatching layer](#c_scanning_dispatching_layer)
     4. [Scanning wire scanner with PShell function](#c_scanning_wire_scanner)
+    5. [PShell function + real time plotting](#c_pshell_plot)
+## PShell function + real time plotting
 6. [Other interfaces](#c_other_interfaces)
     1. [pshell](#c_pshell)
     2. [Old pyScan](#c_old_pyscan)
@@ -1068,6 +1070,92 @@ result = scan(positioner=positioner, readables=readables)
 #                               link_to_raw_x_1, link_to_raw_y_1]
 ```
 
+<a id="c_pshell_plot"></a>
+## PShell function + real time plotting
+This example extends the previous PShell server scan: Visualize the result while the scan is running.
+
+In order to plot the data, you need to have the PShell Plotter running. You can start it by running:
+```bash
+java -cp /opt/gfa/pshell/testing ch.psi.pshell.plotter.View &
+```
+
+```python
+from pyscan import *
+from numpy import mean
+
+wire_scanner = "S30CB09-DWSC440"
+scan_type = 'X1'
+# The last two values are zero because we are using one wire (scan_type).
+scan_range = [-2000, 800, 0, 0]
+
+n_cycles = 3
+
+# In um/s
+velocity = 200
+bpms = []
+blms = ["S10DI01-DBLM045"]
+n_backgrounds = 10
+# This two parameter has to always be the same for the wire scan.
+plt = None
+save_raw = False
+
+script_name = "test/WireScanMock.py"
+parameters = [wire_scanner, scan_type, scan_range, n_cycles, velocity, bpms, blms, n_backgrounds,
+              plt, save_raw]
+
+pshell = PShellFunction(script_name=script_name, parameters=parameters)
+
+# 1 steps scan. Just do 1 wire scan.
+n_positions = 3
+positioner = StaticPositioner(n_images=n_positions)
+readables = function_value(pshell.read)
+
+from PlotClient import PlotClient
+plot_client = PlotClient()
+plot_client.clear_plots()
+
+rms_plot = plot_client.add_line_plot("rms", style="ErrorY")
+rms_com_series = plot_client.add_line_series(rms_plot, "rms_com_1")
+
+gauss_plot = plot_client.add_line_plot("gauss", style="ErrorY")
+gauss_mean_series = plot_client.add_line_series(gauss_plot, "gauss_mean_1")
+
+raw_data_plot = plot_client.add_line_plot("raw")
+
+
+def plot_data(position, position_data):
+    data_rms_com_1 = mean([x[0] for x in position_data[0]])
+    data_rms_sigma_1 = mean([x[1] for x in position_data[0]])
+    plot_client.append_line_series_data(rms_com_series, position, data_rms_com_1, data_rms_sigma_1)
+
+    data_gauss_mean_1 = mean([x[2] for x in position_data[0]])
+    data_gauss_sigma_1 = mean([x[3] for x in position_data[0]])
+    plot_client.append_line_series_data(gauss_mean_series, position, data_gauss_mean_1, data_gauss_sigma_1)
+
+    raw_position_data = [x[4] for x in position_data[0]]
+    raw_value_data = [x[5] for x in position_data[0]]
+
+    cycle_position_data = [pshell.read_raw_data(p) for p in raw_position_data]
+    cycle_value_data = [pshell.read_raw_data(p) for p in raw_value_data]
+
+    plot_client.clear_plot(raw_data_plot)
+
+    for index in range(n_cycles):
+        series = plot_client.add_line_series(raw_data_plot, "cycle_%d" % index)
+
+        cycle_position = list(cycle_position_data[index]["data"])
+        cycle_value = list(cycle_value_data[index]["data"])
+
+        plot_client.set_line_series_data(series, cycle_position, cycle_value)
+
+
+# Result format: [[[cycles]], ...]
+# Example: [[[10.0, 20.0, 50.0, 60.0, '...h5|x_0001/w_pos', '...h5|x_0001/blm1']]]
+result = scan(positioner=positioner, readables=readables, after_read=plot_data)
+
+# Each cycle returns: cycles = [rms_com_1, rms_sigma_1, gauss_mean_1, gauss_sigma_1,
+#                               link_to_raw_x_1, link_to_raw_y_1]
+```
 <a id="c_other_interfaces"></a>
 # Other interfaces
 **TBD**

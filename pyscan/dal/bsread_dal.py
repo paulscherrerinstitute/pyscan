@@ -27,6 +27,7 @@ class ReadGroupInterface(object):
 
         self._message_cache = None
         self._message_cache_timestamp = None
+        self._message_cache_position_index = None
 
         self._connect_bsread(config.bs_default_host, config.bs_default_port)
 
@@ -119,13 +120,24 @@ class ReadGroupInterface(object):
         Reads the PV values from BSread. It uses the first PVs data sampled after the invocation of this method.
         :return: List of values for read pvs. Note: Condition PVs are excluded.
         """
+
+        # Message for this position already cached.
+        if current_position_index is not None and current_position_index == self._message_cache_position_index:
+            return self._read_pvs_from_cache(self.properties)
+
         read_timestamp = time()
         while time() - read_timestamp < config.bs_read_timeout:
+
             message = self.stream.receive(filter=self.filter)
+
             if self.is_message_after_timestamp(message, read_timestamp):
+
                 self._message_cache = message
+                self._message_cache_position_index = current_position_index
                 self._message_cache_timestamp = read_timestamp
+
                 return self._read_pvs_from_cache(self.properties)
+
         else:
             raise Exception("Read timeout exceeded for BS read stream. Could not find the desired package in time.")
 
@@ -145,3 +157,20 @@ class ReadGroupInterface(object):
 
         self._message_cache = None
         self._message_cache_timestamp = None
+
+
+class ImmediateReadGroupInterface(ReadGroupInterface):
+
+    @staticmethod
+    def is_message_after_timestamp(message, timestamp):
+        """
+        Every message is a good message, expect a NULL one.
+        :param message: Message to inspect.
+        :param timestamp: Timestamp to compare the message to.
+        :return: True if the message is not None.
+        """
+        # Receive might timeout, in this case we have nothing to compare.
+        if not message:
+            return False
+
+        return True

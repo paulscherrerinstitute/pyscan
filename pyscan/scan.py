@@ -2,6 +2,7 @@ import logging
 
 from pyscan.dal import epics_dal, bsread_dal, function_dal
 from pyscan.dal.function_dal import FunctionProxy
+from pyscan.positioner.bsread import BsreadPositioner
 from pyscan.scanner import Scanner
 from pyscan.scan_parameters import EPICS_PV, EPICS_CONDITION, BS_PROPERTY, BS_CONDITION, scan_settings, convert_input, \
     FUNCTION_VALUE, FUNCTION_CONDITION, convert_conditions
@@ -42,11 +43,13 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
     finalization = convert_to_list(finalization) or []
     settings = settings or scan_settings()
 
-    bs_reader = _initialize_bs_dal(readables, conditions, settings.bs_read_filter)
+    bs_reader = _initialize_bs_dal(readables, conditions, settings.bs_read_filter, positioner)
+
     epics_writer, epics_pv_reader, epics_condition_reader = _initialize_epics_dal(writables,
                                                                                   readables,
                                                                                   conditions,
                                                                                   settings)
+
     function_writer, function_reader, function_condition = _initialize_function_dal(writables,
                                                                                     readables,
                                                                                     conditions)
@@ -201,13 +204,25 @@ def _initialize_epics_dal(writables, readables, conditions, settings):
     return epics_writer, epics_pv_reader, epics_condition_reader
 
 
-def _initialize_bs_dal(readables, conditions, filter_function):
+def _initialize_bs_dal(readables, conditions, filter_function, positioner):
     bs_readables = [x for x in filter(lambda x: isinstance(x, BS_PROPERTY), readables)]
     bs_conditions = [x for x in filter(lambda x: isinstance(x, BS_CONDITION), conditions)]
 
     bs_reader = None
     if bs_readables or bs_conditions:
-        bs_reader = BS_READER(properties=bs_readables, conditions=bs_conditions, filter_function=filter_function)
+
+        # TODO: The scanner should not depend on a particular positioner. Refactor.
+        if isinstance(positioner, BsreadPositioner):
+            bs_reader = bsread_dal.ImmediateReadGroupInterface(properties=bs_readables,
+                                                               conditions=bs_conditions,
+                                                               filter_function=filter_function)
+
+            positioner.set_bs_reader(bs_reader)
+
+            return bs_reader
+
+        else:
+            bs_reader = BS_READER(properties=bs_readables, conditions=bs_conditions, filter_function=filter_function)
 
     return bs_reader
 

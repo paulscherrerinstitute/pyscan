@@ -8,6 +8,7 @@ from bsread.sender import Sender
 
 from pyscan import SimpleDataProcessor, config, StaticPositioner, scan_settings, function_value
 from pyscan.config import max_time_tolerance
+from pyscan.positioner.bsread import BsreadPositioner
 from pyscan.positioner.time import TimePositioner
 from pyscan.utils import DictionaryDataProcessor
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, cached_initial_values
@@ -34,6 +35,8 @@ from pyscan.scan_parameters import epics_pv, bs_property, epics_condition, bs_co
 from pyscan.scan_actions import action_set_epics_pv, action_restore
 from tests.helpers.mock_epics_dal import pv_cache
 
+MOCK_SENDER_INTERVAL = 0.05
+
 
 def start_sender():
     # Start a mock sender stream.
@@ -45,7 +48,7 @@ def start_sender():
     generator.open()
     while bs_sending:
         generator.send()
-        time.sleep(0.05)
+        time.sleep(MOCK_SENDER_INTERVAL)
 
     generator.close()
 
@@ -239,6 +242,53 @@ class ScanTests(unittest.TestCase):
 
         self.assertTrue(filter_pass >= n_images, "The filter passed less then the received messages.")
         # TODO: Some more sophisticated filter tests.
+
+    def test_bsread_timestamp_read(self):
+        config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
+
+        settling_time = 0.2
+        messages_expected_factor = settling_time / MOCK_SENDER_INTERVAL
+
+        n_images = 10
+        positioner = StaticPositioner(n_images)
+        readables = ["bs://CAMERA1:X"]
+
+        settings = scan_settings(settling_time=settling_time)
+
+        # settings = scan_settings(bs_read_filter=mock_filter)
+        result = scan(positioner=positioner, readables=readables, settings=settings)
+
+        # For messages_expected_factor=4; [[4], [8], [12], ...]
+        expected_results = [[x] for x in [(index+1) * messages_expected_factor for index in range(n_images)]]
+
+        self.assertListEqual(result, expected_results)
+
+    def test_bsread_positioner(self):
+        config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
+
+        settling_time = 0.5
+
+        n_messages = 10
+        positioner = BsreadPositioner(n_messages)
+
+        readables = ["bs://CAMERA1:X"]
+
+        settings = scan_settings(settling_time=settling_time)
+        time.sleep(1)
+
+        # settings = scan_settings(bs_read_filter=mock_filter)
+        result = scan(positioner=positioner, readables=readables, settings=settings)
+
+        first_message_offset = result[0][0]
+
+        # Expect to receive all messages from bsread from a pulse_id on; [[11], [12], [13], ...]
+        expected_results = [[index+first_message_offset] for index in range(n_messages)]
+
+        self.assertListEqual(result, expected_results)
 
     def test_bs_read_default_values(self):
         # DO NOT INCLUDE IN README - default.

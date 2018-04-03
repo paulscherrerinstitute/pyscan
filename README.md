@@ -18,6 +18,7 @@
         3. [Serial positioner](#c_serial_positioner)
         4. [Compound positioner](#c_compound_positioner)
         5. [Time positioner](#c_time_positioner)
+        6. [Bsread positioner](#c_bsread_positioner)
     2. [Writables](#c_writables)
     3. [Readables](#c_readables)
     4. [Conditions](#c_conditions)
@@ -445,6 +446,31 @@ time_positioner = TimePositioner(time_interval=0.1, n_intervals=30)
 readables = [epics_pv("PYSCAN:TEST:OBS1")]
 
 result = scan(positioner=time_positioner, readables=readables)
+```
+
+<a id="c_bsread_positioner"></a>
+### Bsread positioner
+This positioner samples the readables for each received bsread message. 
+
+It is useful for acquiring every message in a bsread stream, and maybe reading some additional properties (for example 
+from EPICS) when a new message is received. Positions given by this positioner are indexes of the received bsread 
+messages.
+
+Because this positioner is not intended to move motor you should not specify any writables - if you do, 
+the bsread message index (within this scan) will be written to them.
+
+**Important**: If you use the bsread positioner you MUST specify at least 1 bs_property() or bs_condition().
+
+```python
+from pyscan import *
+
+# Sample the readables at every bsread message, acquire 10 messages.
+bsread_positioner = BsreadPositioner(n_messages=10)
+
+# Read a bsread property.
+readables = [bs_property("CAMERA1:OBS2")]
+
+result = scan(positioner=bsread_positioner, readables=readables)
 ```
 
 <a id="c_writables"></a>

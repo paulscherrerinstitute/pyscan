@@ -679,6 +679,38 @@ from pyscan import config
 config.bs_default_missing_property_value = None
 ```
 
+### Conditions action
+When a condition is not fulfilled 2 possible actions can be taken:
+- Abort (default)
+- Retry
+
+When using Abort (default), the data acquisition is terminated immediatly. If you select Retry, a number of attempts will
+be made to read again the value at a specified interval.
+
+The number of retries and delay is specified in the config variables:
+
+```python
+from pyscan import *
+
+# Maximum number of retries to read the channels to get valid data.
+config.scan_acquisition_retry_limit = 3
+# Delay between acquisition retries.
+config.scan_acquisition_retry_delay = 1
+```
+
+Example on how to specify the action:
+
+```python
+from pyscan import *
+
+# This 2 conditions are equivalent - Abort if any of the two conditions is not met.
+condition1 = epics_condition("PYSCAN:TEST:VALID1", 10)
+condition2 = epics_condition("PYSCAN:TEST:VALID2", 10, action=ConditionAction.Abort)
+
+# This condition allows for a Retry - try to acquire all the data again and check if the condition is now met.
+condition3 = epics_condition("PYSCAN:TEST:VALID3", 10, action=ConditionAction.Retry)
+```
+
 <a id="c_init_and_fin"></a>
 ## Initialization and Finalization
 The initialization and finalization actions are executed, respectively, before the first writables move and after the

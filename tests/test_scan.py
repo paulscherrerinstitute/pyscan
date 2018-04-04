@@ -528,3 +528,31 @@ class ScanTests(unittest.TestCase):
         after_read = [after_read_0, after_read_1, after_read_2]
 
         scan(readables=void_read, writables=void_write, positioner=positioner, after_read=after_read)
+
+    def test_scanning_bsread_stream_with_conditions(self):
+        # DO NOT INCLUDE IN README - default.
+        config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
+        config.bs_default_missing_property_value = Exception
+
+        # Do a max of 10 retries before aborting.
+        # config.scan_acquisition_retry_limit = 10
+        # No delay between retries as we are using a bsread source - this limits our retry rate.
+        # config.scan_acquisition_retry_delay = 0
+
+        # Lets acquire 10 messages from the stream.
+        n_messages = 10
+        positioner = BsreadPositioner(n_messages)
+
+        # Read camera X and Y value.
+        readables = [bs_property("CAMERA1:X"), bs_property("CAMERA1:Y")]
+
+        # Stream message is valid if "CAMERA1:VALID1" equals 1.
+        # In case this message is not valid, retry with the next message (10 times, as defined above).
+        conditions = bs_condition("CAMERA1:VALID", 10, action=ConditionAction.Retry)
+
+        # The result will have 10 consecutive, valid, messages from the stream.
+        result = scan(positioner=positioner, readables=readables, conditions=conditions)
+
+        self.assertEqual(n_messages, len(result))

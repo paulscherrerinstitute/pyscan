@@ -259,4 +259,3 @@ class Readme(unittest.TestCase):
         self.assertEqual(n_positions, len(result))
         # Scan position 0, readable 0, pass 0 should have all 6 scan return attributes.
         self.assertEqual(6, len(result[0][0][0]))
-

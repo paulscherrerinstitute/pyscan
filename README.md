@@ -35,6 +35,7 @@
     3. [Scanning channels from the dispatching layer](#c_scanning_dispatching_layer)
     4. [Scanning wire scanner with PShell function](#c_scanning_wire_scanner)
     5. [PShell function + real time plotting](#c_pshell_plot)
+    6. [Scanning bsread stream with conditions](#c_bsread_conditions)
 ## PShell function + real time plotting
 6. [Other interfaces](#c_other_interfaces)
     1. [pshell](#c_pshell)
@@ -1214,6 +1215,36 @@ result = scan(positioner=positioner, readables=readables, after_read=plot_data)
 # Each cycle returns: cycles = [rms_com_1, rms_sigma_1, gauss_mean_1, gauss_sigma_1,
 #                               link_to_raw_x_1, link_to_raw_y_1]
 ```
+
+<a id="c_bsread_conditions"></a>
+## Scanning bsread stream with conditions
+This example shows how to scan over a bsread stream and use one of the channels in the stream as a scan condition 
+(to verify if the received data is valid). In this type of scan, we collect all messages from the bsread stream.
+
+```python
+from pyscan import *
+
+# Do a max of 10 retries before aborting.
+config.scan_acquisition_retry_limit = 10
+# No delay between retries as we are using a bsread source - this limits our retry rate.
+config.scan_acquisition_retry_delay = 0
+
+# Lets acquire 10 messages from the stream.
+n_messages = 10
+positioner = BsreadPositioner(n_messages)
+
+# Read camera X and Y value.
+readables = [bs_property("CAMERA1:X"), bs_property("CAMERA1:Y")]
+
+# Stream message is valid if "CAMERA1:VALID1" equals 1.
+# In case this message is not valid, retry with the next message (10 times, as defined above).
+conditions = bs_condition("CAMERA1:VALID", 1, action=ConditionAction.Retry)
+
+# The result will have 10 consecutive, valid, messages from the stream.
+result = scan(positioner=positioner, readables=readables, conditions=conditions)
+```
+
+
 <a id="c_other_interfaces"></a>
 # Other interfaces
 **TBD**

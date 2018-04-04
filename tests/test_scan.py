@@ -6,7 +6,8 @@ from threading import Thread
 
 from bsread.sender import Sender
 
-from pyscan import SimpleDataProcessor, config, StaticPositioner, scan_settings, function_value, function_condition
+from pyscan import SimpleDataProcessor, config, StaticPositioner, scan_settings, function_value, function_condition, \
+    ConditionAction
 from pyscan.config import max_time_tolerance
 from pyscan.positioner.bsread import BsreadPositioner
 from pyscan.positioner.time import TimePositioner
@@ -295,7 +296,7 @@ class ScanTests(unittest.TestCase):
         config.bs_default_host = "localhost"
         config.bs_default_port = 9999
 
-        settling_time = 0.5
+        settling_time = 0.15
 
         n_messages = 10
         positioner = BsreadPositioner(n_messages)
@@ -313,7 +314,7 @@ class ScanTests(unittest.TestCase):
 
             return False
 
-        conditions = [function_condition(odd_condition, action="WaitAndAbort")]
+        conditions = [function_condition(odd_condition, action=ConditionAction.Retry)]
 
         settings = scan_settings(settling_time=settling_time)
         time.sleep(1)

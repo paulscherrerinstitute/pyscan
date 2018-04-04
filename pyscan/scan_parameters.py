@@ -1,4 +1,5 @@
 from collections import namedtuple
+from enum import Enum
 
 from pyscan import config
 
@@ -10,6 +11,12 @@ SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurem
                                              "write_timeout", "settling_time", "progress_callback", "bs_read_filter"])
 FUNCTION_VALUE = namedtuple("FUNCTION_VALUE", ["identifier", "call_function"])
 FUNCTION_CONDITION = namedtuple("FUNCTION_CONDITION", ["identifier", "call_function", "action"])
+
+
+class ConditionAction(Enum):
+    Abort = 1
+    Retry = 2
+
 
 # Used to determine if a parameter was passed or the default value is used.
 _default_value_placeholder = object()
@@ -37,7 +44,8 @@ def function_condition(call_function, name=None, action=None):
     Construct a tuple for condition checking function representation.
     :param call_function: Function to invoke.
     :param name: Name to assign to this function.
-    :param action: What to do then the return value is False. ('Abort' and 'WaitAndAbort' supporteds)
+    :param action: What to do then the return value is False.
+        ('ConditionAction.Abort' and 'ConditionAction.Retry' supported)
     :return: Tuple of ("identifier", "call_function", "action")
     """
     # If the name is not specified, use a counter to set the function name.
@@ -48,7 +56,7 @@ def function_condition(call_function, name=None, action=None):
 
     # The default action is Abort - used for conditions.
     if not action:
-        action = "Abort"
+        action = ConditionAction.Abort
 
     return FUNCTION_CONDITION(identifier, call_function, action)
 function_condition.function_count = 0
@@ -83,7 +91,8 @@ def epics_condition(pv_name, value, action=None, tolerance=None):
     Construct a tuple for an epics condition representation.
     :param pv_name: Name of the PV to monitor.
     :param value: Value we expect the PV to be in.
-    :param action: What to do when the condition fails ('Abort' and 'WaitAndAbort' supporteds)
+    :param action: What to do when the condition fails.
+        ('ConditionAction.Abort' and 'ConditionAction.Retry' supported)
     :param tolerance: Tolerance within which the condition needs to be.
     :return: Tuple of ("pv_name", "value", "action", "tolerance", "timeout")
     """
@@ -97,7 +106,7 @@ def epics_condition(pv_name, value, action=None, tolerance=None):
 
     # the default action is Abort.
     if not action:
-        action = "Abort"
+        action = ConditionAction.Abort
 
     if not tolerance or tolerance < config.max_float_tolerance:
         tolerance = config.max_float_tolerance
@@ -124,11 +133,13 @@ def bs_property(name, default_value=_default_value_placeholder):
     return BS_PROPERTY(identifier, name, default_value)
 
 
-def bs_condition(name, value, tolerance=None, default_value=_default_value_placeholder):
+def bs_condition(name, value, action=None, tolerance=None, default_value=_default_value_placeholder):
     """
     Construct a tuple for bs condition property representation.
     :param name: Complete property name.
     :param value: Expected value.
+    :param action: What to do when the condition fails.
+        ('ConditionAction.Abort' and 'ConditionAction.Retry' supported)
     :param tolerance: Tolerance within which the condition needs to be.
     :param default_value: Default value of a condition, if not present in the bs stream.
     :return:  Tuple of ("identifier", "property", "value", "action", "tolerance", "default_value")
@@ -144,8 +155,8 @@ def bs_condition(name, value, tolerance=None, default_value=_default_value_place
     if not tolerance or tolerance < config.max_float_tolerance:
         tolerance = config.max_float_tolerance
 
-    # We do not support other actions for BS conditions.
-    action = "Abort"
+    if not action:
+        action = ConditionAction.Abort
 
     # We need this to allow the user to change the config at runtime.
     if default_value is _default_value_placeholder:

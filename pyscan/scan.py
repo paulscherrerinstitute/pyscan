@@ -5,7 +5,7 @@ from pyscan.dal.function_dal import FunctionProxy
 from pyscan.positioner.bsread import BsreadPositioner
 from pyscan.scanner import Scanner
 from pyscan.scan_parameters import EPICS_PV, EPICS_CONDITION, BS_PROPERTY, BS_CONDITION, scan_settings, convert_input, \
-    FUNCTION_VALUE, FUNCTION_CONDITION, convert_conditions
+    FUNCTION_VALUE, FUNCTION_CONDITION, convert_conditions, ConditionAction
 from pyscan.utils import convert_to_list, SimpleDataProcessor, ActionExecutor, compare_channel_value
 
 # Instances to use.
@@ -120,17 +120,34 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
             else:
                 raise ValueError("Unknown type of condition %s used." % source)
 
+            value_valid = False
+
             # Function conditions are self contained.
             if source == FUNCTION_CONDITION:
-                if not value:
-                    raise ValueError("Function condition %s returned False." % conditions[index].identifier)
+                if value:
+                    value_valid = True
+
             else:
                 expected_value = conditions[index].value
                 tolerance = conditions[index].tolerance
 
-                if not compare_channel_value(value, expected_value, tolerance):
+                if compare_channel_value(value, expected_value, tolerance):
+                    value_valid = True
+
+            if not value_valid:
+
+                if conditions[index].action == ConditionAction.Retry:
+                    return False
+
+                if source == FUNCTION_CONDITION:
+                    raise ValueError("Function condition %s returned False." % conditions[index].identifier)
+
+                else:
                     raise ValueError("Condition %s, expected value %s, actual value %s, tolerance %s." %
-                                     (conditions[index].identifier, expected_value, value, tolerance))
+                                             (conditions[index].identifier,
+                                              conditions[index].value,
+                                              value,
+                                              conditions[index].tolerance))
 
         return True
 

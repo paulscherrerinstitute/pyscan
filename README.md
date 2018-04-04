@@ -1236,9 +1236,9 @@ positioner = BsreadPositioner(n_messages)
 # Read camera X and Y value.
 readables = [bs_property("CAMERA1:X"), bs_property("CAMERA1:Y")]
 
-# Stream message is valid if "CAMERA1:VALID1" equals 1.
-# In case this message is not valid, retry with the next message (10 times, as defined above).
-conditions = bs_condition("CAMERA1:VALID", 1, action=ConditionAction.Retry)
+# Stream message is valid if "CAMERA1:VALID" equals 10.
+# In case this message is not valid, retry with the next message (10 times before aborting, as defined above).
+conditions = bs_condition("CAMERA1:VALID", 10, action=ConditionAction.Retry)
 
 # The result will have 10 consecutive, valid, messages from the stream.
 result = scan(positioner=positioner, readables=readables, conditions=conditions)

@@ -115,16 +115,21 @@ class ReadGroupInterface(object):
 
         return pv_values
 
-    def read(self, current_position_index=None):
+    def read(self, current_position_index=None, retry=False):
         """
         Reads the PV values from BSread. It uses the first PVs data sampled after the invocation of this method.
         :return: List of values for read pvs. Note: Condition PVs are excluded.
         """
 
+        # Invalidate cache on retry attempt.
+        if retry:
+            self._message_cache_position_index = None
+
         # Message for this position already cached.
         if current_position_index is not None and current_position_index == self._message_cache_position_index:
             return self._read_pvs_from_cache(self.properties)
 
+        # Perform the actual read.
         read_timestamp = time()
         while time() - read_timestamp < config.bs_read_timeout:
 

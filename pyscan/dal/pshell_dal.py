@@ -81,7 +81,7 @@ class PShellFunction(object):
 
         return result_data
 
-    def read(self, current_position_index=None):
+    def read(self, current_position_index=None, retry=False):
         parameters = self.get_scan_parameters(current_position_index)
 
         run_request = {"script": self.script_name,

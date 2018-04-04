@@ -6,7 +6,7 @@ from threading import Thread
 
 from bsread.sender import Sender
 
-from pyscan import SimpleDataProcessor, config, StaticPositioner, scan_settings, function_value
+from pyscan import SimpleDataProcessor, config, StaticPositioner, scan_settings, function_value, function_condition
 from pyscan.config import max_time_tolerance
 from pyscan.positioner.bsread import BsreadPositioner
 from pyscan.positioner.time import TimePositioner
@@ -287,6 +287,47 @@ class ScanTests(unittest.TestCase):
 
         # Expect to receive all messages from bsread from a pulse_id on; [[11], [12], [13], ...]
         expected_results = [[index+first_message_offset] for index in range(n_messages)]
+
+        self.assertListEqual(result, expected_results)
+
+    def test_bsread_dal_cache_invalidation(self):
+        config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
+
+        settling_time = 0.5
+
+        n_messages = 10
+        positioner = BsreadPositioner(n_messages)
+
+        readables = ["bs://CAMERA1:X"]
+
+        counter = 0
+
+        def odd_condition(message):
+            nonlocal counter
+            counter += 1
+
+            if counter % 2 == 0:
+                return True
+
+            return False
+
+        conditions = [function_condition(odd_condition, action="WaitAndAbort")]
+
+        settings = scan_settings(settling_time=settling_time)
+        time.sleep(1)
+
+        # settings = scan_settings(bs_read_filter=mock_filter)
+        result = scan(positioner=positioner,
+                      readables=readables,
+                      conditions=conditions,
+                      settings=settings)
+
+        first_message_offset = result[0][0]
+
+        # Expect to receive all odd messages from bsread from a pulse_id on; [[10], [12], [14], ...]
+        expected_results = [[first_message_offset + (2*index)] for index in range(n_messages)]
 
         self.assertListEqual(result, expected_results)
 

@@ -72,10 +72,10 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
     readables_order = [type(readable) for readable in readables]
 
     # Read function needs to merge BS, PV, and function proxy data.
-    def read_data(current_position_index):
+    def read_data(current_position_index, retry=False):
         _logger.debug("Reading data for position index %s." % current_position_index)
 
-        bs_values = iter(bs_reader.read(current_position_index) if bs_reader else [])
+        bs_values = iter(bs_reader.read(current_position_index, retry) if bs_reader else [])
         epics_values = iter(epics_pv_reader.read(current_position_index) if epics_pv_reader else [])
         function_values = iter(function_reader.read(current_position_index) if function_reader else [])
 

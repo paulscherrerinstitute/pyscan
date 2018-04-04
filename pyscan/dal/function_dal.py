@@ -12,7 +12,7 @@ class FunctionProxy(object):
         """
         self.functions = convert_to_list(functions)
 
-    def read(self, current_position_index=None):
+    def read(self, current_position_index=None, retry=False):
         """
         Read the results from all the provided functions.
         :return: Read results.

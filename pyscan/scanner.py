@@ -102,7 +102,8 @@ class Scanner(object):
         n_current_acquisition = 0
         # Collect data until acquired data is valid or retry limit reached.
         while n_current_acquisition < config.scan_acquisition_retry_limit:
-            single_measurement = self.reader(current_position_index)
+            retry_acquisition = n_current_acquisition != 0
+            single_measurement = self.reader(current_position_index, retry=retry_acquisition)
 
             # If the data is valid, break out of the loop.
             if self.data_validator(current_position_index, single_measurement):

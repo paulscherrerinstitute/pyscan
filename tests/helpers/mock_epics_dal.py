@@ -54,7 +54,7 @@ class MockReadGroupInterface(ReadGroupInterface):
     def connect(pv_name):
         return MockPV(pv_name)
 
-    def read(self, current_position_index=None):
+    def read(self, current_position_index=None, retry=False):
         result = super(MockReadGroupInterface, self).read(current_position_index)
         if self.save_values:
             read_values.append(result)

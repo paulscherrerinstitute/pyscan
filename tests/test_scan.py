@@ -556,3 +556,9 @@ class ScanTests(unittest.TestCase):
         result = scan(positioner=positioner, readables=readables, conditions=conditions)
 
         self.assertEqual(n_messages, len(result))
+
+    def test_mulitple_messages_on_same_position(self):
+        # TODO: Write this test.
+        # Check if different messages on the same position get different values.
+        # This should work only for NON BSREAD positioners.
+        pass

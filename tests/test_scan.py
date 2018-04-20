@@ -45,6 +45,7 @@ def start_sender():
     generator.add_channel('CAMERA1:X', lambda x: x, metadata={'type': 'int32'})
     generator.add_channel('CAMERA1:Y', lambda x: x, metadata={'type': 'int32'})
     generator.add_channel('CAMERA1:VALID', lambda x: 10, metadata={'type': 'int32'})
+    generator.add_channel('BEAM_OK', lambda x: 1 if x%20 == 0  else 0, metadata={'type': 'int32'})
 
     generator.open()
     while bs_sending:
@@ -594,3 +595,36 @@ class ScanTests(unittest.TestCase):
 
             for measurement_index in range(1, n_measurements):
                 self.assertNotEqual(first, result[position_index][measurement_index])
+
+    def test_bsread_positioner_scan_condition(self):
+        # DO NOT INCLUDE IN README - default.
+        config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
+        config.bs_default_missing_property_value = Exception
+
+        config.scan_acquisition_retry_limit = 30
+        config.scan_acquisition_retry_delay = 0
+
+        # Lets acquire 10 messages from the stream.
+        n_messages = 5
+        positioner = BsreadPositioner(n_messages)
+
+        # Read camera X and Y value.
+        readables = [bs_property("CAMERA1:X")]
+        conditions = [bs_condition("BEAM_OK", 1, action=ConditionAction.Retry)]
+
+        start_time = time.time()
+
+        # The result will have 10 consecutive, valid, messages from the stream.
+        result = scan(positioner=positioner, readables=readables, conditions=conditions)
+
+        stop_time = time.time()
+
+        # It should take around 5 second if the retry delay is used.
+        self.assertTrue(stop_time-start_time < 6)
+
+        self.assertEqual(n_messages, len(result))
+
+        for index in range(n_messages):
+            self.assertEqual(result[index][0], (index+1) * 20)

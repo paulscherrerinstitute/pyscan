@@ -121,14 +121,6 @@ class ReadGroupInterface(object):
         :return: List of values for read pvs. Note: Condition PVs are excluded.
         """
 
-        # Invalidate cache on retry attempt.
-        if retry:
-            self._message_cache_position_index = None
-
-        # Message for this position already cached.
-        if current_position_index is not None and current_position_index == self._message_cache_position_index:
-            return self._read_pvs_from_cache(self.properties)
-
         # Perform the actual read.
         read_timestamp = time()
         while time() - read_timestamp < config.bs_read_timeout:
@@ -179,3 +171,16 @@ class ImmediateReadGroupInterface(ReadGroupInterface):
             return False
 
         return True
+
+    def read(self, current_position_index=None, retry=False):
+
+        # Invalidate cache on retry attempt.
+        if retry:
+            self._message_cache_position_index = None
+
+        # Message for this position already cached.
+        if current_position_index is not None and current_position_index == self._message_cache_position_index:
+            return self._read_pvs_from_cache(self.properties)
+
+        return super(ImmediateReadGroupInterface, self).read(current_position_index=current_position_index,
+                                                             retry=retry)

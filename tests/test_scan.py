@@ -118,7 +118,7 @@ class ScanTests(unittest.TestCase):
                      epics_pv("PYSCAN:TEST:OBS1")]
 
         conditions = [epics_condition("PYSCAN:TEST:VALID1", 10),
-                    bs_condition("CAMERA1:VALID", 10)]
+                      bs_condition("CAMERA1:VALID", 10)]
 
         initialization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 1, "PYSCAN:TEST:PRE1:GET")]
 
@@ -262,7 +262,7 @@ class ScanTests(unittest.TestCase):
         result = scan(positioner=positioner, readables=readables, settings=settings)
 
         # For messages_expected_factor=4; [[4], [8], [12], ...]
-        expected_results = [[x] for x in [(index+1) * messages_expected_factor for index in range(n_images)]]
+        expected_results = [[x] for x in [(index + 1) * messages_expected_factor for index in range(n_images)]]
 
         self.assertListEqual(result, expected_results)
 
@@ -287,7 +287,7 @@ class ScanTests(unittest.TestCase):
         first_message_offset = result[0][0]
 
         # Expect to receive all messages from bsread from a pulse_id on; [[11], [12], [13], ...]
-        expected_results = [[index+first_message_offset] for index in range(n_messages)]
+        expected_results = [[index + first_message_offset] for index in range(n_messages)]
 
         self.assertListEqual(result, expected_results)
 
@@ -328,7 +328,7 @@ class ScanTests(unittest.TestCase):
         first_message_offset = result[0][0]
 
         # Expect to receive all odd messages from bsread from a pulse_id on; [[10], [12], [14], ...]
-        expected_results = [[first_message_offset + (2*index)] for index in range(n_messages)]
+        expected_results = [[first_message_offset + (2 * index)] for index in range(n_messages)]
 
         self.assertListEqual(result, expected_results)
 
@@ -435,6 +435,7 @@ class ScanTests(unittest.TestCase):
 
         def write(position):
             positions.append(position)
+
         positions = []
 
         # Get 10 images.
@@ -448,6 +449,7 @@ class ScanTests(unittest.TestCase):
 
         def write2(position):
             positions2.append(position)
+
         positions2 = []
 
         positions.clear()
@@ -486,6 +488,7 @@ class ScanTests(unittest.TestCase):
 
         def void_write(position):
             positions.append(position)
+
         positions = []
 
         def before_move(position):
@@ -510,6 +513,7 @@ class ScanTests(unittest.TestCase):
 
         def void_write(position):
             positions.append(position)
+
         positions = []
 
         def after_read_0():
@@ -557,8 +561,36 @@ class ScanTests(unittest.TestCase):
 
         self.assertEqual(n_messages, len(result))
 
+    def test_bsread_positioner_multi_measurements(self):
+
+        with self.assertRaisesRegex(ValueError, "When using BsreadPositioner the maximum number of n_measurements = 1"):
+            scan(readables=[epics_pv("something")],
+                 positioner=BsreadPositioner(10),
+                 settings=scan_settings(n_measurements=2))
+
     def test_mulitple_messages_on_same_position(self):
-        # TODO: Write this test.
-        # Check if different messages on the same position get different values.
-        # This should work only for NON BSREAD positioners.
-        pass
+        # DO NOT INCLUDE IN README - default.
+        config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
+        config.bs_default_missing_property_value = Exception
+
+        # Lets acquire 10 messages from the stream.
+        n_images = 5
+        n_measurements = 3
+        positioner = StaticPositioner(n_images)
+        settings = scan_settings(n_measurements=n_measurements)
+
+        # Read camera X and Y value.
+        readables = [bs_property("CAMERA1:X"), bs_property("CAMERA1:Y")]
+
+        # The result will have 10 consecutive, valid, messages from the stream.
+        result = scan(positioner=positioner, readables=readables, settings=settings)
+
+        self.assertEqual(n_images, len(result))
+
+        for position_index in range(n_images):
+            first = result[position_index][0]
+
+            for measurement_index in range(1, n_measurements):
+                self.assertNotEqual(first, result[position_index][measurement_index])

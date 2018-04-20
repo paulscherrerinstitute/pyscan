@@ -75,3 +75,10 @@ class ScannerTests(unittest.TestCase):
         scanner_instance.abort_scan()
         self.assertRaisesRegex(Exception, "User aborted scan.", scanner_instance.discrete_scan)
         self.assertEqual(scanner_instance.get_status(), STATUS_ABORTED)
+
+    def test_bsread_positioner_multi_measurements(self):
+
+        with self.assertRaisesRegex(ValueError, "When using BsreadPositioner the maximum number of n_measurements = 1"):
+            scanner(readables=[epics_pv("something")],
+                    positioner=BsreadPositioner(10),
+                    settings=scan_settings(n_measurements=2))

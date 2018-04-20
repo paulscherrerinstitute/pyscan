@@ -43,6 +43,10 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
     finalization = convert_to_list(finalization) or []
     settings = settings or scan_settings()
 
+    # TODO: Ugly. The scanner should not depend on a particular positioner implementation.
+    if isinstance(positioner, BsreadPositioner) and settings.n_measurements > 1:
+        raise ValueError("When using BsreadPositioner the maximum number of n_measurements = 1.")
+
     bs_reader = _initialize_bs_dal(readables, conditions, settings.bs_read_filter, positioner)
 
     epics_writer, epics_pv_reader, epics_condition_reader = _initialize_epics_dal(writables,

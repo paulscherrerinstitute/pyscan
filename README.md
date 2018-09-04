@@ -1332,8 +1332,8 @@ Exception: User aborted scan.
 
 ```
 As you can see from the output, the scan was running in a separate thread, and it did stop with an exception when 
-the main thread interrupted the scan. The scanning thread was also calling the **update\_graph** function, which 
-wrote the current scan values (always 1 in this case) to the console.
+the main thread interrupted the scan. The scanning thread was also calling the **update\_graph** function after 
+each step. The function just wrote the position and the current scanned data (always 1) to the console.
 
 <a id="c_other_interfaces"></a>
 # Other interfaces

@@ -1332,8 +1332,15 @@ Exception: User aborted scan.
 
 ```
 As you can see from the output, the scan was running in a separate thread, and it did stop with an exception when 
-the main thread interrupted the scan. The scanning thread was also calling the **update\_graph** function after 
-each step. The function just wrote the position and the current scanned data (always 1) to the console.
+the main thread interrupted it. 
+
+The scanning thread was calling the **update\_graph** function after each step. This function just wrote the position 
+and the current scanned data (always 1) to the console, but it could be modified to update a graph while the scan 
+is still running, for example.
+
+In addition to the abort command, you can also call:
+- scan_object.pause_scan() (pause the scan)
+- scan_object.resume_scan() (resume the scan, when paused)
 
 <a id="c_other_interfaces"></a>
 # Other interfaces

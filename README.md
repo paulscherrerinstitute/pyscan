@@ -36,6 +36,7 @@
     4. [Scanning wire scanner with PShell function](#c_scanning_wire_scanner)
     5. [PShell function + real time plotting](#c_pshell_plot)
     6. [Scanning bsread stream with conditions](#c_bsread_conditions)
+    7. [Scanning in a separate thread](#c_scan_separate_thread)
 ## PShell function + real time plotting
 6. [Other interfaces](#c_other_interfaces)
     1. [pshell](#c_pshell)
@@ -1244,6 +1245,95 @@ conditions = bs_condition("CAMERA1:VALID", 10, action=ConditionAction.Retry)
 result = scan(positioner=positioner, readables=readables, conditions=conditions)
 ```
 
+<a id="c_scan_separate_thread"></a>
+## Scanning in a separate thread
+If you do not want your scan to block your operations, you have to run it in a separate thread. There are a lot of ways 
+to do that - below you can find the most simple example. The example shows 2 things: How to abort a scan 
+(that is happening in a separate thread) and also how to get updates on scan points while the scan is still running.
+
+```python
+from pyscan import *
+from threading import Thread
+from time import sleep
+
+positioner = StaticPositioner(n_images=50)
+settings = scan_settings(settling_time=0.1)
+
+# Simple data provider, always returns 1.
+def sample_data():
+    return 1
+
+# For each position, after each scan step, this function will be called by the scanning thread.
+def update_graph(position, position_data):
+    print("Position: ", position, " data: ", position_data)
+
+# Generate a scan object.
+scan_object = scanner(positioner=positioner, readables=sample_data, settings=settings,
+                      after_read=update_graph)
+
+result = None
+
+# Define a scanning thread function.
+def scan_thread():
+    nonlocal result
+    result = scan_object.discrete_scan()
+
+# Execute the scan in a separate thread.
+Thread(target=scan_thread).start()
+
+sleep(0.5)
+
+print("The main thread is not blocked by the scan.")
+
+sleep(0.5)
+
+# Abort the scan.
+scan_object.abort_scan()
+```
+
+The output you expect from this script is the following:
+
+```
+Scan: 0.00 % completed (0/50)
+Position:  0  data:  [1]
+Scan: 2.00 % completed (1/50)
+Position:  1  data:  [1]
+Scan: 4.00 % completed (2/50)
+Position:  2  data:  [1]
+Scan: 6.00 % completed (3/50)
+Position:  3  data:  [1]
+Scan: 8.00 % completed (4/50)
+The main thread is not blocked by the scan.
+Position:  4  data:  [1]
+Scan: 10.00 % completed (5/50)
+Position:  5  data:  [1]
+Scan: 12.00 % completed (6/50)
+Position:  6  data:  [1]
+Scan: 14.00 % completed (7/50)
+Position:  7  data:  [1]
+Scan: 16.00 % completed (8/50)
+Position:  8  data:  [1]
+Scan: 18.00 % completed (9/50)
+Position:  9  data:  [1]
+Scan: 20.00 % completed (10/50)
+Exception in thread Thread-1:
+Traceback (most recent call last):
+  File "/anaconda/envs/pyscan/lib/python3.6/threading.py", line 916, in _bootstrap_inner
+    self.run()
+  File "/anaconda/envs/pyscan/lib/python3.6/threading.py", line 864, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/babic_a/git/pyscan/tests/test_readme.py", line 288, in scan_thread
+    result = scan_object.discrete_scan()
+  File "/Users/babic_a/git/pyscan/pyscan/scanner.py", line 188, in discrete_scan
+    self._verify_scan_status()
+  File "/Users/babic_a/git/pyscan/pyscan/scanner.py", line 82, in _verify_scan_status
+    raise Exception("User aborted scan.")
+Exception: User aborted scan.
+
+```
+As you can see from the output, the scan was running in a separate thread, and it did stop with an exception when 
+the main thread interrupted the scan. The scanning thread was also calling the **update\_graph** function, which 
+wrote the current scan values (always 1 in this case) to the console.
 
 <a id="c_other_interfaces"></a>
 # Other interfaces

@@ -4,6 +4,8 @@ from itertools import cycle
 import sys
 
 # BEGIN EPICS MOCK.
+from threading import Thread
+
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, fixed_values
 
 scan_module = sys.modules["pyscan.scan"]
@@ -259,3 +261,40 @@ class Readme(unittest.TestCase):
         self.assertEqual(n_positions, len(result))
         # Scan position 0, readable 0, pass 0 should have all 6 scan return attributes.
         self.assertEqual(6, len(result[0][0][0]))
+
+
+    def test_abort_scan(self):
+
+        positioner = StaticPositioner(n_images=50)
+        settings = scan_settings(settling_time=0.1)
+
+        # Simple data provider, always returns 1.
+        def sample_data():
+            return 1
+
+        # For each position, after each scan step, this function will be called by the scanning thread.
+        def update_graph(position, position_data):
+            print("Position: ", position, " data: ", position_data)
+
+        # Generate a scan object.
+        scan_object = scanner(positioner=positioner, readables=sample_data, settings=settings,
+                              after_read=update_graph)
+
+        result = None
+
+        # Define a scanning thread function.
+        def scan_thread():
+            nonlocal result
+            result = scan_object.discrete_scan()
+
+        # Execute the scan in a separate thread.
+        Thread(target=scan_thread).start()
+
+        sleep(0.5)
+
+        print("The main thread is not blocked by the scan.")
+
+        sleep(0.5)
+
+        # Abort the scan.
+        scan_object.abort_scan()

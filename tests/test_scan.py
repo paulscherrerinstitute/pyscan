@@ -175,12 +175,16 @@ class ScanTests(unittest.TestCase):
 
         positioner = StaticPositioner(5)
 
+        initialization = [action_set_epics_pv("PYSCAN:TEST:VALID1", 778)]
+
         readables = [bs_property("CAMERA1:X")]
 
         conditions = [bs_condition("CAMERA1:VALID", 10, operation=ConditionComparison.EQUAL),
-                      bs_condition("CAMERA1:VALID", 11, operation=ConditionComparison.LOWER)]
+                      bs_condition("CAMERA1:VALID", 11, operation=ConditionComparison.LOWER),
+                      epics_condition("PYSCAN:TEST:VALID1", 778, operation=ConditionComparison.LOWER_OR_EQUAL),
+                      epics_condition("PYSCAN:TEST:VALID1", 779, operation=ConditionComparison.LOWER)]
 
-        result = scan(positioner=positioner, readables=readables, conditions=conditions,
+        result = scan(positioner=positioner, readables=readables, conditions=conditions, initialization=initialization,
                       settings=scan_settings(measurement_interval=0.25, n_measurements=1))
 
         print(result)

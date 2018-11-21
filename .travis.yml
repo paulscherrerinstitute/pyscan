@@ -34,7 +34,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda config --add channels defaults
   - conda update -q --all
-  - conda install conda-build=2.1.10 anaconda-client
+  - conda install conda-build anaconda-client
   # build
   - conda build conda-recipe --no-test
 

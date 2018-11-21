@@ -6,12 +6,12 @@ from threading import Thread
 
 from bsread.sender import Sender
 
-from pyscan import SimpleDataProcessor, config, StaticPositioner, scan_settings, function_value, function_condition, \
-    ConditionAction
+from pyscan import SimpleDataProcessor, config, StaticPositioner, function_value, function_condition, \
+    ConditionAction, ConditionComparison
 from pyscan.config import max_time_tolerance
 from pyscan.positioner.bsread import BsreadPositioner
 from pyscan.positioner.time import TimePositioner
-from pyscan.utils import DictionaryDataProcessor
+from pyscan.utils import DictionaryDataProcessor, compare_channel_value
 from tests.helpers.mock_epics_dal import MockReadGroupInterface, MockWriteGroupInterface, cached_initial_values
 
 # BEGIN EPICS MOCK.
@@ -73,9 +73,41 @@ class ScanTests(unittest.TestCase):
 
         self.sender_thread.join()
 
-    def test_conditions(self):
-        # TODO: Test if the conditions belong to the same output as the values.
-        pass
+    def test_compare_channel_value(self):
+        self.assertTrue(compare_channel_value(current_value=10.4, expected_value=10.4))
+        self.assertTrue(compare_channel_value(current_value=10.4, expected_value=10.4,
+                                              operation=ConditionComparison.EQUAL))
+        self.assertTrue(compare_channel_value(current_value=10.4, expected_value=10.3,
+                                              operation=ConditionComparison.EQUAL, tolerance=0.1))
+        self.assertFalse(compare_channel_value(current_value=10.4, expected_value=10.29,
+                                              operation=ConditionComparison.EQUAL, tolerance=0.1))
+
+        self.assertTrue(compare_channel_value(current_value=10.4, expected_value=10.3,
+                                              operation=ConditionComparison.NOT_EQUAL))
+        self.assertTrue(compare_channel_value(current_value=10.4, expected_value=10.3,
+                                              operation=ConditionComparison.NOT_EQUAL, tolerance=0.09))
+        self.assertFalse(compare_channel_value(current_value=10.4, expected_value=10.3,
+                                               operation=ConditionComparison.NOT_EQUAL, tolerance=0.1))
+
+        self.assertTrue(compare_channel_value(current_value=10.4, expected_value=10.5,
+                                              operation=ConditionComparison.LOWER))
+
+        self.assertTrue(compare_channel_value(current_value=10.4, expected_value=10.4,
+                                              operation=ConditionComparison.LOWER, tolerance=0.1))
+        self.assertTrue(compare_channel_value(current_value=10.5, expected_value=10.4,
+                                              operation=ConditionComparison.LOWER, tolerance=0.12))
+        self.assertTrue(compare_channel_value(current_value=10.4, expected_value=10.5,
+                                              operation=ConditionComparison.LOWER))
+        self.assertFalse(compare_channel_value(current_value=10.51, expected_value=10.5,
+                                               operation=ConditionComparison.LOWER))
+
+        self.assertTrue(compare_channel_value(current_value=10.4, expected_value=10.4,
+                                              operation=ConditionComparison.LOWER_OR_EQUAL))
+        self.assertTrue(compare_channel_value(current_value=10.5, expected_value=10.4,
+                                              operation=ConditionComparison.LOWER_OR_EQUAL, tolerance=0.1))
+        self.assertFalse(compare_channel_value(current_value=10.5, expected_value=10.4,
+                                               operation=ConditionComparison.LOWER_OR_EQUAL))
+
 
     def test_actions(self):
         positions = [[1, 1], [2, 2]]

@@ -5,15 +5,16 @@ from time import sleep
 from epics.pv import PV
 
 from pyscan import config
-from pyscan.scan_parameters import convert_input
+from pyscan.scan_parameters import convert_input, ConditionComparison
 
 
-def compare_channel_value(current_value, expected_value, tolerance=0.0):
+def compare_channel_value(current_value, expected_value, tolerance=0.0, operation=ConditionComparison.EQUAL):
     """
     Check if the pv value is the same as the expected value, within tolerance for int and float.
     :param current_value: Current value to compare it to.
     :param expected_value: Expected value of the PV.
     :param tolerance: Tolerance for number comparison. Cannot be less than the minimum tolerance.
+    :param operation: Operation to perform on the current and expected value - works for int and floats.
     :return: True if the value matches.
     """
     # Minimum tolerance allowed.
@@ -27,8 +28,34 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0):
 
         # For numbers we compare them within tolerance.
         elif isinstance(current_value, (float, int)):
-            if abs(current_value - expected_value) <= tolerance:
-                return True
+
+            if operation == ConditionComparison.EQUAL:
+                if abs(current_value - expected_value) <= tolerance:
+                    return True
+
+            elif operation == ConditionComparison.HIGHER:
+                if (current_value - expected_value) > tolerance:
+                    return True
+
+            elif operation == ConditionComparison.HIGHER_OR_EQUAL:
+                if (current_value - expected_value) >= tolerance:
+                    return True
+
+            elif operation == ConditionComparison.LOWER:
+                difference = current_value - expected_value
+
+                if difference < 0 or abs(difference) < tolerance:
+                    return True
+
+            elif operation == ConditionComparison.LOWER_OR_EQUAL:
+                difference = current_value - expected_value
+
+                if difference <= 0 or abs(difference) <= tolerance:
+                    return True
+
+            elif operation == ConditionComparison.NOT_EQUAL:
+                if abs(current_value - expected_value) > tolerance:
+                    return True
 
         # We cannot set and match other than strings and numbers.
         else:

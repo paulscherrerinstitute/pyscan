@@ -89,8 +89,11 @@ readables = [epics_pv("PYSCAN:TEST:OBS1")]
 # Move MOTOR1 over defined positions.
 writables = [epics_pv("PYSCAN:TEST:MOTOR1:SET", "PYSCAN:TEST:MOTOR1:GET")]
 
-# At each read of "PYSCAN:TEST:OBS1", check if "PYSCAN:TEST:VALID1" == 10
-conditions = [epics_condition("PYSCAN:TEST:VALID1", 10)]
+# At each read of "PYSCAN:TEST:OBS1", check if "PYSCAN:TEST:VALID1" == 10 and "PYSCAN:TEST:VALID2" == 12
+conditions = [
+    epics_condition("PYSCAN:TEST:VALID1", 10),
+    epics_condition("PYSCAN:TEST:VALID2", 12)
+]
 
 # Before the scan starts, set "PYSCAN:TEST:PRE1:SET" to 1.
 initialization = [action_set_epics_pv("PYSCAN:TEST:PRE1:SET", 1, "PYSCAN:TEST:PRE1:GET")]
@@ -712,6 +715,36 @@ condition2 = epics_condition("PYSCAN:TEST:VALID2", 10, action=ConditionAction.Ab
 # This condition allows for a Retry - try to acquire all the data again and check if the condition is now met.
 condition3 = epics_condition("PYSCAN:TEST:VALID3", 10, action=ConditionAction.Retry)
 ```
+
+### Condition comparison operation
+The **bs\_condition** supports an additional parameter: operation. This parameter is used for the comparison operation 
+and can be specified like this:
+
+```python
+from pyscan import *
+
+# The condition is true, if the value is equal to the received value.
+condition_1 = bs_condition(name="CAMERA1:VALID2", value=5, operation=ConditionComparison.EQUAL)
+
+# The condition is true, if the value is lower compared to the received value.
+condition_2 = bs_condition(name="CAMERA1:VALID2", value=5, operation=ConditionComparison.LOWER)
+
+# You can pass multiple conditions to the scanning routine by chaining them in a list.
+conditions = [condition_1, condition_2]
+```
+
+Possible comparison operations are:
+
+- ConditionComparison.EQUAL
+- ConditionComparison.EQUAL = 0
+- ConditionComparison.NOT_EQUAL = 1
+- ConditionComparison.LOWER = 2
+- ConditionComparison.LOWER_OR_EQUAL = 3
+- ConditionComparison.HIGHER = 4
+- ConditionComparison.HIGHER_OR_EQUAL = 5
+
+**WARNING**: Currently the comparison operation works only for scalar value. In case of array operations, the 
+comparison is always EQUAl.
 
 <a id="c_init_and_fin"></a>
 ## Initialization and Finalization

@@ -150,11 +150,12 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
                     raise ValueError("Function condition %s returned False." % conditions[index].identifier)
 
                 else:
-                    raise ValueError("Condition %s, expected value %s, actual value %s, tolerance %s." %
+                    raise ValueError("Condition %s, expected value %s, actual value %s, tolerance %s, operation %s." %
                                              (conditions[index].identifier,
                                               conditions[index].value,
                                               value,
-                                              conditions[index].tolerance))
+                                              conditions[index].tolerance,
+                                              conditions[index].operation))
 
         return True
 

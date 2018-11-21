@@ -21,13 +21,9 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0, operatio
     tolerance = max(tolerance, config.max_float_tolerance)
 
     def compare_value(value):
-        # If we set a string, we expect the result to match exactly.
-        if isinstance(current_value, str):
-            if value == expected_value:
-                return True
 
         # For numbers we compare them within tolerance.
-        elif isinstance(current_value, (float, int)):
+        if isinstance(current_value, (float, int)):
 
             if operation == ConditionComparison.EQUAL:
                 if abs(current_value - expected_value) <= tolerance:
@@ -57,13 +53,30 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0, operatio
                 if abs(current_value - expected_value) > tolerance:
                     return True
 
-        # We cannot set and match other than strings and numbers.
+        # Otherwise use the object comparison.
         else:
             try:
-                return current_value == expected_value
+                if operation == ConditionComparison.EQUAL:
+                    return current_value == expected_value
+
+                elif operation == ConditionComparison.HIGHER:
+                    return current_value > expected_value
+
+                elif operation == ConditionComparison.HIGHER_OR_EQUAL:
+                    return current_value >= expected_value
+
+                elif operation == ConditionComparison.LOWER:
+                    return current_value < expected_value
+
+                elif operation == ConditionComparison.LOWER_OR_EQUAL:
+                    return current_value <= expected_value
+
+                elif operation == ConditionComparison.NOT_EQUAL:
+                    return current_value != expected_value
+
             except:
-                raise ValueError("Do not know how to compare %s with the expected value %s."
-                                 % (current_value, expected_value))
+                raise ValueError("Do not know how to compare %s with the expected value %s and action %s."
+                                 % (current_value, expected_value, operation))
 
         return False
 

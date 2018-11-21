@@ -42,11 +42,15 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0, operatio
                     return True
 
             elif operation == ConditionComparison.LOWER:
-                if (current_value - expected_value) < tolerance:
+                difference = current_value - expected_value
+
+                if difference < 0 or abs(difference) < tolerance:
                     return True
 
             elif operation == ConditionComparison.LOWER_OR_EQUAL:
-                if (current_value - expected_value) <= tolerance:
+                difference = current_value - expected_value
+
+                if difference <= 0 or abs(difference) <= tolerance:
                     return True
 
             elif operation == ConditionComparison.NOT_EQUAL:

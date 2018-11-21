@@ -168,6 +168,23 @@ class ScanTests(unittest.TestCase):
         # The first 2 attributes are from bs_read, they should be equal to the pulse ID processed.
         self.assertTrue(all(x[0] == x[1] and x[2] == 1 for x in result), "The result is wrong.")
 
+    def test_multiple_conditions(self):
+        config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
+
+        positioner = StaticPositioner(5)
+
+        readables = [bs_property("CAMERA1:X")]
+
+        conditions = [bs_condition("CAMERA1:VALID", 10, operation=ConditionComparison.EQUAL),
+                      bs_condition("CAMERA1:VALID", 11, operation=ConditionComparison.LOWER)]
+
+        result = scan(positioner=positioner, readables=readables, conditions=conditions,
+                      settings=scan_settings(measurement_interval=0.25, n_measurements=1))
+
+        print(result)
+
     def test_progress_monitor(self):
 
         current_index = []

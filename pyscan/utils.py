@@ -26,32 +26,22 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0, operatio
         if isinstance(current_value, (float, int)):
 
             if operation == ConditionComparison.EQUAL:
-                if abs(current_value - expected_value) <= tolerance:
-                    return True
+                return abs(current_value - expected_value) <= tolerance
 
             elif operation == ConditionComparison.HIGHER:
-                if (current_value - expected_value) > tolerance:
-                    return True
+                return (current_value - expected_value) > tolerance
 
             elif operation == ConditionComparison.HIGHER_OR_EQUAL:
-                if (current_value - expected_value) >= tolerance:
-                    return True
+                return (current_value - expected_value) >= tolerance
 
             elif operation == ConditionComparison.LOWER:
-                difference = current_value - expected_value
-
-                if difference < 0 or abs(difference) < tolerance:
-                    return True
+                return (current_value - expected_value) < 0 or abs(current_value - expected_value) < tolerance
 
             elif operation == ConditionComparison.LOWER_OR_EQUAL:
-                difference = current_value - expected_value
-
-                if difference <= 0 or abs(difference) <= tolerance:
-                    return True
+                return (current_value - expected_value) <= 0 or abs(current_value - expected_value) <= tolerance
 
             elif operation == ConditionComparison.NOT_EQUAL:
-                if abs(current_value - expected_value) > tolerance:
-                    return True
+                return abs(current_value - expected_value) > tolerance
 
         # Otherwise use the object comparison.
         else:
@@ -75,7 +65,7 @@ def compare_channel_value(current_value, expected_value, tolerance=0.0, operatio
                     return current_value != expected_value
 
             except:
-                raise ValueError("Do not know how to compare %s with the expected value %s and action %s."
+                raise ValueError("Do not know how to compare current_value %s with expected_value %s and action %s."
                                  % (current_value, expected_value, operation))
 
         return False

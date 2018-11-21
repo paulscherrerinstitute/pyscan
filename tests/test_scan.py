@@ -187,7 +187,24 @@ class ScanTests(unittest.TestCase):
         result = scan(positioner=positioner, readables=readables, conditions=conditions, initialization=initialization,
                       settings=scan_settings(measurement_interval=0.25, n_measurements=1))
 
-        print(result)
+        self.assertTrue(all(x[0] == i+1 for i, x in enumerate(result)), "The result is wrong.")
+
+    def test_same_condition_multiple_times(self):
+        config.bs_connection_mode = "pull"
+        config.bs_default_host = "localhost"
+        config.bs_default_port = 9999
+
+        positioner = StaticPositioner(5)
+
+        readables = [bs_property("CAMERA1:X")]
+
+        conditions = [bs_condition("CAMERA1:VALID", 10, operation=ConditionComparison.EQUAL),
+                      bs_condition("CAMERA1:VALID", 10, operation=ConditionComparison.EQUAL)]
+
+        result = scan(positioner=positioner, readables=readables, conditions=conditions,
+                      settings=scan_settings(measurement_interval=0.25, n_measurements=1))
+
+        self.assertTrue(all(x[0] == i + 1 for i, x in enumerate(result)), "The result is wrong.")
 
     def test_progress_monitor(self):
 

@@ -115,11 +115,9 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
         function_values = iter(function_condition.read(current_position_index) if function_condition else [])
 
         for index, source in enumerate(conditions_order):
-            operation = ConditionComparison.EQUAL
 
             if source == BS_CONDITION:
                 value = next(bs_values)
-                operation = conditions[index].operation
             elif source == EPICS_CONDITION:
                 value = next(epics_values)
             elif source == FUNCTION_CONDITION:
@@ -137,6 +135,7 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
             else:
                 expected_value = conditions[index].value
                 tolerance = conditions[index].tolerance
+                operation = conditions[index].operation
 
                 if compare_channel_value(value, expected_value, tolerance, operation):
                     value_valid = True

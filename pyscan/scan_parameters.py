@@ -4,7 +4,7 @@ from enum import Enum
 from pyscan import config
 
 EPICS_PV = namedtuple("EPICS_PV", ["identifier", "pv_name", "readback_pv_name", "tolerance", "readback_pv_value"])
-EPICS_CONDITION = namedtuple("EPICS_CONDITION", ["identifier", "pv_name", "value", "action", "tolerance"])
+EPICS_CONDITION = namedtuple("EPICS_CONDITION", ["identifier", "pv_name", "value", "action", "tolerance", "operation"])
 BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "property", "default_value"])
 BS_CONDITION = namedtuple("BS_CONDITION", ["identifier", "property", "value", "action", "tolerance", "operation",
                                            "default_value"])
@@ -96,7 +96,7 @@ def epics_pv(pv_name, readback_pv_name=None, tolerance=None, readback_pv_value=N
     return EPICS_PV(identifier, pv_name, readback_pv_name, tolerance, readback_pv_value)
 
 
-def epics_condition(pv_name, value, action=None, tolerance=None):
+def epics_condition(pv_name, value, action=None, tolerance=None, operation=ConditionComparison.EQUAL):
     """
     Construct a tuple for an epics condition representation.
     :param pv_name: Name of the PV to monitor.
@@ -104,7 +104,9 @@ def epics_condition(pv_name, value, action=None, tolerance=None):
     :param action: What to do when the condition fails.
         ('ConditionAction.Abort' and 'ConditionAction.Retry' supported)
     :param tolerance: Tolerance within which the condition needs to be.
-    :return: Tuple of ("pv_name", "value", "action", "tolerance", "timeout")
+    :param operation: How to compare the received value with the expected value.
+    Allowed values: ConditionComparison.[EQUAL,NOT_EQUAL, LOWER, LOWER_OR_EQUAL, HIGHER, HIGHER_OR_EQUAL]
+    :return: Tuple of ("pv_name", "value", "action", "tolerance", "timeout", "operation")
     """
     identifier = pv_name
 
@@ -121,7 +123,7 @@ def epics_condition(pv_name, value, action=None, tolerance=None):
     if not tolerance or tolerance < config.max_float_tolerance:
         tolerance = config.max_float_tolerance
 
-    return EPICS_CONDITION(identifier, pv_name, value, action, tolerance)
+    return EPICS_CONDITION(identifier, pv_name, value, action, tolerance, operation)
 
 
 def bs_property(name, default_value=_default_value_placeholder):
@@ -155,7 +157,7 @@ def bs_condition(name, value, action=None, tolerance=None, operation=ConditionCo
     :param operation: How to compare the received value with the expected value.
     Allowed values: ConditionComparison.[EQUAL,NOT_EQUAL, LOWER, LOWER_OR_EQUAL, HIGHER, HIGHER_OR_EQUAL]
     :param default_value: Default value of a condition, if not present in the bs stream.
-    :return:  Tuple of ("identifier", "property", "value", "action", "tolerance", "default_value")
+    :return:  Tuple of ("identifier", "property", "value", "action", "tolerance", "operation", "default_value")
     """
     identifier = name
 

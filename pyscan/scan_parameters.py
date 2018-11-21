@@ -6,11 +6,21 @@ from pyscan import config
 EPICS_PV = namedtuple("EPICS_PV", ["identifier", "pv_name", "readback_pv_name", "tolerance", "readback_pv_value"])
 EPICS_CONDITION = namedtuple("EPICS_CONDITION", ["identifier", "pv_name", "value", "action", "tolerance"])
 BS_PROPERTY = namedtuple("BS_PROPERTY", ["identifier", "property", "default_value"])
-BS_CONDITION = namedtuple("BS_CONDITION", ["identifier", "property", "value", "action", "tolerance", "default_value"])
+BS_CONDITION = namedtuple("BS_CONDITION", ["identifier", "property", "value", "action", "tolerance", "operation",
+                                           "default_value"])
 SCAN_SETTINGS = namedtuple("SCAN_SETTINGS", ["measurement_interval", "n_measurements",
                                              "write_timeout", "settling_time", "progress_callback", "bs_read_filter"])
 FUNCTION_VALUE = namedtuple("FUNCTION_VALUE", ["identifier", "call_function"])
 FUNCTION_CONDITION = namedtuple("FUNCTION_CONDITION", ["identifier", "call_function", "action"])
+
+
+class ConditionComparison(Enum):
+    EQUAL = 0
+    NOT_EQUAL = 1
+    LOWER = 2
+    LOWER_OR_EQUAL = 3
+    HIGHER = 4
+    HIGHER_OR_EQUAL = 5
 
 
 class ConditionAction(Enum):
@@ -133,7 +143,8 @@ def bs_property(name, default_value=_default_value_placeholder):
     return BS_PROPERTY(identifier, name, default_value)
 
 
-def bs_condition(name, value, action=None, tolerance=None, default_value=_default_value_placeholder):
+def bs_condition(name, value, action=None, tolerance=None, operation=ConditionComparison.EQUAL,
+                 default_value=_default_value_placeholder):
     """
     Construct a tuple for bs condition property representation.
     :param name: Complete property name.
@@ -141,6 +152,8 @@ def bs_condition(name, value, action=None, tolerance=None, default_value=_defaul
     :param action: What to do when the condition fails.
         ('ConditionAction.Abort' and 'ConditionAction.Retry' supported)
     :param tolerance: Tolerance within which the condition needs to be.
+    :param operation: How to compare the received value with the expected value.
+    Allowed values: ConditionComparison.[EQUAL,NOT_EQUAL, LOWER, LOWER_OR_EQUAL, HIGHER, HIGHER_OR_EQUAL]
     :param default_value: Default value of a condition, if not present in the bs stream.
     :return:  Tuple of ("identifier", "property", "value", "action", "tolerance", "default_value")
     """
@@ -162,7 +175,7 @@ def bs_condition(name, value, action=None, tolerance=None, default_value=_defaul
     if default_value is _default_value_placeholder:
         default_value = config.bs_default_missing_property_value
 
-    return BS_CONDITION(identifier, name, value, action, tolerance, default_value)
+    return BS_CONDITION(identifier, name, value, action, tolerance, operation, default_value)
 
 
 def scan_settings(measurement_interval=None, n_measurements=None, write_timeout=None, settling_time=None,

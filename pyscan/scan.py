@@ -5,7 +5,7 @@ from pyscan.dal.function_dal import FunctionProxy
 from pyscan.positioner.bsread import BsreadPositioner
 from pyscan.scanner import Scanner
 from pyscan.scan_parameters import EPICS_PV, EPICS_CONDITION, BS_PROPERTY, BS_CONDITION, scan_settings, convert_input, \
-    FUNCTION_VALUE, FUNCTION_CONDITION, convert_conditions, ConditionAction
+    FUNCTION_VALUE, FUNCTION_CONDITION, convert_conditions, ConditionAction, ConditionComparison
 from pyscan.utils import convert_to_list, SimpleDataProcessor, ActionExecutor, compare_channel_value
 
 # Instances to use.
@@ -115,8 +115,11 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
         function_values = iter(function_condition.read(current_position_index) if function_condition else [])
 
         for index, source in enumerate(conditions_order):
+            operation = ConditionComparison.EQUAL
+
             if source == BS_CONDITION:
                 value = next(bs_values)
+                operation = conditions[index].operation
             elif source == EPICS_CONDITION:
                 value = next(epics_values)
             elif source == FUNCTION_CONDITION:
@@ -135,7 +138,7 @@ def scanner(positioner, readables, writables=None, conditions=None, before_read=
                 expected_value = conditions[index].value
                 tolerance = conditions[index].tolerance
 
-                if compare_channel_value(value, expected_value, tolerance):
+                if compare_channel_value(value, expected_value, tolerance, operation):
                     value_valid = True
 
             if not value_valid:

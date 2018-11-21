@@ -718,13 +718,27 @@ condition3 = epics_condition("PYSCAN:TEST:VALID3", 10, action=ConditionAction.Re
 
 ### Condition comparison operation
 
-**WARNING**: The condition comparison operations are supported only for **bs\_condition**.
-
-**WARNING**: Currently the comparison operation works only for scalar value. In case of array operations, the 
-comparison is always EQUAl.
-
 The condition comparison operation allows you to specify how to compare the expected value and the read value on a 
 condition channel.
+
+Possible comparison operations are:
+
+- ConditionComparison.EQUAL (default if nothing is specified)
+- ConditionComparison.NOT_EQUAL
+- ConditionComparison.LOWER
+- ConditionComparison.LOWER_OR_EQUAL
+- ConditionComparison.HIGHER
+- ConditionComparison.HIGHER_OR_EQUAL
+
+You can interprete the condition in the following way:
+
+```python
+from pyscan import *
+# If the received value is HIGHER_OR_EQUAL to (value=) 5, the condition is TRUE (the scan will acquire the readables).
+bs_condition(name="CAMERA1:VALID2", value=5, operation=ConditionComparison.HIGHER_OR_EQUAL)
+```
+
+Example how to set conditions:
 
 ```python
 from pyscan import *
@@ -732,24 +746,12 @@ from pyscan import *
 # The condition is true, if the value is equal to the received value.
 condition_1 = bs_condition(name="CAMERA1:VALID2", value=5, operation=ConditionComparison.EQUAL)
 
-# The condition is true, if the value is lower compared to the received value.
-condition_2 = bs_condition(name="CAMERA1:VALID2", value=5, operation=ConditionComparison.LOWER)
+# The condition is true, if the received value is lower than 5.
+condition_2 = epics_condition(name="PV:VALUE", value=5, operation=ConditionComparison.LOWER)
 
 # You can pass multiple conditions to the scanning routine by chaining them in a list.
 conditions = [condition_1, condition_2]
 ```
-
-Possible comparison operations are:
-
-- ConditionComparison.EQUAL (default if nothing is specified) - Available for all data types.
-- ConditionComparison.NOT_EQUAL - int and float data type supported.
-- ConditionComparison.LOWER - int and float data type supported.
-- ConditionComparison.LOWER_OR_EQUAL - int and float data type supported.
-- ConditionComparison.HIGHER - int and float data type supported.
-- ConditionComparison.HIGHER_OR_EQUAL - int and float data type supported.
-
-The tolerance is taken into account in all operations. If a data type that does not support the specified operation is 
-passed, the operation is changed to ConditionComparison.EQUAL.
 
 <a id="c_init_and_fin"></a>
 ## Initialization and Finalization

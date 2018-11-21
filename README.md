@@ -717,8 +717,14 @@ condition3 = epics_condition("PYSCAN:TEST:VALID3", 10, action=ConditionAction.Re
 ```
 
 ### Condition comparison operation
-The **bs\_condition** supports an additional parameter: operation. This parameter is used for the comparison operation 
-and can be specified like this:
+
+**WARNING**: The condition comparison operations are supported only for **bs\_condition**.
+
+**WARNING**: Currently the comparison operation works only for scalar value. In case of array operations, the 
+comparison is always EQUAl.
+
+The condition comparison operation allows you to specify how to compare the expected value and the read value on a 
+condition channel.
 
 ```python
 from pyscan import *
@@ -735,16 +741,15 @@ conditions = [condition_1, condition_2]
 
 Possible comparison operations are:
 
-- ConditionComparison.EQUAL
-- ConditionComparison.EQUAL = 0
-- ConditionComparison.NOT_EQUAL = 1
-- ConditionComparison.LOWER = 2
-- ConditionComparison.LOWER_OR_EQUAL = 3
-- ConditionComparison.HIGHER = 4
-- ConditionComparison.HIGHER_OR_EQUAL = 5
+- ConditionComparison.EQUAL (default if nothing is specified) - Available for all data types.
+- ConditionComparison.NOT_EQUAL - int and float data type supported.
+- ConditionComparison.LOWER - int and float data type supported.
+- ConditionComparison.LOWER_OR_EQUAL - int and float data type supported.
+- ConditionComparison.HIGHER - int and float data type supported.
+- ConditionComparison.HIGHER_OR_EQUAL - int and float data type supported.
 
-**WARNING**: Currently the comparison operation works only for scalar value. In case of array operations, the 
-comparison is always EQUAl.
+The tolerance is taken into account in all operations. If a data type that does not support the specified operation is 
+passed, the operation is changed to ConditionComparison.EQUAL.
 
 <a id="c_init_and_fin"></a>
 ## Initialization and Finalization

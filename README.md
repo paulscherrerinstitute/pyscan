@@ -645,18 +645,20 @@ condition1 = epics_condition("PYSCAN:TEST:VALID1", 10)
 condition2 = bs_condition("CAMERA1:VALID1", 5, tolerance=1)
 # bs condition with default value. See notes at the bottom of this chapter.
 condition3 = bs_condition("CAMERA1:VALID2", 5, default_value="5")
+# Acquired data is valid when "PYSCAN:TEST:VALID2" > 10. See "Condition comparison operation".
+condition4 = bs_condition("CAMERA1:VALID2", 10, default_value="5", operation=ConditionComparison.HIGHER)
 
 # Function conditions need to return a boolean to signal if the scan can continue or not.
 def i_always_fail():
     return False
 
-condition4 = function_condition(i_always_fail)
+condition5 = function_condition(i_always_fail)
 
 # In this case, the condition is not defined with the function_condition call, so the condition action is ABORT (default).
 def i_always_work():
     return True
 
-conditions = [condition1, condition2, condition3, condition4, i_always_work]
+conditions = [condition1, condition2, condition3, condition4, condition5 i_always_work]
 ```
 
 When any of the condition fail (the condition value not match the specified one, or the function condition returns 
